@@ -1,0 +1,10 @@
+CEXE_headers += bmx_bc_parms.H
+CEXE_headers += bmx_fluid_parms.H
+CEXE_headers += bmx_species_parms.H
+CEXE_headers += bmx_dem_parms.H
+
+CEXE_sources += bmx_bc_parms.cpp
+CEXE_sources += bmx_fluid_parms.cpp
+CEXE_sources += bmx_species_parms.cpp
+CEXE_sources += bmx_dem_parms.cpp
+CEXE_headers += bmx_bc_list.H

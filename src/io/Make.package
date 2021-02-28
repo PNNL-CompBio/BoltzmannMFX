@@ -1,0 +1,5 @@
+CEXE_sources += bmx_io.cpp
+CEXE_sources += bmx_build_info.cpp
+CEXE_sources += bmx_chk.cpp
+CEXE_sources += bmx_plt.cpp
+CEXE_sources += bmx_restart.cpp

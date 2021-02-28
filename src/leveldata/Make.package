@@ -1,0 +1,2 @@
+CEXE_headers += bmx_leveldata.H
+CEXE_sources += bmx_leveldata.cpp

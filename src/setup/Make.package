@@ -1,0 +1,11 @@
+CEXE_headers += bmx_calc_cell.H
+CEXE_headers += bmx_calc_fluid_coeffs.H
+CEXE_headers += bmx_init_fluid.H
+
+CEXE_sources += bmx_init_fluid.cpp 
+CEXE_sources += bmx_calc_fluid_coeffs.cpp
+CEXE_sources += bmx_arrays.cpp
+CEXE_sources += bmx_init.cpp
+CEXE_sources += bmx_setup_solvers.cpp
+CEXE_sources += bmx_set_bc_type.cpp
+CEXE_sources += bmx_calc_cell.cpp

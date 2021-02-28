@@ -1,0 +1,1050 @@
+# 21.02
+
+  -- Abort when MLMG is detected as failing regardless of verbosity
+     setting. (#1762)
+
+  -- Update DPC++ version of Anyof (#1757)
+
+  -- Use ParticleReal for particle interpolation (#1763)
+
+  -- Remove obsolete functions from AMReX particle classes (#1754, #1755)
+
+  -- Make ParticleContainer::Geom always refer to the particle one. (#1470)
+
+  -- Gpu Docs Update (#1758)
+
+  -- Add IntVect versions of numParticlesOutOfRange. (#1751)
+
+  -- Improve the interpolation from cell centroids to face centroids:
+     (#1750)
+
+  -- In ParticleToMesh and MeshToParticle, use nGrowVect() to accommodate
+     different a different number of grow cells in each dimension. (#1748)
+
+  -- HIP: New Warp Size Macro (#1742) Use new the HIP macro for the warp
+     size on various AMD devices.
+
+  -- Add allocator template parameter to ParticleContainer (#1416)
+
+  -- Add ability to calculate slopes on face centroids (#1707) And apply the
+     explicit stencil when computing the laplacian.
+
+  -- HIP indirect function and kernel fusing (#1739) Add a GNU Make flag,
+     HIP_INDIRECT_FUNCTION=[TRUE|FALSE], and modify the Gpu kernel fusing
+     test.
+
+  -- When using CMake 3.15+ allow for MSVC runtime library changes (#1736)
+
+  -- RoundRobin: option to not sort processes (#1721)
+
+  -- EB: edge centroid (#1730) Add edge centroid to the database and make it
+     available via EBFArrayBoxFactory.
+
+  -- Fix RegridOnly to regrid even with single level grids (#1722)
+
+  -- Define: _OPENMP -> AMREX_USE_OMP (#1560) Replace the define `_OPENMP`
+     with `AMREX_USE_OMP` for all parallel "backend" implementations and
+     control of MFIter loops.
+
+  -- Update Make.nrel to accomodate MPT MPI with CUDA enabled (#1726)
+
+  -- Cell-centered Hypre and Petsc setup on GPU (#1709)
+
+  -- ParmParse::hasUnusedInputs & getUnusedInputs (#1716) Add functions to
+     find if there are unused `ParmParse` parameters starting with
+     `prefix.`.  If `prefix` is empty, all unused `ParmParse` parameters are
+     included.
+
+  -- CMake: offer option to exclude Src/Amr from build (#1714)
+
+  -- Make bisect more robust (#1708)
+
+  -- Support single precision build with configure (#1706) Add new arguments
+     `--single-precision` and `--single-precision-particles` to `configure`.
+
+  -- Support when CMake 3.18 policy 105 is set to new (#1696)
+
+  -- Optimized function for filling BaseFab of GpuArray (#1692)
+
+  -- BaseFab::minmax (#1691)  Add BaseFab::minmax function and use it in
+     VisMF.
+
+  -- New feature in the fextract tool to directly export in the csv format
+     (#1634)
+
+# 21.01
+
+  -- Optimization of MLCellLinOp::applyBC (#1690)
+
+  -- Optimization of iMultiFab sum (#1684)
+
+  -- Sanitize the input of mkconfig (#1685)
+
+  -- New versions of Reduce::Min, Max and MinMax taking callable (#1679)
+
+  -- Only issue prefetch if arena uses managed memory (#1678)
+
+  -- GNU Make: Fix the library flags (#1641)
+
+  -- PolymorphicArray4, a thin layer around Array4 allowing us to access
+     both AoS and SoA data with operator() (#1643)
+
+  -- CMake: dowstream projects must enable Fortran if AMReX_FORTRAN=ON
+     (#1669)
+
+  -- Optimization of FaceLinear interpolater (#1663)
+
+  -- Allow alternate form of "check_pair" function (#1667)
+
+  -- ParallelFor for Reduction (#1658)
+
+  -- Add features to fextract (#1657)
+
+  -- Fix parallel add bug when both USE_GPU and USE_OMP are defined (#1654)
+
+  -- Write a plotfile to ASCII (#1638)
+
+  -- Fix NodalProjector::getGradPhi for multilevel case (#1642)
+
+  -- Remove GPU pragma support (#1650) (#1649)
+
+  -- Remove custom MFIter reduction code (#1648)
+
+  -- Remove support for old versions of DPCPP (#1644)
+
+  -- Fused FillBoundary (#1570)
+
+  -- Divergence Free FillPatch (#1483)
+
+  -- Optimization of constant coefficient MacProjector (#1636)
+
+  -- Optimization of nodal solver with constant coefficient (#1629)
+
+  -- Expose the index of the neighboring particle to users of the
+     iterator. (#1628)
+
+  -- Implement overset mask for MLPoisson too (#1604)
+
+  -- Fuse nodal jacobi smoother for GPU (#1625)
+
+  -- Support for SoA data for neighbor particles. (#1590)
+
+  -- Fix a bug that causes errors when writing HDF5 plotfile and particle
+     (#1621)
+
+  -- Fortran Inteface: Porting more MultiFab functions (#1609)
+
+  -- Remove alternative operators from AMReX (#1599)
+
+  -- EB from STL (#1592)
+
+  -- AMReX_Config.H generated at built time is included in all
+     headers. (#1566)
+
+  -- MacProjector: Update setDomainBC API (#1589)
+
+  -- Reimplement NumParticlesAtLevel (#1581)
+
+  -- Add msvc cuda support (#1573)
+
+# 20.12
+
+  -- EB2::PolyIF (#1567) The existing PolynomialIF contains a dynamic size
+     vector.  This makes it hard to support it on GPU.  This new PolyIF
+     class uses fixed size array and has GPU support.
+
+  -- Tools/Plotfile works for for single precision now. (#1577)
+
+  -- Arena: Add accessor to query Arena attributes through info object
+     (#1575)
+
+  -- Allow MacProjection reuse (#1574)
+
+  -- Remove SUNDIALS Fortran interface support (#1559)
+
+  -- Allow MLEBABecLap to solve for multiple components (#1557)
+
+  -- DPCPP: MPI (#1556) Allow MPI for dpcpp build in gnu make assuming
+     mpiicpx is used.
+
+  -- Non-local boundary conditions (#1544)
+
+  -- If TheZeroVector() is passed in to SortParticlesByBin, do nothing
+     instead of crashing. (#1564)
+
+  -- Scan size type (#1521) Make the size type a template parameter to
+     support the scan of more than INT_MAX elements.
+
+  -- DPCPP: Fortran (#1554) Switch from gfortran to ifx that comes with
+     oneapi in GNU make.
+
+  -- CMake: generate_buildinfo target (#1545) This commit generates a static
+     library `buildInfo::<target>` for the passed user target. This target
+     is then automatically linked.  Also, the generated `.cpp` file is now
+     scoped properly, avoiding collisions.
+
+  -- nvcc --Werror cross-execution-space-call (#1540) This is turned on by
+     default in GNU make, and can be turned on in CMake.
+
+  -- fcompare: Add option for an absolute tolerance check (#1537)
+
+  -- Remove call to cudaDeviceSetCacheConfig (#1536) No longer set CUDA
+     device cache configuration to prefer L1 cache.
+
+  -- Assert no nested MFIters (#1530) Add assertion to catch nested MFIters
+     (e.g., MultiFab functions are called inside MFIter).
+
+  -- Free MPI_Datatype defined by AMReX (#1527) This fixes a one-time memory
+     leak in MPI_Datatypes defined by AMReX as reported in #1525.
+
+  -- make clean & make cleanconfig (#1520) `make clean` now does what `make
+     realclean` does.  `make realclean` is kept.  `make cleanconfig` is
+     introduced to do what `make clean` used to do.  For most users, `make
+     clean` is the one that should be used.
+
+  -- hypre: Adjust singular matrices before hypre solves (#1519)
+
+  -- CMake: overhaul options (#1490)
+
+  -- New Reduce::Sum function taking lambda function (#1508)
+
+  -- GNU Make: AMREX_CUDA_ARCH (#1507) Option to use AMREX_CUDA_ARCH in
+     addition to CUDA_ARCH to set CUDA arch.  If AMREX_CUDA is set, it will
+     be used over CUDA_ARCH.
+
+  -- Add option for device sync at beginning and end of TinyProfiler region
+     (#1505) Now when setting
+     `tiny_profiler.device_synchronize_on_region_end = 1` in the inputs
+     file, we will synchronize before calling nvtxRangePop() and
+     nvtxRangePush(), which means that TINY_PROFILE regions will include the
+     full kernel time, rather than just the kernel launch time.
+
+  -- CMake; bump up hypre minimi required version (#1503)
+
+# 20.11
+
+  -- The default hypre interface in MLMG is now IJ matrix for both EB and
+     non-EB.  Previously, it was semi-struct for non-EB. (#1492)
+
+  -- USE_SAVE_TEMPS option in GNU Make system for HIP. (#1492)
+
+  -- The device version of `Error`, `Abort` and `Warning` is no-op, unless
+     `NDEBUG` is defined. (#1492)
+
+  -- Ascent: Use Default Name for Mesh Ghost (#1488)
+
+  -- Add fill method to GpuArray (#1472)
+
+  -- Add Gpu::Atomic::AddNoRet (#1469)
+
+  -- Option to make the code NOT enforce solvability in MLMG for singular
+     problems. (#1471)
+
+  -- CMake: improve HDF5 support (#1468)
+
+  -- CMake: FindPETSc must not overwrite CMAKE_Fortran_FLAGS (#1464)
+
+  -- CMake: prevent in-source builds (#1453)
+
+  -- change char * to char const* so SWFFT code compiles with USE_CUDA=TRUE
+     (#1454)
+
+  -- Fix when small_volfrac is used -- we need to adjust the data in cut
+     cell neighbors as well as regular neighbors. (#1451)
+
+  -- Allow users to set a Geometry object for ParticleContainer
+     independently of the AmrCore / AmrLevel object. (#1446)
+
+  -- HDF5 plotfile write bug fix and performance improvement (#1448)
+
+  -- CMake: add HIP support (#1316)
+
+  -- NodalProjector: use volume-weighted average down (#1444)
+
+  -- Fix race conditions in EB interpolation from cell centers to faces
+     (#1443)
+
+  -- Allow tagging value to vary by level (#1441)
+
+  -- Hypre with overset (#1439)
+
+  -- Hypre IJ interface: Enable access to additional solvers and
+     preconditioners available in Hypre (#1437)
+
+  -- Fix CPU version of uninitailiedFillNImpl in PODVector (#1435)
+
+  -- CMake: Fix missing compile time definitions for HYPRE/PETSc (#1436)
+
+  -- Fix bug in EB extdir slopes (#1434)
+
+  -- Make the id and cpu members of amrex_particle private, as they should
+     no longer be accessed directly. (#1433)
+
+  -- Disable OpenMPI C++ binding in GNU make system (#1398)
+
+  -- Fix a long standing bug in eb levelset (#1432)
+
+# 20.10
+
+  -- CMake: fix ENABLE_PROFPARSER and ENABLE_SENSEI options (#1428)
+
+  -- Remove EB LSCore and levelset, and reimplement signed distance function
+     capability. (#1429 & #1425)
+
+  -- Remove flags setCGVerbose and setCGMaxIter since those are more
+     accurately called setBottomVerbose and setBottomMaxIter.  The
+     "setCG..."  flags are misleading since they actually apply to non-CG
+     bottom solvers as well. (#1413)
+
+  -- Remove GetPosition and SetPosition from ParIter.  These were added for
+     WarpX, but they are not used any more. (#1408)
+
+  -- Only check the requested MPI Threading level if AMReX also initialized
+     MPI. (#1406)
+
+  -- DPCPP support for mulitple GPUs (#1392)
+
+  -- Random Number Generation on Device (#1363) In order to support RNG on
+     device with DPC++, we have to change the API because DPC++ does not
+     support global device variables.
+
+  -- Remove redundant particle tests and old/obsolete/non-test tests (#1389
+     & #1381)
+
+  -- Gpu kernel fusing is integrated in MFIter. (#1332)
+
+  -- New runtime parameter, amrex.max_gpu_streams. (#1386)
+
+  -- Switch to `use mpi` from `include 'mpif.h'` (#1385)
+
+  -- Remove reliance on managed memory from
+     AMReX_ParticleCommunication.H/.cpp (#1380)
+
+  -- CMake: re-organize tutorials (#1333)
+
+  -- Implement Particle in a way that does not involve UB. (#1337)
+
+  -- amrex::EB_average_down(): Fix indexing error. (#1360)
+
+  -- Only add one copy of the ghost particle regardless of how many isects
+     we have (#1359)
+
+  -- Add non-EB slopes and extend the generality of EB slope routines in 2D
+     and 3D (#1350)
+
+  -- Async IO: Check Runtime Threading (#1351)
+
+  -- Changes to make AMR codes compiled with EB but not building any
+     Geometry work as if it is all regular. (#1349)
+
+  -- Fix mkconfig.py (#1344)
+
+  -- Add -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored to
+     suppress spurious warnings from nvcc. (#1342)
+
+  -- EB extend_domain_face (#1321)
+
+  -- Add parameter that stores OpenMP support version (#1325)
+
+# 20.09
+
+  -- Fix interpolation coefficients for EB stencil in cell-centered linear
+     solvers when the EB surface at the domain boundary is tilted.
+
+  -- Add a parameter to `AMReX_omp_mod` that can be used by Fortran code to
+     check whether AMReX was built with OpenMP support, and, if yes, what
+     the version number (_OPENMP) was at the time AMReX was compiled.
+
+  -- CMake: re-write genex evaluation functions.
+
+  -- Extend the number of unique particles per cpu we can have at once.
+
+  -- Add a new method to the `amrex_distromap` type in
+     F_Interfaces. `get_pmap` fills a caller-owned array of PEs.
+
+  -- Fix a long standing bug in GNU make system on the use of HOST and
+     HOSTNAME.
+
+  -- Add Scan::InclusiveSum and ExclusiveSum for CPU to avoid ifdef.
+
+  -- Add check for empty probin_file in Amr::restart.
+
+  -- Update Sundials interface, documentation, and build to be version
+     agnostic.
+
+  -- Updates for ROCm 3.6 and 3.7.
+
+  -- Add section to Make.unknown for intel mpi.
+
+  -- CMake: re-factor third party libraries setup.
+
+  -- Port TagBoxArray to GPU.
+
+  -- Fix a bug in matching of COMP_VERSION to correctly treat CCE > 9.
+
+  -- By default, EB outside the domain will be generated by extending from
+     the domain faces.
+
+  -- Fix an issues due to roundoff error in determining whether particles
+     are inside the domain.
+
+  -- Remove Perilla because it's incompatible with our GPU strategy and it's
+     no longer being maintained.
+
+  -- Switch the overset mask convention to that 1 means unknown and 0 means
+     known.  The new convention is more convenient for AMR-Wind.
+
+  -- Remove old solvers, Src/LinearSolvers/C_CellMG and C_TensorMG.  They
+     have been superseded by Src/LinearSolvers/MLMG.
+
+  -- MacProjector: allow for re-use of the object and enhance multi-level
+     algorithm.
+
+  -- Add asserts for bounds checking to Array1D and Array2D.
+
+  -- Optimization of the construction of SFC.
+
+  -- Refactoring of particle buffer map.
+
+  -- Optimization of FPinfo and complementIn.
+
+  -- Move the Amr/Extrapolater used in IAMR/PeleLM to C++/GPU compliant.
+
+  -- Less surprising behavior for the ok() method of FabArray. This makes
+     the `ok()` method of FabArray return `false` instead of crashing if the
+     `define()` method has yet to be called.
+
+  -- Optimization of regrid.
+
+  -- Special FillBoundary for Almo.
+
+  -- Fix the average_down_faces calls in linear solvers to see periodicity.
+
+  -- Make sure the calculation of divu at inflow face in nodal projection
+     does not use tangential velocities on an inflow face.
+
+# 20.08
+
+  -- New average_down_faces functions that take periodic boundary into account.
+
+  -- Update the documentation for Nsight.
+
+  -- Fix a bug with HDF5 boxcenter data.
+
+  -- New runtime parameter, `eb2.extend_domain_face`, that can be used to extraploate EB information
+     from domain faces.
+
+  -- New GNU Make options for GCC and Clang, `WARN_ALL` and `WARN_ERROR`. `WARN_ALL` turns on more
+     compiler warnings.  `WARN_ERROR` turns warnings into errors.
+
+  -- Fix various compiler warnings.
+
+  -- Fix memory fragmentation issue with communication buffer.
+
+  -- Semi-coarsening support in linear solvers.
+
+  -- Fix virtual particle issues.
+
+  -- Capability to fuse GPU kernel launches.
+
+  -- Make ghost particles support soa data.
+
+  -- CMake: ability to export build tree.
+
+  -- Reset amrex_geometry_module initialization state when finalizing.
+
+  -- Remove Long version of Gatherv.
+
+  -- Optimization of TagBoxArray::collate.
+
+  -- CMake: fix missing PETSc setup in Config file.
+
+  -- BndryFunc for nodal data.
+
+  -- MLMG Hypre fix for singular problems.
+
+  -- Add particle copy filters.
+
+  -- Async output support for particles.
+
+  -- BackgroundThread class.
+
+# 20.07
+
+  -- Nodal hypre solver now supports coarsening before hypre is called.
+
+  -- A new ParmParse parameter, `amrex.the_arena_is_managed` is introduced to set the default memory
+     type of `The_Arena`.
+
+  -- MFIter is now OMP thread safe when it is compiled with GPU support.
+
+  -- Overset support is added to cell-center and tensor linear solvers.
+
+  -- Remove compile time flag, BACKTRACE, for simplicity.
+
+  -- Updates on Blueprint and Ascent.
+
+  -- HDF5 support in GNU Make and CMake.
+
+  -- CMake support for DPC++.
+
+  -- Add -DNDEBUG for non-debug build.
+
+  -- Support for Windows.
+
+  -- Support for ParallelContext in Particles.
+
+  -- Non const iterator for neighbor list.
+
+  -- Tool for comparing single-level plotfiles of all nodalities.
+
+  -- GNU Make: Use -M instead the perl script to generate dependencies.
+
+  -- Particle: Remove directly accessing the m_idata and m_rdata structs internally.
+
+  -- Extend the makeSFC method to take an additional argument where the user can override the number
+     of processes a BoxArray is distributed to.
+
+  -- Turn tiling off by default for gpu.
+
+# 20.06
+
+  -- Set a non-default CMAKE_INSTALL_PREFIX only if AMReX is the
+     top-level CMake project. Otherwise, the default of a downstream
+     project using AMReX as subproject will be placed in a quite
+     confusing, temporary directory.
+
+  -- C order support for Array2D and Array3D.
+
+  -- Disable unqualified abs function within amrex namespace.
+
+  -- Updates for SENSEI 3.2.
+
+  -- CMake: link to OpenMP::Fortran only when needed.
+
+  -- DPC++ support.
+
+  -- Add non-const data() to GpuArray.
+
+  -- Fix HIP version of scan.
+
+  -- Return immediately from GPU memcpy if size is zero.
+
+  -- Documentation on EB linear solvers.
+
+# 20.05
+
+  -- AMReX's git history has been rewritten.  If you have problems due
+     to this, follow the instruction here. https://xkcd.com/1597/  We
+     also have a new CONTRIBUTING.md.
+
+  -- EB linear solvers: You now need to specify the location of
+     diffusion coefficient (face center or face centroid) and the
+     location of the unknowns (cell center or cell centroid).
+
+  -- Optimization of makeKnapSack and makeSFC.
+
+  -- Unification of GPU and CPU versions of neighbor particle /
+     neighbor list implementations.
+
+  -- New HostDeviceParallelFor functions that can run on either host
+     or device depending on the launch region flag.
+
+  -- Add CUPTI trace for CUDA kernel timing.
+
+  -- Implement AMReX_FORTRAN (BL_NO_FORT) option in CMake.
+
+  -- Fix CUDA build of tools.
+
+  -- Fix invalid git version in CMake.
+
+# 20.04
+
+  -- BaseFab can no longer be used on device.  Many BaseFab functions
+     now requires RunOn::Device or RunOn::Host template parameter when
+     GPU support is enabled.
+
+  -- FillPatch* funcitons are now templated to support FabArray in
+     addition to MultiFab.
+
+  -- Fix -pthread for nvcc by default in Make.unknown
+
+  -- EB now has the option to build coarse level from GeometryShop
+     when coarsening from fine level fails.  This could be used for
+     hyperbolic system with EB resolved to the finest level
+
+  -- CMake: add C++ 17 among valid options for AMREX_CXX_STANDARD
+
+  -- Add option to set fixed number of iterations in the Fortran
+     interface of linear solver
+
+  -- Fabs in alias FabArray now carries EB information.
+
+  -- Add AMREX_LOOP_3D and 4D macros.
+
+  -- Make amrex::Random() return numbers in the same interval for both
+     CPU and GPU: [0:1)
+
+  -- More flux register functionality for flash
+
+  -- Chunked partition in particle redistribution to use less memory.
+
+# 20.03
+
+  -- AmrCore can now be built without using ParmParse.
+
+  -- Improve BL_NO_FORT support.
+
+  -- Fix OMP bug in MFIter constructors taking BoxArray and
+     DistributionMapping.
+
+  -- Cray compiler has been re-enabled in CMake.
+
+  -- For device only code, the users can now use #if AMREX_DIVICE_COMPILE.
+
+  -- Fix an integer overflow issue in TileArray cache.
+
+# 20.02
+
+  -- RealVect updated for GPU.
+
+  -- Support for restarting from HDF5 particle checkpoint file.
+
+  -- Improvement of MacProjector and NodalProjector
+
+# 20.01
+
+  -- GPU host device version of swap.
+
+  -- Fix an edge case of gpu block reduce where the block size is less
+     than a warp.
+
+  -- Always check MPI buffer size for overflow.
+
+  -- CMake support for PETSc.
+
+  -- Include C sources in the CUDA proprecessing.
+
+  -- It's now safe to construct a zero components Fab.
+
+  -- CXXSTD: option to set c++ standard in GNU make system
+
+  -- Improve performance of the nodal linear solver on GPU.
+
+# 19.12
+
+  -- Fix potential deadlocks in amrex::Random.
+
+  -- MultiFab::Swap that does shallow swap if it can, does deep swap
+     otherwise.
+
+  -- FabArray::arena function that returns the Arena used to build.
+
+  -- Nodal projection sync residuals are implemented for RAP.
+
+  -- GPU support for initializing Fabs to NaNs.
+
+# 19.11
+
+  -- AmrCore::regrid will now simply return instead of abort if the
+     base level is already the maximal level.
+
+  -- Add NodalProjector that wraps MLMG for convenience.
+
+  -- Enforce in AmrCore that blocking factor must be a power of 2.
+
+  -- Add support to write plotfile in HDF5 format.
+
+  -- FabArray's Reduce functions can now take lambda working on Array4
+     in addition of FAB.
+
+  -- Add AMREX_REAL_MIN, AMREX_REAL_MAX and AMREX_REAL_LOWEST for
+     convenience.
+
+  -- GPU launch functions and macros are now safe with empty boxes.
+
+  -- Remove FabView from BaseFab.
+
+  -- Avoid race conditions in GPU reduction code called multiple
+     times.
+
+  -- MLMG tensor solver is fixed for AMR.
+
+# 19.10
+
+  -- Add inhomogeneous Neumann BC to MLMG for convenience.
+
+  -- Fix a corner case of tensor solver.
+
+  -- Various fixes for single precision and particle real.
+
+  -- Add amrex::Long that has a size of 8.
+
+  -- Add int8_t support in typecheck.
+
+  -- C++ user literal _rt for amrex::Real and _prt for
+     amrex::ParticleReal.
+
+  -- EB MAC projector now requires the user to specify whether the
+     face velocities are defined on face centers or centroids.
+
+# 19.09
+
+  -- First pass of Sr/EB on GPU.
+
+  -- Optimization of particle redistribution.
+
+  -- EB integral: add integral of x*y*z
+
+  -- HostDevice::Atomic::Add that does atomic add for both device and
+     host omp code.
+
+  -- makeFineMask: optional arguments specifying coarse and fine flag
+     values.
+
+  -- Optimization of FabArray communication for GPU by merging small
+     kernels.
+
+# 19.08
+
+  -- MacProjector has the option to set maximal coarsening level.
+
+  -- OwnerMask and OverlapMask are now built on GPU.
+
+  -- Random number generation on GPU no longer requires an call to
+     initialize seeds.  They are done in amrex::Initialize and resize
+     is not needed when launching with more threads than the size of
+     seed array.
+
+  -- Optimization of NeighborParticles.
+
+# 19.07
+
+  -- Geometry/CoordSys: Static class members have been removed.
+     Functions such as `isPeriodic`, `isAnyPeriodic`, `isAllPeriodic`,
+     `ProbLo`, `ProbHi`, `IsCartesian`, `IsRZ`, and `IsSPHERICAL` are
+     now non-static.  The default Geometry can been obtained via
+     `DefaultGeometry()` function.
+
+  -- Funciton amrex::Loop and amrex:LoopConcurrent are added to help
+     looping over cells in a Box.
+
+  -- Nodal solver: A bug in nodal owner mask that could affect
+     covergence was fixed.
+
+  -- Fortran amrex_amrcore_module: add amrex_set_boxarray,
+     amrex_set_distromap, and amrex_set_finest_level.
+
+  -- Option to allocate MultiFab data in arenas different from
+     The_Arena().
+
+  -- Option to tag MultiFabs and query their memory usages.
+
+  -- AsyncFab has been deleted.
+
+# 19.06
+
+  -- Geometry/CoordSys: New constructor and define function are added.
+     We plan to remove static data from Geometry and its base CoordSys
+     in the next release.  This means most of the static functions in
+     Geometry class will become non-static.  These include
+     `isPeriodic`, `isAnyPeriodic`, `isAllPeriodic`, `ProbLo`,
+     `ProbHi`, `IsCartesian`, `IsRZ`, and `IsSPHERICAL`.  You can
+     prepare codes now for the upcoming changes.  In almost all cases,
+     all you have to do is replace `Geometry::function` with
+     `DefaultGeometry().function`.
+
+  -- Add tensor linear solvers for viscous flows with and without EB.
+
+  -- Algoim: A modified version of Algoim is added.  This removes the
+     dependence of 3d EB nodal MLMG solver on the official Algoim code
+     and Blitz.
+
+  -- EB: Fix the potential ownership issue is IndexSpace.
+
+  -- Add a new FillPatchTwoLevels for EB.
+
+# 19.05
+
+  -- Interface of virtual function Interpolater::interp has changed.
+
+  -- Add Fortran funcntions for shared memory reductions.
+
+  -- EB nodal linear solver: The default bottom solver is now bicgcg.
+     It starts with bicgstab and switches cg if bicgstab fails.
+
+  -- EB nodal linear solver: Finished the implementation of matrix
+     coarsening with RAP.
+
+  -- Particle: Option for adding runtime struct of array components.
+
+  -- Add a trilinear interpolation option for 3D.
+
+  -- Add more support for non-uniform grow vectors to MultiFab and
+     FabArray.
+
+  -- AmrMesh: n_error_buf is now IntVect.  This allows for different
+     number of error buffer cells in different directions.
+
+  -- Using PETSc as bottom solver no longer requires Hypre.
+ 
+# 19.04
+
+  -- SUNDIALS 4 support.
+
+  -- Option to disable device sync in MFIter.
+
+  -- Functions for prefetch unified memory.
+
+  -- GNU Make system: It is now an error if a function with return
+     type does not return.
+
+  -- GNU Make system: Pass C++ flags to nvcc when compiling C codes.
+
+  -- Allocate 3/4 of gpu memory upfront in The_Arena.
+
+  -- BaseFab now has Allocator template parameter.
+
+  -- Random number generation on gpu.
+
+# 19.03
+
+  -- Deprecated Fortran framework F_BaseLib and linear solver F_MG
+     have been removed.  A number of tools written in F_BaseLib have
+     been migrated to Tools/Plotfile/.  Note that the Fortran wrappers
+     to C++ (F_Interfaces) are still there.
+
+  -- In addition to launch macros, there are now functions for
+     lauching, amrex::launch, amrex::For and amrex::ParallelFor.
+     These improves debuggability. 
+
+  -- If compiled with BASEFAB_IS_PINNED, pinned memory will be used
+     for BaseFab meta-data.  On systems with nvlink, this improves the
+     performance a little bit.
+
+  -- Performance improvement in particle redistribution.
+
+  -- Particle NeighborList has been moved from tutorial to AMReX
+     proper.
+
+  -- Cell-centered MLMG linear solver have been ported to GPU.
+
+# 19.02
+
+  -- Array4 class that contains the important information in BaseFab
+     class.  It can be captured by lambda and used on gpu.
+
+  -- A number of new macros for launching for loops: AMREX_FOR_1D,
+     AMREX_FOR_3D, AMREX_FOR_4D, AMREX_PARALLEL_FOR_1D,
+     AMREX_PARALLEL_FOR_3D, and AMREX_PARALLEL_FOR_4D.
+
+  -- Disable cuda aware MPI by default.  It can be enabled with
+     parameter amrex.use_gpu_aware_mpi.
+
+# 19.01
+
+  -- Documentation and Tutorials on GPU
+
+  -- EB implicit function using spline
+
+  -- FabArray::fabPtr() function takes MFIter and returns a device
+     pointer to BaseFab.
+
+# 18.12
+
+  -- More GPU supports
+
+# 18.11
+
+  -- GPU support in Base and Particle
+
+  -- BaseFab is no longer polymorphic
+
+  -- EB now supports ghost cells outside physical domain
+
+# 18.10
+
+  -- MacProjector class for MAC projection
+
+  -- Support for Dirichlet EB in linear solver
+
+  -- Option to use PETSc as bottom solver
+
+  -- Multi-level linear solver with EB not crossing coarse/fine
+     boundary. 
+
+  -- Sundials 3 support
+
+# 18.09
+
+  -- Cell-centered linear solver with homogeneous Neumann embedded
+     boundary. 
+
+  -- Hypre as a bottom solver has a IJ matrix interface and supports
+     homogeneous Neumann boundary condition on embedded boundary.
+
+  -- Old embedded boundary codes have been removed.
+
+# 18.08
+
+  -- Faster geometry generation is available at Src/EB2.
+     Tutorials/EB/CNS is now based on EB2.
+
+  -- AMReX is now fully compliant with xSDK.
+
+  -- Fortran interface for particles.  See Tutorials/Amr/Advection_F/
+     for an example.
+
+# 18.07
+
+  -- Pre- and post-interpolation hooks in FillPatch.
+
+  -- NDEBUG is no longer defined in xSDK mode.
+
+# 18.06
+
+  -- When amrex::Initialize is called, optional std::ostream arguments
+     can be passed in and their defaults are std::cout and std::cerr.
+
+  -- ParmParse inputs files can now contain Fortran namelist that can
+     be accessed from Fortan (and Frotran only).  These Fortran inputs
+     are stored in amrex_namelist character variable in
+     amrex_parmparse_module, and can be read with standard Fortran
+     I/O.
+     
+  -- There is a new non-blocking parallel copy function in
+     MultiFab/FabArray called ParallelCopy_nowait.  It returns a
+     CopierHandle object and can later be used to finish the
+     communication with CopierHandle::finish().
+
+# 18.05
+
+  -- FillBoundary and ParallelCopy functions can now take IntVect
+     arguments as the number of ghost cells.  That is the number of
+     ghost cells could be different for different directions.
+
+  -- MultiFab, iMultiFab and FabArray can have different number of
+     ghost cells in different directions.
+
+  -- Fortran module mempool_module has been renamed amrex_mempool_module.
+
+  -- Many macros have been renamed.
+     * USE_PARTICLES and PARTICLES have been renamed AMREX_PARTICLES
+     * DIMENSION_AGNOSTIC has been renamed AMREX_DIMENSION_AGNOSTIC
+     * USE_CVODE has been renamed AMREX_USE_CVODE
+     * DEBUG has been renamed AMREX_DEBUG
+
+ -- amrex::Array is now an alias to std::array in stead of amrex::Vector.
+
+# 18.04
+
+  -- New BoxList constructors making a given number of Boxes from a
+     single Box.
+
+  -- Optimization of particle redistribution
+
+  -- MLMG nodal linear solver: add solvability fix
+
+  -- Modification to amrex::Initialize and Finalize to make it
+     suitable as a library in an application that does not use AMReX
+     as a framework.
+
+# 18.03
+
+  -- STL support for EB
+
+# 18.02
+
+  -- Fortran interface: added new functions amrex_multifab_build_alias
+     and amrex_imultifab_build_alias.
+
+  -- Documentation in reST/Sphinx.  See Docs/Readme.sphinx for more
+     details.
+
+  -- Src/LinearSolvers/MLMG now supports nodal based data.
+
+  -- Fortran module AMReX_fillpatch_module takes a user provided
+     callback function for filling physical boundary conditions.  That
+     function used to use 0-based index for component (i.e., the last
+     index).  For consistence with 1-based index for component in
+     other Fortran modules, this has been changed to 1-based index for
+     component.
+
+# 18.01
+
+  -- New linear solver MLMG at Src/LinearSolvers/MLMG/.  Currently it
+     supports cell-centered single level and multi-level composite
+     solve.  Fortran interface is also available at
+     Src/F_Interfaces/LinearSolvers/.  See Tutorials/LinearSolvers for
+     tutorials.
+
+# 17.12
+
+  -- Ported more features (including dynamic scheduling and explicit
+     tile size) of MFIter from C++ to Fortran.
+
+  -- Added procedures to Fortran amrex_multifab_module to add,
+     subtract, multiply, divide, saxpy and lincomb (linear
+     combination).  Note that we call it saxpy, but it doesn't mean
+     single precision.
+
+  -- The `configure; make; make install` build approach enables linear
+     solvers by default now.
+
+  -- MultiFab and iMultiFab now support move assignment operator.
+     This allows for swapping two MultiFabs without deep copying.  For
+     instance, std::swap(mf1, mf2);
+
+  -- Tutorials/Amr/Advection_AmrCore changes from using
+     `Vector<unique_ptr<MultiFab>>` to `Vector<MultiFab>`.
+
+# 17.11
+
+  -- AMREX_ASSERT_WITH_MESSAGE and AMREX_ALWAYS_ASSERT_WITH_MESSAGE
+     are new macros for assertion when it fails additional message
+     will be printed.   For example:
+
+         AMREX_ASSERT_WITH_MESSAGE(x > y, "reason why x > y must be true");
+
+  -- amrex::Array is deprecated and replaced by amrex::Vector.
+     Currently Array is an alias to Vector.  So this should not break
+     any codes.  In the future, we will remove Array completely.
+     Therefore it is recommended that application codes should start
+     replacing Array with Vector.  There is a script,
+     amrex/Tools/Migration/amrex_array_to_vector.sh, to help.  But use
+     it with caution.   If it is completely gibberish to you, you
+     probably shouldn't use the script. 
+
+  -- functions for printing to a file in a parallel and thread-safe manner
+     have been added. For example:
+
+        amrex::AllPrintToFile("output") << "Hello from rank " << rank << 
+                                           " and thread " << thread << "\n";
+
+     will print out the requested information to separate files for each 
+     rank and thread.
+
+# 17.10
+
+  -- Added a load balance approach to Amr/AmrLevel.  The runtime
+     parameters for this is amr.loadbalance_with_workestimates and
+     amr.loadbalance_level0_int.  The latter is for single level
+     (i.e., amr.max_level=0) only.  For multi-level runs, load balance
+     is done during regrid and thus the load balance interval is
+     controlled by amr.regrid_int.  To use this approach, AmrLevel
+     derivative must has a StateData for work estimates and its index
+     is returned by virtual function int WorkEstType().
+
+  -- MFIter now supports dynamic scheduling of OpenMP threads.  For
+     example,
+ 
+       for (MFIter mfi(mf, MFItInfo().SetDynamic(true).EnableTiling(tile_size);
+            mfi.isValid(); ++mfi)
+       { ... }
+
+  -- Added EBFluxRegister to Src/EB for refluxing and
+     re-redistribution in EB.
+
+  -- amrex.signal_handling = 1 is a new runtime parameter that can be
+     used to control whether AMReX should handle signals like SIGSEGV
+     etc. 
