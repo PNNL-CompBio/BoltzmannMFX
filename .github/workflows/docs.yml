@@ -26,7 +26,7 @@ jobs:
         run: |
           cd doc
           echo "Build the Sphinx documentation for BoltzmannMFX."
-          make PYTHON="python3" html
+          make html
           echo "done."
 
       - name: Deploy
