@@ -187,7 +187,7 @@ bmx::bmx_calc_txfr_particle (Real time)
         const auto& interp_array = interp_ptr->array(pti);
 
         amrex::ParallelFor(np,
-            [pstruct,interp_array,interp_ncomp,plo,dxi]
+            [pstruct,interp_array,plo,dxi]
             AMREX_GPU_DEVICE (int pid) noexcept
               {
               // Local array storing interpolated values
