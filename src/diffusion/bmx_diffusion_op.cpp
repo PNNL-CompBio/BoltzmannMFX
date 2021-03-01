@@ -4,7 +4,7 @@
 
 #include <bmx_diffusion_op.H>
 #include <bmx_bc_parms.H>
-#include <bmx_species_parms.H>
+#include <bmx_chem_species_parms.H>
 #include <bmx_fluid_parms.H>
 
 using namespace amrex;
@@ -14,8 +14,8 @@ using namespace amrex;
 // We set up everything which doesn't change between timesteps here
 //
 DiffusionOp::DiffusionOp (AmrCore* _amrcore,
-                          std::array<amrex::LinOpBCType,3> a_speciesbc_lo,
-                          std::array<amrex::LinOpBCType,3> a_speciesbc_hi,
+                          std::array<amrex::LinOpBCType,3> a_chem_speciesbc_lo,
+                          std::array<amrex::LinOpBCType,3> a_chem_speciesbc_hi,
                           int _nghost)
 {
     if(verbose > 0)
@@ -23,8 +23,8 @@ DiffusionOp::DiffusionOp (AmrCore* _amrcore,
 
     nghost = _nghost;
 
-    m_speciesbc_lo = a_speciesbc_lo;
-    m_speciesbc_hi = a_speciesbc_hi;
+    m_chem_speciesbc_lo = a_chem_speciesbc_lo;
+    m_chem_speciesbc_hi = a_chem_speciesbc_hi;
 
     // Get inputs from ParmParse
     readParameters();
@@ -45,7 +45,7 @@ void DiffusionOp::setup (AmrCore* _amrcore)
 
     int max_level = amrcore->maxLevel();
 
-    const int nspecies_g = FLUID::nspecies;
+    const int nchem_species_g = FLUID::nchem_species;
 
     // Resize and reset data
     b.resize(max_level + 1);
@@ -53,8 +53,8 @@ void DiffusionOp::setup (AmrCore* _amrcore)
     phi.resize(max_level + 1);
     rhs.resize(max_level + 1);
 
-    species_phi.resize(max_level + 1);
-    species_rhs.resize(max_level + 1);
+    chem_species_phi.resize(max_level + 1);
+    chem_species_rhs.resize(max_level + 1);
 
     for(int lev = 0; lev <= max_level; lev++)
     {
@@ -70,23 +70,23 @@ void DiffusionOp::setup (AmrCore* _amrcore)
         // No ghost cells needed for rhs
         rhs[lev].reset(new MultiFab(grids[lev], dmap[lev], 3, 0, MFInfo()));
 
-        species_phi[lev].reset(new MultiFab(grids[lev], dmap[lev], nspecies_g, 1, MFInfo()));
+        chem_species_phi[lev].reset(new MultiFab(grids[lev], dmap[lev], nchem_species_g, 1, MFInfo()));
 
         // No ghost cells needed for rhs
-        species_rhs[lev].reset(new MultiFab(grids[lev], dmap[lev], nspecies_g, 0, MFInfo()));
+        chem_species_rhs[lev].reset(new MultiFab(grids[lev], dmap[lev], nchem_species_g, 0, MFInfo()));
     }
 
     LPInfo info;
     info.setMaxCoarseningLevel(mg_max_coarsening_level);
 
-    amrex::Print() << "Initializing solver with " << nspecies_g << " components " << std::endl;
-    species_matrix.reset(new MLABecLaplacian(geom, grids, dmap, info, {}, nspecies_g));
+    amrex::Print() << "Initializing solver with " << nchem_species_g << " components " << std::endl;
+    chem_species_matrix.reset(new MLABecLaplacian(geom, grids, dmap, info, {}, nchem_species_g));
 
-    species_matrix->setMaxOrder(2);
+    chem_species_matrix->setMaxOrder(2);
 
-    species_matrix->setDomainBC(m_speciesbc_lo, m_speciesbc_hi);
+    chem_species_matrix->setDomainBC(m_chem_speciesbc_lo, m_chem_speciesbc_hi);
 
-    species_b.resize(max_level + 1);
+    chem_species_b.resize(max_level + 1);
 
     for(int lev = 0; lev <= max_level; lev++)
     {
@@ -94,7 +94,7 @@ void DiffusionOp::setup (AmrCore* _amrcore)
         {
               BoxArray edge_ba = grids[lev];
               edge_ba.surroundingNodes(dir);
-              species_b[lev][dir].reset(new MultiFab(edge_ba, dmap[lev], nspecies_g, nghost, MFInfo()));
+              chem_species_b[lev][dir].reset(new MultiFab(edge_ba, dmap[lev], nchem_species_g, nghost, MFInfo()));
         }
     }
 }
@@ -156,19 +156,19 @@ void DiffusionOp::ComputeLapX (const Vector< MultiFab* >& lapX_out,
 
   int finest_level = amrcore->finestLevel();
 
-  // Number of fluid species
-  const int nspecies_g = FLUID::nspecies;
+  // Number of fluid chem_species
+  const int nchem_species_g = FLUID::nchem_species;
 
   // We want to return div (D_gk grad)) phi
-  species_matrix->setScalars(0.0, -1.0);
+  chem_species_matrix->setScalars(0.0, -1.0);
 
   Vector<BCRec> bcs_X; 
-  bcs_X.resize(3*nspecies_g);
+  bcs_X.resize(3*nchem_species_g);
 
   // Compute the coefficients
   for (int lev = 0; lev <= finest_level; lev++)
   {
-    MultiFab b_coeffs(X_gk_in[lev]->boxArray(), X_gk_in[lev]->DistributionMap(), nspecies_g, 1, MFInfo());
+    MultiFab b_coeffs(X_gk_in[lev]->boxArray(), X_gk_in[lev]->DistributionMap(), nchem_species_g, 1, MFInfo());
     b_coeffs.setVal(0.);
 
 #ifdef _OPENMP
@@ -183,7 +183,7 @@ void DiffusionOp::ComputeLapX (const Vector< MultiFab* >& lapX_out,
         Array4<Real const> const& D_gk_arr     = D_gk_in[lev]->const_array(mfi);
         Array4<Real      > const& b_coeffs_arr = b_coeffs.array(mfi);
 
-        amrex::ParallelFor(bx, nspecies_g, [=]
+        amrex::ParallelFor(bx, nchem_species_g, [=]
           AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             b_coeffs_arr(i,j,k,n) = D_gk_arr(i,j,k,n);
@@ -191,14 +191,14 @@ void DiffusionOp::ComputeLapX (const Vector< MultiFab* >& lapX_out,
       }
     }
 
-    average_cellcenter_to_face( GetArrOfPtrs(species_b[lev]), b_coeffs, geom[lev], nspecies_g );
+    average_cellcenter_to_face( GetArrOfPtrs(chem_species_b[lev]), b_coeffs, geom[lev], nchem_species_g );
 
-    species_matrix->setBCoeffs(lev, GetArrOfConstPtrs(species_b[lev]));
+    chem_species_matrix->setBCoeffs(lev, GetArrOfConstPtrs(chem_species_b[lev]));
 
-    species_matrix->setLevelBC(lev, GetVecOfConstPtrs(X_gk_in)[lev]);
+    chem_species_matrix->setLevelBC(lev, GetVecOfConstPtrs(X_gk_in)[lev]);
   }
 
-  MLMG solver(*species_matrix);
+  MLMG solver(*chem_species_matrix);
 
   solver.apply(lapX_out, X_gk_in);
 }

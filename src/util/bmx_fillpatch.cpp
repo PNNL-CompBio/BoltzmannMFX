@@ -20,7 +20,7 @@ void set_ptr_to_bmx (bmx& bmx_for_fillpatching_in)
 // This interface must match the definition of the interface for
 //    CpuBndryFuncFab in amrex/Src/Base/AMReX_PhysBCFunct.H
 inline
-void SpeciesFillBox (Box const& bx,
+void ChemSpeciesFillBox (Box const& bx,
                      Array4<amrex::Real> const& dest,
                      const int dcomp,
                      const int numcomp,
@@ -31,9 +31,9 @@ void SpeciesFillBox (Box const& bx,
                      const int orig_comp)
 {
     if (dcomp != 0)
-         amrex::Abort("Must have dcomp = 0 in SpeciesFillBox");
-    if (numcomp != FLUID::nspecies)
-         amrex::Abort("Must have numcomp = nspecies_g in SpeciesFillBox");
+         amrex::Abort("Must have dcomp = 0 in ChemSpeciesFillBox");
+    if (numcomp != FLUID::nchem_species)
+         amrex::Abort("Must have numcomp = nchem_species_g in ChemSpeciesFillBox");
 
     const Box& domain = geom.Domain();
 
@@ -59,7 +59,7 @@ void SpeciesFillBox (Box const& bx,
    {
       // bmx_for_fillpatching->set_mass_fractions_g_bcs(time, lev, dest_fab, domain);
    } else if(orig_comp == 1)
-      bmx_for_fillpatching->set_species_diffusivities_g_bcs(time, lev, dest_fab, domain);
+      bmx_for_fillpatching->set_chem_species_diffusivities_g_bcs(time, lev, dest_fab, domain);
    else
       amrex::Abort("Unknown component in ScalarFillBox!");
 
@@ -67,9 +67,9 @@ void SpeciesFillBox (Box const& bx,
 
 // Compute a new multifab by copying array from valid region and filling ghost cells
 // works for single level and 2-level cases (fill fine grid ghost by interpolating from coarse)
-// NOTE: icomp here refers to whether we are filling 0: fluid species
+// NOTE: icomp here refers to whether we are filling 0: fluid chem_species
 void
-bmx::FillPatchSpecies (int lev,
+bmx::FillPatchChemSpecies (int lev,
                         Real time,
                         MultiFab& mf,
                         int icomp,
@@ -87,9 +87,9 @@ bmx::FillPatchSpecies (int lev,
         Vector<MultiFab*> smf;
         Vector<Real> stime;
 
-        GetDataSpecies(0, time, smf, icomp, stime);
+        GetDataChemSpecies(0, time, smf, icomp, stime);
 
-        CpuBndryFuncFab bfunc(SpeciesFillBox);
+        CpuBndryFuncFab bfunc(ChemSpeciesFillBox);
         PhysBCFunct<CpuBndryFuncFab> physbc(geom[lev], bcs, bfunc);
         amrex::FillPatchSingleLevel(mf, time, smf, stime, 0, 0, ncomp,
                                     geom[lev], physbc, icomp);
@@ -98,10 +98,10 @@ bmx::FillPatchSpecies (int lev,
     {
         Vector<MultiFab*> cmf, fmf;
         Vector<Real> ctime, ftime;
-        GetDataSpecies(lev-1, time, cmf, icomp, ctime);
-        GetDataSpecies(lev  , time, fmf, icomp, ftime);
+        GetDataChemSpecies(lev-1, time, cmf, icomp, ctime);
+        GetDataChemSpecies(lev  , time, fmf, icomp, ftime);
 
-        CpuBndryFuncFab bfunc(SpeciesFillBox);
+        CpuBndryFuncFab bfunc(ChemSpeciesFillBox);
         PhysBCFunct<CpuBndryFuncFab> cphysbc(geom[lev-1],bcs,bfunc);
         PhysBCFunct<CpuBndryFuncFab> fphysbc(geom[lev  ],bcs,bfunc);
 
@@ -117,7 +117,7 @@ bmx::FillPatchSpecies (int lev,
 
 // Utility to copy in data from phi_old and/or phi_new into another multifab
 void
-bmx::GetDataSpecies (int lev,
+bmx::GetDataChemSpecies (int lev,
                       Real time,
                       Vector<MultiFab*>& data,
                       int icomp,
@@ -158,18 +158,18 @@ bmx::fillpatch_all ( Vector< MultiFab* > const& X_gk_in,
                      Real time)
 {
 
-  const int l_nspecies = FLUID::nspecies;
+  const int l_nchem_species = FLUID::nchem_species;
 
   for (int lev = 0; lev < nlev; lev++) {
 
     int state_comp, num_comp;
 
-    if (advect_fluid_species) {
-      MultiFab Sborder_X(grids[lev], dmap[lev], FLUID::nspecies, nghost, MFInfo());
+    if (advect_fluid_chem_species) {
+      MultiFab Sborder_X(grids[lev], dmap[lev], FLUID::nchem_species, nghost, MFInfo());
       Sborder_X.setVal(0);
       state_comp = 0;
-      num_comp = l_nspecies;
-      FillPatchSpecies(lev, time, Sborder_X, state_comp, num_comp, bcs_X);
+      num_comp = l_nchem_species;
+      FillPatchChemSpecies(lev, time, Sborder_X, state_comp, num_comp, bcs_X);
       MultiFab::Copy(*X_gk_in[lev], Sborder_X, 0, 0, num_comp, X_gk_in[lev]->nGrow());
     }
   }

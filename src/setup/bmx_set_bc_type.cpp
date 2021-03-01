@@ -20,10 +20,10 @@ bmx::bmx_set_bc_type (int lev)
     const int ig_   = bc_list.get_ig();
     const int minf_ = bc_list.get_minf();
 
-    const int l_species = FLUID::nspecies;
+    const int l_chem_species = FLUID::nchem_species;
 
     // Set the defaults for BCRecs
-    m_bcrec_species.resize(l_species);
+    m_bcrec_chem_species.resize(l_chem_species);
 
     { // begin x direction
 
@@ -184,20 +184,20 @@ bmx::bmx_set_bc_type (int lev)
     }// end z-direction
 
 
-    if (l_species > 0) {
-      m_bcrec_species_d.resize(l_species);
+    if (l_chem_species > 0) {
+      m_bcrec_chem_species_d.resize(l_chem_species);
 #ifdef AMREX_USE_GPU
       Gpu::htod_memcpy
 #else
         std::memcpy
 #endif
-        (m_bcrec_species_d.data(), m_bcrec_species.data(), sizeof(BCRec)*l_species);
+        (m_bcrec_chem_species_d.data(), m_bcrec_chem_species.data(), sizeof(BCRec)*l_chem_species);
     }
 
-    m_h_bc_X_gk.resize(FLUID::nspecies, Vector<Real>(bc.size()));
+    m_h_bc_X_gk.resize(FLUID::nchem_species, Vector<Real>(bc.size()));
 
-    if ( FLUID::solve and advect_fluid_species) {
-        for (int n = 0; n < FLUID::nspecies; ++n) {
+    if ( FLUID::solve and advect_fluid_chem_species) {
+        for (int n = 0; n < FLUID::nchem_species; ++n) {
             Gpu::copyAsync(Gpu::hostToDevice, m_h_bc_X_gk[n].begin(), m_h_bc_X_gk[n].end(),
                            m_bc_X_gk[n].begin());
         }
@@ -211,11 +211,11 @@ void bmx::set_bcrec_lo(const int lev, const int dir, const int l_type)
   // Scalar BC Recs
   if (geom[lev].isPeriodic(dir)) {
 
-    for (auto& b : m_bcrec_species) b.setLo(dir, BCType::int_dir);
+    for (auto& b : m_bcrec_chem_species) b.setLo(dir, BCType::int_dir);
 
   } else {
 
-    for (auto& b : m_bcrec_species) b.setLo(dir, BCType::foextrap);
+    for (auto& b : m_bcrec_chem_species) b.setLo(dir, BCType::foextrap);
 
   }
 }
@@ -225,11 +225,11 @@ void bmx::set_bcrec_hi(const int lev, const int dir, const int l_type)
   // Scalar BC Recs
   if (geom[lev].isPeriodic(dir)) {
 
-    for (auto& b : m_bcrec_species) b.setHi(dir, BCType::int_dir);
+    for (auto& b : m_bcrec_chem_species) b.setHi(dir, BCType::int_dir);
 
   } else {
 
-    for (auto& b : m_bcrec_species) b.setHi(dir, BCType::foextrap);
+    for (auto& b : m_bcrec_chem_species) b.setHi(dir, BCType::foextrap);
 
   }
 }

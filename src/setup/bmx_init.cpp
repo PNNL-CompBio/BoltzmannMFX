@@ -5,7 +5,7 @@
 #include <bmx_bc_parms.H>
 #include <bmx_dem_parms.H>
 #include <bmx_fluid_parms.H>
-#include <bmx_species_parms.H>
+#include <bmx_chem_species_parms.H>
 
 using BMXParIter = BMXParticleContainer::BMXParIter;
 using PairIndex = BMXParticleContainer::PairIndex;
@@ -15,29 +15,29 @@ bmx::InitParams ()
 {
   if (ooo_debug) amrex::Print() << "InitParams" << std::endl;
 
-  // Read and process species, fluid and DEM particle model options.
+  // Read and process chem_species, fluid and DEM particle model options.
   SPECIES::Initialize();
   FLUID::Initialize();
 
-  BL_ASSERT(FLUID::nspecies <= SPECIES::NMAX);
+  BL_ASSERT(FLUID::nchem_species <= SPECIES::NMAX);
 
   DEM::Initialize();
 
-  // Important! Resize the bc vector for the fluid species mass fractions
+  // Important! Resize the bc vector for the fluid chem_species mass fractions
   // We have to do it here because the size has to match the number of fluid
-  // species
+  // chem_species
   // NOTE: once we will have a class for BCs this won't be needed anymore
-  m_bc_X_gk.resize(FLUID::nspecies, Gpu::DeviceVector<Real>(50, 0));
-  m_bc_X_gk_ptr.resize(FLUID::nspecies, nullptr);
+  m_bc_X_gk.resize(FLUID::nchem_species, Gpu::DeviceVector<Real>(50, 0));
+  m_bc_X_gk_ptr.resize(FLUID::nchem_species, nullptr);
   {
-      Vector<Real*> tmp(FLUID::nspecies);
-      for (int i = 0; i < FLUID::nspecies; ++i) {
+      Vector<Real*> tmp(FLUID::nchem_species);
+      for (int i = 0; i < FLUID::nchem_species; ++i) {
           tmp[i] = m_bc_X_gk[i].data();
       }
       Gpu::copyAsync(Gpu::hostToDevice, tmp.begin(), tmp.end(), m_bc_X_gk_ptr.begin());
       Gpu::synchronize();
   }
-  bcs_X.resize(2*FLUID::nspecies);
+  bcs_X.resize(2*FLUID::nchem_species);
 
   BC::Initialize(geom[0]);
 
@@ -71,14 +71,14 @@ bmx::InitParams ()
     particle_sorting_bin = IntVect(sorting_bin);
 
     // Set the bmx class flag equal to the FLUID parameter
-    advect_fluid_species = FLUID::solve_species;
+    advect_fluid_chem_species = FLUID::solve_chem_species;
 
-    // We can still turn it off explicitly even if we passed species inputs
-    pp.query("advect_fluid_species", advect_fluid_species);
+    // We can still turn it off explicitly even if we passed chem_species inputs
+    pp.query("advect_fluid_chem_species", advect_fluid_chem_species);
 
-    if (advect_fluid_species)
-      AMREX_ALWAYS_ASSERT_WITH_MESSAGE(FLUID::solve_species,
-          "Advect fluid species flag is on but no fluid species were provided");
+    if (advect_fluid_chem_species)
+      AMREX_ALWAYS_ASSERT_WITH_MESSAGE(FLUID::solve_chem_species,
+          "Advect fluid chem_species flag is on but no fluid chem_species were provided");
 
     // The default type is "KnapSack"; alternative is "SFC"
     pp.query("load_balance_type", load_balance_type);
@@ -558,10 +558,10 @@ bmx::bmx_init_fluid (int is_restarting, Real dt, Real stop_time)
           const Box& sbx = dummy[mfi].box();
 
           if ( is_restarting ) {
-            init_fluid_parameters(bx, mfi, ld, advect_fluid_species);
+            init_fluid_parameters(bx, mfi, ld, advect_fluid_chem_species);
           } else {
             init_fluid(sbx, bx, domain, mfi, ld, dx, dy, dz, xlen, ylen, zlen, plo,
-                       advect_fluid_species);
+                       advect_fluid_chem_species);
           }
        }
 
@@ -576,9 +576,9 @@ bmx::bmx_init_fluid (int is_restarting, Real dt, Real stop_time)
     {
       Real time = 0.0;
 
-      if (advect_fluid_species) {
-        bmx_set_species_bcs(time, get_X_gk(), get_D_gk());
-        bmx_set_species_bcs(time, get_X_gk_old(), get_D_gk());
+      if (advect_fluid_chem_species) {
+        bmx_set_chem_species_bcs(time, get_X_gk(), get_D_gk());
+        bmx_set_chem_species_bcs(time, get_X_gk_old(), get_D_gk());
       }
     }
 }

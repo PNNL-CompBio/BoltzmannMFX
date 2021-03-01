@@ -63,7 +63,7 @@ bmx::bmx_calc_txfr_fluid (Real time)
 
   const Geometry& gm = Geom(0);
 
-  // Deposit the species_rhs to the grid
+  // Deposit the chem_species_rhs to the grid
   for (int lev = 0; lev < nlev; lev++) {
     amrex::Print() << "CALLING XFR DEPOSITIO " << std::endl;
     pc->InterphaseTxfrDeposition(lev, *txfr_ptr[lev]); 
@@ -107,7 +107,7 @@ bmx::bmx_calc_txfr_fluid (Real time)
 }
 
 //
-// Interpolate fluid species onto particle locations
+// Interpolate fluid chem_species onto particle locations
 //
 void
 bmx::bmx_calc_txfr_particle (Real time)
@@ -116,7 +116,7 @@ bmx::bmx_calc_txfr_particle (Real time)
 
   BL_PROFILE("bmx::bmx_calc_txfr_particle()");
 
-  bmx_set_species_bcs(time, get_X_gk(), get_D_gk());
+  bmx_set_chem_species_bcs(time, get_X_gk(), get_D_gk());
 
   for (int lev = 0; lev < nlev; lev++)
   {

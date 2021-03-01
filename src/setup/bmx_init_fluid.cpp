@@ -3,13 +3,13 @@
 #include <bmx_calc_fluid_coeffs.H>
 #include <bmx_calc_cell.H>
 #include <bmx_fluid_parms.H>
-#include <bmx_species_parms.H>
+#include <bmx_chem_species_parms.H>
 // #include <bmx_ic_parms.H>
 
 using namespace amrex;
 
 // Forward declarations
-void set_ic_species_g (const Box& sbx, const Box& domain,
+void set_ic_chem_species_g (const Box& sbx, const Box& domain,
                        const Real dx, const Real dy, const Real dz,
                        const GpuArray<Real, 3>& plo, FArrayBox& X_gk_fab);
 
@@ -31,16 +31,16 @@ void init_fluid (const Box& sbx,
                  const Real ylength,
                  const Real zlength,
                  const GpuArray<Real, 3>& plo,
-                 const int advect_fluid_species)
+                 const int advect_fluid_chem_species)
 {
   // Fluid SPECIES Initialization
-  if (advect_fluid_species) {
-    // Set the initial fluid species mass fractions
-    set_ic_species_g(sbx, domain, dx, dy, dz, plo, (*ld.X_gk)[mfi]);
+  if (advect_fluid_chem_species) {
+    // Set the initial fluid chem_species mass fractions
+    set_ic_chem_species_g(sbx, domain, dx, dy, dz, plo, (*ld.X_gk)[mfi]);
   }
 
-  // Initialize all the fluid and fluid species parameters
-  init_fluid_parameters(bx, mfi, ld, advect_fluid_species);
+  // Initialize all the fluid and fluid chem_species parameters
+  init_fluid_parameters(bx, mfi, ld, advect_fluid_chem_species);
 }
 
 //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv!
@@ -51,10 +51,10 @@ void init_fluid (const Box& sbx,
 void init_fluid_parameters (const Box& bx,
                             const MFIter& mfi,
                             LevelData& ld,
-                            const int advect_fluid_species)
+                            const int advect_fluid_chem_species)
 {
   // Initialize D_gk
-  if (advect_fluid_species) {
+  if (advect_fluid_chem_species) {
     calc_D_gk(bx, (*ld.D_gk)[mfi]);
   }
 
@@ -63,10 +63,10 @@ void init_fluid_parameters (const Box& bx,
 
 //!vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv!
 //!                                                                      !
-//!  Purpose: Set fluid species mass fractions initial conditions.       !
+//!  Purpose: Set fluid chem_species mass fractions initial conditions.       !
 //!                                                                      !
 //!^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
-void set_ic_species_g (const Box& sbx,
+void set_ic_chem_species_g (const Box& sbx,
                        const Box& domain,
                        const Real dx,
                        const Real dy,
@@ -82,11 +82,11 @@ void set_ic_species_g (const Box& sbx,
 
   Array4<Real> const& X_gk = X_gk_fab.array();
 
-  const int nspecies_g = X_gk_fab.nComp();
+  const int nchem_species_g = X_gk_fab.nComp();
 
   amrex::Print() << "SETTING INITIAL CONDITIONS FOR SPECIES " << std::endl;
 
-  ParallelFor(sbx, nspecies_g, [=]
+  ParallelFor(sbx, nchem_species_g, [=]
        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
       { 
           Real x   = (i+.5)*dx;

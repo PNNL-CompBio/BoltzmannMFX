@@ -20,12 +20,12 @@ void init_fluid (const amrex::Box& sbx,
                  const amrex::Real ylength,
                  const amrex::Real zlength,
                  const amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>& plo,
-                 const int advect_fluid_species);
+                 const int advect_fluid_chem_species);
 
 void init_fluid_parameters (const Box& bx,
                             const MFIter& mfi,
                             LevelData& ld,
-                            const int advect_fluid_species);
+                            const int advect_fluid_chem_species);
 
 void set_ic (const Box& sbx,
              const Box& domain,

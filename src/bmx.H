@@ -93,16 +93,16 @@ class bmx : public AmrCore
     void bmx_calc_txfr_particle (Real time);
     void bmx_calc_txfr_fluid    (Real time);
 
-    void bmx_set_species_bcs (Real time,
+    void bmx_set_chem_species_bcs (Real time,
                                Vector< MultiFab* > const& X_gk,
                                Vector< MultiFab* > const& D_gk);
 
-    void set_species_diffusivities_g_bcs (Real time,
+    void set_chem_species_diffusivities_g_bcs (Real time,
                                           const int lev,
                                           FArrayBox& D_gk_fab,
                                           const Box& domain);
 
-    void set_species_bc0 (const Box& sbx,
+    void set_chem_species_bc0 (const Box& sbx,
                           MFIter* mfi,
                           const int lev,
                           const Box& domain);
@@ -172,10 +172,10 @@ class bmx : public AmrCore
     std::map< std::string, Gpu::DeviceVector<int> > m_X_gk_bc_types;
 
   protected:
-    void FillPatchSpecies (int lev, Real time, MultiFab & mf, int icomp, int ncomp,
+    void FillPatchChemSpecies (int lev, Real time, MultiFab & mf, int icomp, int ncomp,
                            const Vector<BCRec> & bcr);
 
-    void GetDataSpecies (int lev, Real time, Vector<MultiFab *> & data, int icomp,
+    void GetDataChemSpecies (int lev, Real time, Vector<MultiFab *> & data, int icomp,
                          Vector<Real> & datatime);
 
   protected:
@@ -211,18 +211,18 @@ class bmx : public AmrCore
     void fillpatch_all (Vector< MultiFab* > const& X_gk_in, Real time);
 
   public:
-    void bmx_apply_predictor ( Vector< MultiFab* >& species_RHS_old,
+    void bmx_apply_predictor ( Vector< MultiFab* >& chem_species_RHS_old,
                                Vector< MultiFab* >& lap_X_old,
                                Vector< MultiFab* >& lap_X_star,
                                Real time,
                                Real dt,
                                Real prev_dt);
 
-    void bmx_species_X_rhs(Vector< MultiFab*      > const& rhs);
+    void bmx_chem_species_X_rhs(Vector< MultiFab*      > const& rhs);
 
   public:
 
-    void bmx_normalize_fluid_species(const Vector< MultiFab* >& X_gk);
+    void bmx_normalize_fluid_chem_species(const Vector< MultiFab* >& X_gk);
 
   private:
 
@@ -255,15 +255,15 @@ class bmx : public AmrCore
 
     amrex::Vector< amrex::MultiFab const* > get_D_gk_const () const noexcept;
 
-    amrex::Vector<int> const& get_species_iconserv () const noexcept { return m_iconserv_species; }
+    amrex::Vector<int> const& get_chem_species_iconserv () const noexcept { return m_iconserv_chem_species; }
   
-    int const* get_species_iconserv_device_ptr () const noexcept {
-        return m_iconserv_species_d.data(); }
+    int const* get_chem_species_iconserv_device_ptr () const noexcept {
+        return m_iconserv_chem_species_d.data(); }
 
-    amrex::Vector<amrex::BCRec> const& get_species_bcrec () const noexcept { return m_bcrec_species; }
+    amrex::Vector<amrex::BCRec> const& get_chem_species_bcrec () const noexcept { return m_bcrec_chem_species; }
  
-    amrex::BCRec const* get_species_bcrec_device_ptr () const noexcept {
-      return m_bcrec_species_d.data(); }
+    amrex::BCRec const* get_chem_species_bcrec_device_ptr () const noexcept {
+      return m_bcrec_chem_species_d.data(); }
 
     // used if load_balance_type == "KnapSack"
     amrex::Vector< amrex::MultiFab* > particle_cost;
@@ -274,7 +274,7 @@ class bmx : public AmrCore
     // levels: 0) fluid reconstruction, 1..N) particle-wall (refined) collisions
     Vector< std::unique_ptr<MultiFab> > level_sets;
 
-    bool advect_fluid_species   = false;
+    bool advect_fluid_chem_species   = false;
 
     enum struct DiffusionType {
             Invalid, Explicit, Crank_Nicolson, Implicit
@@ -361,11 +361,11 @@ class bmx : public AmrCore
     Vector< Vector< MultiFab* > > chkTVars;
     Vector< std::string > chkTVarsName;
 
-    Vector< Vector< MultiFab* > > chkSpeciesVars;
-    Vector< std::string > chkSpeciesVarsName;
+    Vector< Vector< MultiFab* > > chkChemSpeciesVars;
+    Vector< std::string > chkChemSpeciesVarsName;
 
-    Vector< Vector< MultiFab* > > chkSpeciesTVars;
-    Vector< std::string > chkSpeciesTVarsName;
+    Vector< Vector< MultiFab* > > chkChemSpeciesTVars;
+    Vector< std::string > chkChemSpeciesTVarsName;
 
     /***************************************************************************
      *                                                                         *
@@ -376,12 +376,12 @@ class bmx : public AmrCore
     Vector<Real> t_old;
     Vector<Real> t_new;
 
-    Vector<BCRec> bcs_X; // For fluid species
+    Vector<BCRec> bcs_X; // For fluid chem_species
     Vector<BCRec> bcs_f; // For generic first-order extrapolation
 
-    amrex::Vector<amrex::BCRec> m_bcrec_species;
+    amrex::Vector<amrex::BCRec> m_bcrec_chem_species;
 
-    amrex::Gpu::DeviceVector<amrex::BCRec> m_bcrec_species_d;
+    amrex::Gpu::DeviceVector<amrex::BCRec> m_bcrec_chem_species_d;
 
     int nghost_state() const { return 1; }
 
@@ -390,7 +390,7 @@ class bmx : public AmrCore
         return DiffusionType::Implicit;
     }
 
-    amrex::Vector<int> m_iconserv_species;
-    amrex::Gpu::DeviceVector<int> m_iconserv_species_d;
+    amrex::Vector<int> m_iconserv_chem_species;
+    amrex::Gpu::DeviceVector<int> m_iconserv_chem_species_d;
 };
 #endif

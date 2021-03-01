@@ -4,7 +4,7 @@
 
 #include <bmx_deposition_K.H>
 #include <bmx_dem_parms.H>
-#include <bmx_species_parms.H>
+#include <bmx_chem_species_parms.H>
 #include <bmx_fluid_parms.H>
 #include <bmx_algorithm.H>
 

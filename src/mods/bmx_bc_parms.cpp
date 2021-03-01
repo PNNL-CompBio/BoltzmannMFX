@@ -10,7 +10,7 @@
 
 #include <bmx_bc_parms.H>
 #include <bmx_dem_parms.H>
-#include <bmx_species_parms.H>
+#include <bmx_chem_species_parms.H>
 #include <bmx_bc_list.H>
 
 namespace BC
@@ -27,8 +27,8 @@ namespace BC
   amrex::Vector<int> bc_ylo, bc_yhi;
   amrex::Vector<int> bc_zlo, bc_zhi;
 
-  std::array<amrex::LinOpBCType,3> diff_species_lobc;
-  std::array<amrex::LinOpBCType,3> diff_species_hibc;
+  std::array<amrex::LinOpBCType,3> diff_chem_species_lobc;
+  std::array<amrex::LinOpBCType,3> diff_chem_species_hibc;
 
 
   // Data structure storing individual BC information
@@ -64,13 +64,13 @@ namespace BC
       if (geom.isPeriodic(dir))
       {
 
-        diff_species_lobc[dir] = amrex::LinOpBCType::Periodic;
-        diff_species_hibc[dir] = amrex::LinOpBCType::Periodic;
+        diff_chem_species_lobc[dir] = amrex::LinOpBCType::Periodic;
+        diff_chem_species_hibc[dir] = amrex::LinOpBCType::Periodic;
 
       } else {
 
-        diff_species_lobc[dir] = amrex::LinOpBCType::Dirichlet;
-        diff_species_hibc[dir] = amrex::LinOpBCType::Dirichlet;
+        diff_chem_species_lobc[dir] = amrex::LinOpBCType::Dirichlet;
+        diff_chem_species_hibc[dir] = amrex::LinOpBCType::Dirichlet;
 
       }
     }

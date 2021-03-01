@@ -20,14 +20,14 @@ class LevelData
     // Destructor
     ~LevelData ();
 
-    // Gas species (new and old)
+    // Gas chem_species (new and old)
     amrex::MultiFab* X_gk;
     amrex::MultiFab* X_gko;
 
-    // Gas species source/sink from particles
+    // Gas chem_species source/sink from particles
     amrex::MultiFab* X_rhs;
 
-    // Species diffusion coefficients
+    // ChemSpecies diffusion coefficients
     amrex::MultiFab* D_gk;
 };
 

@@ -1,4 +1,4 @@
-CEXE_sources += bmx_set_species_bcs.cpp
+CEXE_sources += bmx_set_chem_species_bcs.cpp
 
 CEXE_sources += bmx_fillpatch.cpp
 

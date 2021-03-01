@@ -4,7 +4,7 @@
 #include <bmx_mf_helpers.H>
 #include <bmx_dem_parms.H>
 #include <bmx_fluid_parms.H>
-#include <bmx_species_parms.H>
+#include <bmx_chem_species_parms.H>
 
 void
 bmx::EvolveFluid (int nstep,
@@ -26,19 +26,19 @@ bmx::EvolveFluid (int nstep,
         m_leveldata[lev]->X_gk->FillBoundary(geom[lev].periodicity());
     }
 
-    bmx_set_species_bcs(time, get_X_gk(), get_D_gk());
+    bmx_set_chem_species_bcs(time, get_X_gk(), get_D_gk());
 
     // Create temporary multifabs to hold the old-time lap_X and vel_RHS
     //    so we don't have to re-compute them in the corrector
     Vector< MultiFab* > lap_X(finest_level+1);
-    Vector< MultiFab* > species_RHS(finest_level+1);
+    Vector< MultiFab* > chem_species_RHS(finest_level+1);
 
-    const int nspecies_g = FLUID::nspecies;
+    const int nchem_species_g = FLUID::nchem_species;
 
     for (int lev = 0; lev <= finest_level; lev++)
     {
-       lap_X[lev]       = new MultiFab(grids[lev], dmap[lev], nspecies_g, 0, MFInfo());
-       species_RHS[lev] = new MultiFab(grids[lev], dmap[lev], nspecies_g, 0, MFInfo());
+       lap_X[lev]       = new MultiFab(grids[lev], dmap[lev], nchem_species_g, 0, MFInfo());
+       chem_species_RHS[lev] = new MultiFab(grids[lev], dmap[lev], nchem_species_g, 0, MFInfo());
     }
 
     dt = fixed_dt;
@@ -63,7 +63,7 @@ bmx::EvolveFluid (int nstep,
       MultiFab::Copy(X_gko, X_gk, 0, 0, X_gk.nComp(), X_gko.nGrow());
     }
 
-    // Interpolate species to particle locations
+    // Interpolate chem_species to particle locations
     bmx_calc_txfr_particle(time);
 
     // Deposit sources/sink from individual particles to grid
@@ -122,7 +122,7 @@ bmx::EvolveFluid (int nstep,
 
             amrex::Print() << "UPDATING ON BX " << bx << std::endl;
 
-            ParallelFor(bx, nspecies_g, [=]
+            ParallelFor(bx, nchem_species_g, [=]
               AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
                 // amrex::Print() << "OLD LAP " << IntVect(i,j,k) << " " << 
@@ -141,15 +141,15 @@ bmx::EvolveFluid (int nstep,
     // *************************************************************************************
     if (not l_explicit_diff) 
     {
-        bmx_set_species_bcs(time, get_X_gk(), get_D_gk());
+        bmx_set_chem_species_bcs(time, get_X_gk(), get_D_gk());
 
-        diffusion_op->diffuse_species(get_X_gk(), get_D_gk(), theta, l_dt);
+        diffusion_op->diffuse_chem_species(get_X_gk(), get_D_gk(), theta, l_dt);
     }
 
     for (int lev = 0; lev <= finest_level; lev++)
     {
        delete lap_X[lev];
-       delete species_RHS[lev];
+       delete chem_species_RHS[lev];
     }
 
     BL_PROFILE_REGION_STOP("bmx::EvolveFluid");

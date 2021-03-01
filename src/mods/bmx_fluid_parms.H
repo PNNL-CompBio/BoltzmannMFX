@@ -3,26 +3,26 @@
 
 #include <AMReX_REAL.H>
 
-#include <bmx_species_parms.H>
+#include <bmx_chem_species_parms.H>
 
 namespace FLUID
 {
   // Flag to solve fluid equations
   extern int solve;
 
-  // Flag to solve species fluid equations
-  extern int solve_species;
+  // Flag to solve chem_species fluid equations
+  extern int solve_chem_species;
 
-  // Fluid phase species names
-  extern amrex::Vector<std::string> species;
+  // Fluid phase chem_species names
+  extern amrex::Vector<std::string> chem_species;
 
-  // Species unique identifying code
-  extern std::vector<int> species_id;
+  // ChemSpecies unique identifying code
+  extern std::vector<int> chem_species_id;
 
-  // Total number of fluid species
-  extern int nspecies;
+  // Total number of fluid chem_species
+  extern int nchem_species;
 
-  // Specified constant gas phase species diffusion coefficients
+  // Specified constant gas phase chem_species diffusion coefficients
   extern std::vector<amrex::Real> D_gk0;
 
   // Name to later reference when building input regions
@@ -30,10 +30,10 @@ namespace FLUID
 
   struct FLUID_t {
 
-    amrex::Vector<SPECIES::SPECIES_t> species;
+    amrex::Vector<SPECIES::SPECIES_t> chem_species;
 
     FLUID_t() :
-      species(0)
+      chem_species(0)
     {}
 
   };

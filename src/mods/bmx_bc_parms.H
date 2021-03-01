@@ -26,8 +26,8 @@ namespace BC
   extern int domain_bc[6];
 
   // Use AMReX LinOpBCType to define the domain extents
-  extern std::array<amrex::LinOpBCType,3> diff_species_lobc;
-  extern std::array<amrex::LinOpBCType,3> diff_species_hibc;
+  extern std::array<amrex::LinOpBCType,3> diff_chem_species_lobc;
+  extern std::array<amrex::LinOpBCType,3> diff_chem_species_hibc;
 
   // Data structure for BC data
   extern amrex::Vector<BC_t> bc;

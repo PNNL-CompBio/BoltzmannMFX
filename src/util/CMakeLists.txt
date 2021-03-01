@@ -10,7 +10,7 @@ target_sources( bmxcore
    bmx_regrid.cpp
    bmx_fillpatch_bc.H
    bmx_fillpatch.cpp
-   bmx_set_species_bcs.cpp
+   bmx_set_chem_species_bcs.cpp
    bmx_mf_helpers.H
    bmx_mf_helpers.cpp
    )

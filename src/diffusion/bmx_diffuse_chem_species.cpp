@@ -5,13 +5,13 @@
 using namespace amrex;
 
 //
-// Implicit solve for species mass fraction
+// Implicit solve for chem_species mass fraction
 //
-void DiffusionOp::diffuse_species (      Vector< MultiFab* >    X_gk_in,
+void DiffusionOp::diffuse_chem_species (      Vector< MultiFab* >    X_gk_in,
                                    const Vector< MultiFab* >    D_gk_in,
                                    Real theta, Real dt)
 {
-    BL_PROFILE("DiffusionOp::diffuse_species");
+    BL_PROFILE("DiffusionOp::diffuse_chem_species");
 
     int finest_level = amrcore->finestLevel();
 
@@ -28,29 +28,29 @@ void DiffusionOp::diffuse_species (      Vector< MultiFab* >    X_gk_in,
     //      b: D_gk
 
     if(verbose > 0)
-      amrex::Print() << "Diffusing species mass fractions ..." << std::endl;
+      amrex::Print() << "Diffusing chem_species mass fractions ..." << std::endl;
 
     // Set alpha and beta
-    species_matrix->setScalars(1.0, theta*dt);
+    chem_species_matrix->setScalars(1.0, theta*dt);
 
-    // Number of fluid species
-    const int nspecies_g = FLUID::nspecies;
+    // Number of fluid chem_species
+    const int nchem_species_g = FLUID::nchem_species;
 
     Vector<BCRec> bcs_X; 
-    bcs_X.resize(3*nspecies_g);
+    bcs_X.resize(3*nchem_species_g);
 
     for(int lev = 0; lev <= finest_level; lev++)
     {
-        average_cellcenter_to_face( GetArrOfPtrs(species_b[lev]), *D_gk_in[lev], geom[lev], nspecies_g );
+        average_cellcenter_to_face( GetArrOfPtrs(chem_species_b[lev]), *D_gk_in[lev], geom[lev], nchem_species_g );
 
         // This sets the coefficients
-        species_matrix->setACoeffs (lev, 1.);
-        species_matrix->setBCoeffs (lev, GetArrOfConstPtrs(species_b[lev]));
+        chem_species_matrix->setACoeffs (lev, 1.);
+        chem_species_matrix->setBCoeffs (lev, GetArrOfConstPtrs(chem_species_b[lev]));
 
         // Zero these out just to have a clean start because they have 3 components
         //      (due to re-use with velocity solve)
-        species_phi[lev]->setVal(0.0);
-        species_rhs[lev]->setVal(0.0);
+        chem_species_phi[lev]->setVal(0.0);
+        chem_species_rhs[lev]->setVal(0.0);
 
         // Set rhs equal to X_gk and
         // Multiply rhs by (D_gk) -- we are solving
@@ -67,32 +67,32 @@ void DiffusionOp::diffuse_species (      Vector< MultiFab* >    X_gk_in,
           if (bx.ok())
           {
             Array4<Real const> const& X_gk_arr    = X_gk_in[lev]->const_array(mfi);
-            Array4<Real      > const& rhs_arr     = species_rhs[lev]->array(mfi);
+            Array4<Real      > const& rhs_arr     = chem_species_rhs[lev]->array(mfi);
 
-            amrex::ParallelFor(bx, [X_gk_arr,rhs_arr,nspecies_g]
+            amrex::ParallelFor(bx, [X_gk_arr,rhs_arr,nchem_species_g]
               AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-              for (int n(0); n < nspecies_g; ++n)
+              for (int n(0); n < nchem_species_g; ++n)
                 rhs_arr(i,j,k,n) = X_gk_arr(i,j,k,n);
             });
           }
         }
 
-        MultiFab::Copy(*species_phi[lev], *X_gk_in[lev], 0, 0, nspecies_g, 1);
-        species_matrix->setLevelBC(lev, GetVecOfConstPtrs(species_phi)[lev]);
+        MultiFab::Copy(*chem_species_phi[lev], *X_gk_in[lev], 0, 0, nchem_species_g, 1);
+        chem_species_matrix->setLevelBC(lev, GetVecOfConstPtrs(chem_species_phi)[lev]);
     }
 
-    MLMG solver(*species_matrix);
+    MLMG solver(*chem_species_matrix);
     setSolverSettings(solver);
 
     // This ensures that ghost cells of sol are correctly filled when returned from the solver
     solver.setFinalFillBC(true);
 
-    solver.solve(GetVecOfPtrs(species_phi), GetVecOfConstPtrs(species_rhs), mg_rtol, mg_atol);
+    solver.solve(GetVecOfPtrs(chem_species_phi), GetVecOfConstPtrs(chem_species_rhs), mg_rtol, mg_atol);
 
     for(int lev = 0; lev <= finest_level; lev++)
     {
-        species_phi[lev]->FillBoundary(geom[lev].periodicity());
-        MultiFab::Copy(*X_gk_in[lev], *species_phi[lev], 0, 0, nspecies_g, 1);
+        chem_species_phi[lev]->FillBoundary(geom[lev].periodicity());
+        MultiFab::Copy(*X_gk_in[lev], *chem_species_phi[lev], 0, 0, nchem_species_g, 1);
     }
 }

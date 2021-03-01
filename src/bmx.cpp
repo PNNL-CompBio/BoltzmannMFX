@@ -4,7 +4,7 @@
 #include <AMReX_Box.H>
 
 #include <bmx_fluid_parms.H>
-#include <bmx_species_parms.H>
+#include <bmx_chem_species_parms.H>
 
 std::string      bmx::particle_init_type   = "AsciiFile";
 std::string      bmx::load_balance_type    = "KnapSack";
