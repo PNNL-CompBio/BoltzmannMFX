@@ -16,7 +16,9 @@ jobs:
 
       - name: Install and Build
         run: |
-          ./build_docs.sh
+          cd doc
+          echo "Build the Sphinx documentation for BoltzmannMFX."
+          make PYTHON="python3" html
 
       - name: Deploy
         if: github.event_name == 'push' && github.repository == 'PNNL-CompBio/BoltzmannMFX' && github.ref == 'refs/heads/main'
