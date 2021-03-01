@@ -1,6 +1,6 @@
 .. _build-source:
 
-Build/install BoltzmannMFX
+Build/Install BoltzmannMFX
 ==========================
 
 Put instructions for compiling the code here.
