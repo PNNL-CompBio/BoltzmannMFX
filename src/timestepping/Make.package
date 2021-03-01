@@ -1,2 +1,0 @@
-CEXE_sources += bmx_evolve.cpp
-CEXE_sources += bmx_evolve_fluid.cpp

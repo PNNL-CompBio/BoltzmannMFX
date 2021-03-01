@@ -1,4 +1,0 @@
-CEXE_headers += bmx_deposition_K.H
-
-CEXE_sources += bmx_deposition_bcs.cpp
-CEXE_sources += bmx_pc_deposition.cpp
