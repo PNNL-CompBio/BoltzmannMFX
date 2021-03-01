@@ -33,5 +33,6 @@ jobs:
         if: github.event_name == 'push' && github.repository == 'PNNL-CompBio/BoltzmannMFX' && github.ref == 'refs/heads/main'
         uses: JamesIves/github-pages-deploy-action@3.7.1
         with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages # The branch the action should deploy to.
           FOLDER: doc/build/html # The folder the action should deploy.
