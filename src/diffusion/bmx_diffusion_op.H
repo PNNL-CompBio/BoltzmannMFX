@@ -41,7 +41,7 @@ class DiffusionOp
     // Set user-supplied solver settings (must be done every time step)
     void setSolverSettings (amrex::MLMG& solver);
 
-    // Species mass fraction diffusion
+    // ChemSpecies mass fraction diffusion
     void diffuse_chem_species (amrex::Vector< amrex::MultiFab* > X_gk,
                           const amrex::Vector< amrex::MultiFab* > D_gk,
                           amrex::Real theta, amrex::Real dt);

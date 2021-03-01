@@ -102,7 +102,7 @@ bmx::RegridArrays (int lev)
       std::swap(m_leveldata[lev]->X_gko, X_gko_new);
       delete X_gko_new;
 
-      // Species diffusion coefficients
+      // ChemSpecies diffusion coefficients
       MultiFab* D_gk_new = new MultiFab(grids[lev], dmap[lev],
                                        m_leveldata[lev]->D_gk->nComp(),
                                        m_leveldata[lev]->D_gk->nGrow(),

@@ -79,7 +79,7 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
           lc += FLUID::nchem_species;
         }
 
-        // Species mass fraction
+        // ChemSpecies mass fraction
         if(FLUID::solve_chem_species and plt_D_gk == 1 ) {
           for(int n(0); n < FLUID::nchem_species; n++) {
             MultiFab::Copy(*mf[lev], *m_leveldata[lev]->D_gk, n, lc+n, 1, 0);

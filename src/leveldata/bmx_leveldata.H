@@ -27,7 +27,7 @@ class LevelData
     // Gas chem_species source/sink from particles
     amrex::MultiFab* X_rhs;
 
-    // Species diffusion coefficients
+    // ChemSpecies diffusion coefficients
     amrex::MultiFab* D_gk;
 };
 

@@ -25,8 +25,8 @@ bmx::InitIOChkData ()
 {
     if (ooo_debug) amrex::Print() << "InitIOChkData" << std::endl;
 
-    chkSpeciesVarsName = {"X_gk"};
-    //chkSpeciesVarsName = {"X_gk", "D_gk"};
+    chkChemSpeciesVarsName = {"X_gk"};
+    //chkChemSpeciesVarsName = {"X_gk", "D_gk"};
 
     ResetIOChkData();
 }
@@ -38,13 +38,13 @@ bmx::ResetIOChkData ()
   chkScalarVars.clear();
   chkScalarVars.resize(chkscaVarsName.size(), Vector< MultiFab*>(nlev));
 
-  chkSpeciesVars.clear();
-  chkSpeciesVars.resize(chkSpeciesVarsName.size(), Vector< MultiFab*>(nlev));
+  chkChemSpeciesVars.clear();
+  chkChemSpeciesVars.resize(chkChemSpeciesVarsName.size(), Vector< MultiFab*>(nlev));
 
   for (int lev(0); lev < nlev; ++lev) {
     if (advect_fluid_chem_species) {
-      chkSpeciesVars[0][lev] = m_leveldata[lev]->X_gk;
-      //chkSpeciesVars[2][lev] = m_leveldata[lev]->D_gk;
+      chkChemSpeciesVars[0][lev] = m_leveldata[lev]->X_gk;
+      //chkChemSpeciesVars[2][lev] = m_leveldata[lev]->D_gk;
     }
   }
 }
@@ -135,10 +135,10 @@ bmx::WriteCheckPointFile (std::string& check_file,
 
           if (advect_fluid_chem_species) {
              // Write chem_species variables
-             for (int i = 0; i < chkSpeciesVars.size(); i++) {
-                VisMF::Write( *(chkSpeciesVars[i][lev]),
+             for (int i = 0; i < chkChemSpeciesVars.size(); i++) {
+                VisMF::Write( *(chkChemSpeciesVars[i][lev]),
                   amrex::MultiFabFileFullPrefix(lev, checkpointname,
-                        level_prefix, chkSpeciesVarsName[i]));
+                        level_prefix, chkChemSpeciesVarsName[i]));
              }
           }
        }

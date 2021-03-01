@@ -172,10 +172,10 @@ class bmx : public AmrCore
     std::map< std::string, Gpu::DeviceVector<int> > m_X_gk_bc_types;
 
   protected:
-    void FillPatchSpecies (int lev, Real time, MultiFab & mf, int icomp, int ncomp,
+    void FillPatchChemSpecies (int lev, Real time, MultiFab & mf, int icomp, int ncomp,
                            const Vector<BCRec> & bcr);
 
-    void GetDataSpecies (int lev, Real time, Vector<MultiFab *> & data, int icomp,
+    void GetDataChemSpecies (int lev, Real time, Vector<MultiFab *> & data, int icomp,
                          Vector<Real> & datatime);
 
   protected:
@@ -361,11 +361,11 @@ class bmx : public AmrCore
     Vector< Vector< MultiFab* > > chkTVars;
     Vector< std::string > chkTVarsName;
 
-    Vector< Vector< MultiFab* > > chkSpeciesVars;
-    Vector< std::string > chkSpeciesVarsName;
+    Vector< Vector< MultiFab* > > chkChemSpeciesVars;
+    Vector< std::string > chkChemSpeciesVarsName;
 
-    Vector< Vector< MultiFab* > > chkSpeciesTVars;
-    Vector< std::string > chkSpeciesTVarsName;
+    Vector< Vector< MultiFab* > > chkChemSpeciesTVars;
+    Vector< std::string > chkChemSpeciesTVarsName;
 
     /***************************************************************************
      *                                                                         *

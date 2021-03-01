@@ -15,10 +15,10 @@ namespace SPECIES
   // Total number of chem_species
   int nchem_species(0);
 
-  // Species names
+  // ChemSpecies names
   std::vector<std::string> chem_species(0);
 
-  // Species unique identifying code (at the moment = their index in the input
+  // ChemSpecies unique identifying code (at the moment = their index in the input
   // entries)
   std::vector<int> chem_species_id(0);
 
@@ -65,7 +65,7 @@ namespace SPECIES
         // Get molecular weights input --------------------------------//
         for (int n(0); n < nchem_species; n++) {
           std::string name = "chem_species." + chem_species[n];
-          amrex::ParmParse ppSpecies(name.c_str());
+          amrex::ParmParse ppChemSpecies(name.c_str());
         }
 
       }

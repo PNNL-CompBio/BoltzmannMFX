@@ -16,7 +16,7 @@ namespace FLUID
   // Fluid phase chem_species names
   extern amrex::Vector<std::string> chem_species;
 
-  // Species unique identifying code
+  // ChemSpecies unique identifying code
   extern std::vector<int> chem_species_id;
 
   // Total number of fluid chem_species

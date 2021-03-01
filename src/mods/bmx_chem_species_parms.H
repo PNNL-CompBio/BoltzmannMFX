@@ -26,7 +26,7 @@ namespace SPECIES
   // Specified chem_species names
   extern std::vector<std::string> chem_species;
 
-  // Species unique identifying code (at the moment = their index in the input
+  // ChemSpecies unique identifying code (at the moment = their index in the input
   // entries)
   extern std::vector<int> chem_species_id;
 
@@ -39,7 +39,7 @@ namespace SPECIES
       mass_fraction(0.)
     {}
 
-    // Species mass fraction, used for ICs and BCs
+    // ChemSpecies mass fraction, used for ICs and BCs
     amrex::Real mass_fraction;
   };
 

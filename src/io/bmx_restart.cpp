@@ -125,15 +125,15 @@ bmx::Restart (std::string& restart_file, int *nstep, Real *dt, Real *time)
 
            if (advect_fluid_chem_species)
            {
-              for (int i = 0; i < chkSpeciesVars.size(); i++ )
+              for (int i = 0; i < chkChemSpeciesVars.size(); i++ )
               {
-                 amrex::Print() << "  Loading " << chkSpeciesVarsName[i] << std::endl;
+                 amrex::Print() << "  Loading " << chkChemSpeciesVarsName[i] << std::endl;
     
                  MultiFab mf;
                  VisMF::Read(mf,
                          amrex::MultiFabFileFullPrefix(lev,
                                                    restart_file, level_prefix,
-                                                   chkSpeciesVarsName[i]),
+                                                   chkChemSpeciesVarsName[i]),
                                                    nullptr,
                                                    ParallelDescriptor::IOProcessorNumber());
 
@@ -141,7 +141,7 @@ bmx::Restart (std::string& restart_file, int *nstep, Real *dt, Real *time)
                  // Copy from the mf we used to read in to the mf we will use going forward
                  const int ng_to_copy = 0;
      
-                 (*(chkSpeciesVars[i][lev])).copy(mf, 0, 0, FLUID::nchem_species,
+                 (*(chkChemSpeciesVars[i][lev])).copy(mf, 0, 0, FLUID::nchem_species,
                      ng_to_copy, ng_to_copy);
               }
           }
