@@ -1,7 +1,7 @@
 .. _build-source:
 
-Build/install Hipace++
-======================
+Build/install BoltzmannMFX
+==========================
 
 Put instructions for compiling the code here.
 
