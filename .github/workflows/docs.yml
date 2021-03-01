@@ -12,13 +12,16 @@ jobs:
       - name: Dependencies
         run: |
           .github/workflows/dependencies/documentation.sh
+          echo "Installing python packages for docs..."
           python3 -m pip install sphinx sphinx_rtd_theme breathe
+          echo "done."
 
       - name: Install and Build
         run: |
           cd doc
           echo "Build the Sphinx documentation for BoltzmannMFX."
           make PYTHON="python3" html
+          echo "done."
 
       - name: Deploy
         if: github.event_name == 'push' && github.repository == 'PNNL-CompBio/BoltzmannMFX' && github.ref == 'refs/heads/main'
