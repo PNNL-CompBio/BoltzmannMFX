@@ -7,26 +7,26 @@
 #include <AMReX_ParallelDescriptor.H>
 
 #include <bmx_fluid_parms.H>
-#include <bmx_species_parms.H>
+#include <bmx_chem_species_parms.H>
 
 namespace FLUID
 {
   // Flag to solve fluid equations
   int solve;
 
-  // Flag to solve species fluid equations
-  int solve_species(0);
+  // Flag to solve chem_species fluid equations
+  int solve_chem_species(0);
 
-  // Fluid phase species names
-  amrex::Vector<std::string> species;
+  // Fluid phase chem_species names
+  amrex::Vector<std::string> chem_species;
 
   // Species unique identifying code
-  std::vector<int> species_id;
+  std::vector<int> chem_species_id;
 
-  // Total number of fluid species
-  int nspecies(0);
+  // Total number of fluid chem_species
+  int nchem_species(0);
 
-  // Specified constant gas phase species diffusion coefficients
+  // Specified constant gas phase chem_species diffusion coefficients
   std::vector<amrex::Real> D_gk0(0);
 
   // Name to later reference when building inputs for IC/BC regions
@@ -55,26 +55,26 @@ namespace FLUID
     {
       amrex::ParmParse ppFluid(name.c_str());
 
-      // Fluid species inputs
-      if (ppFluid.contains("species"))
+      // Fluid chem_species inputs
+      if (ppFluid.contains("chem_species"))
       {
-        solve_species = 1;
+        solve_chem_species = 1;
 
-        ppFluid.getarr("species", species);
+        ppFluid.getarr("chem_species", chem_species);
 
-        nspecies = species.size();
+        nchem_species = chem_species.size();
 
         amrex::Print() << " " << std::endl;
 
-        amrex::Print() << " Reading in " << species.size() << " species from the inputs file" << std::endl;
-        for (int n = 0; n < nspecies; n++)
-           amrex::Print() << "species " << n << " is " << species[n] << std::endl;
+        amrex::Print() << " Reading in " << chem_species.size() << " chem_species from the inputs file" << std::endl;
+        for (int n = 0; n < nchem_species; n++)
+           amrex::Print() << "chem_species " << n << " is " << chem_species[n] << std::endl;
 
-        D_gk0.resize(nspecies);
+        D_gk0.resize(nchem_species);
 
-        ppFluid.getarr("species_diff", D_gk0);
-        for (int n = 0; n < nspecies; n++)
-           amrex::Print() << "diff coeffs for species " << n << " is " << D_gk0[n] << std::endl;
+        ppFluid.getarr("chem_species_diff", D_gk0);
+        for (int n = 0; n < nchem_species; n++)
+           amrex::Print() << "diff coeffs for chem_species " << n << " is " << D_gk0[n] << std::endl;
 
         amrex::Print() << " " << std::endl;
 

@@ -6,5 +6,5 @@ target_sources( bmxcore
    PRIVATE
    bmx_diffusion_op.cpp
    bmx_diffusion_op.H
-   bmx_diffuse_species.cpp
+   bmx_diffuse_chem_species.cpp
    )

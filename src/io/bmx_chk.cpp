@@ -42,7 +42,7 @@ bmx::ResetIOChkData ()
   chkSpeciesVars.resize(chkSpeciesVarsName.size(), Vector< MultiFab*>(nlev));
 
   for (int lev(0); lev < nlev; ++lev) {
-    if (advect_fluid_species) {
+    if (advect_fluid_chem_species) {
       chkSpeciesVars[0][lev] = m_leveldata[lev]->X_gk;
       //chkSpeciesVars[2][lev] = m_leveldata[lev]->D_gk;
     }
@@ -133,8 +133,8 @@ bmx::WriteCheckPointFile (std::string& check_file,
 
        for (int lev = 0; lev < nlevels; ++lev) {
 
-          if (advect_fluid_species) {
-             // Write species variables
+          if (advect_fluid_chem_species) {
+             // Write chem_species variables
              for (int i = 0; i < chkSpeciesVars.size(); i++) {
                 VisMF::Write( *(chkSpeciesVars[i][lev]),
                   amrex::MultiFabFileFullPrefix(lev, checkpointname,

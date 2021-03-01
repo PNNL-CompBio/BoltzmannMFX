@@ -1,7 +1,7 @@
 #include <bmx.H>
 
 #include <bmx_fluid_parms.H>
-#include <bmx_species_parms.H>
+#include <bmx_chem_species_parms.H>
 
 using namespace amrex;
 
@@ -9,11 +9,11 @@ using namespace amrex;
 // Set the BCs for density only
 //
 void
-bmx::bmx_set_species_bcs (Real time,
+bmx::bmx_set_chem_species_bcs (Real time,
                             Vector< MultiFab* > const& X_gk_in,
                             Vector< MultiFab* > const& D_gk_in)
 {
-  BL_PROFILE("bmx::bmx_set_species_bcs()");
+  BL_PROFILE("bmx::bmx_set_chem_species_bcs()");
 
   for (int lev = 0; lev < nlev; lev++)
   {
@@ -24,7 +24,7 @@ bmx::bmx_set_species_bcs (Real time,
 #endif
      for (MFIter mfi(*(m_leveldata[lev]->X_gk), false); mfi.isValid(); ++mfi)
      {
-        set_species_diffusivities_g_bcs(time, lev, (*D_gk_in[lev])[mfi], domain);
+        set_chem_species_diffusivities_g_bcs(time, lev, (*D_gk_in[lev])[mfi], domain);
      }
 
      X_gk_in[lev]->FillBoundary(geom[lev].periodicity());
@@ -33,7 +33,7 @@ bmx::bmx_set_species_bcs (Real time,
 }
 
 void 
-bmx::set_species_diffusivities_g_bcs (Real time,
+bmx::set_chem_species_diffusivities_g_bcs (Real time,
                                        const int lev,
                                        FArrayBox& scal_fab,
                                        const Box& domain)
@@ -50,9 +50,9 @@ bmx::set_species_diffusivities_g_bcs (Real time,
 
   Array4<Real> const& scal_arr = scal_fab.array();
 
-  const int nspecies_g = FLUID::nspecies;
+  const int nchem_species_g = FLUID::nchem_species;
 
-  Gpu::DeviceVector< Real > D_gk0_d(nspecies_g);
+  Gpu::DeviceVector< Real > D_gk0_d(nchem_species_g);
   Gpu::copyAsync(Gpu::hostToDevice, FLUID::D_gk0.begin(), FLUID::D_gk0.end(), D_gk0_d.begin());
 
   Real* p_D_gk0 = D_gk0_d.data();
@@ -79,7 +79,7 @@ bmx::set_species_diffusivities_g_bcs (Real time,
 
     int ilo = dom_lo[0];
 
-    amrex::ParallelFor(bx_yz_lo_3D, nspecies_g, [bct_ilo,ilo,scal_arr]
+    amrex::ParallelFor(bx_yz_lo_3D, nchem_species_g, [bct_ilo,ilo,scal_arr]
       AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
       const int bct = bct_ilo(ilo-1,j,k,0);
@@ -97,7 +97,7 @@ bmx::set_species_diffusivities_g_bcs (Real time,
 
     int ihi = dom_hi[0];
 
-    amrex::ParallelFor(bx_yz_hi_3D, nspecies_g, [bct_ihi,ihi,scal_arr]
+    amrex::ParallelFor(bx_yz_hi_3D, nchem_species_g, [bct_ihi,ihi,scal_arr]
       AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
       const int bct = bct_ihi(ihi+1,j,k,0);
@@ -115,7 +115,7 @@ bmx::set_species_diffusivities_g_bcs (Real time,
 
     int jlo = dom_lo[1];
 
-    amrex::ParallelFor(bx_xz_lo_3D, nspecies_g, [bct_jlo,jlo,scal_arr]
+    amrex::ParallelFor(bx_xz_lo_3D, nchem_species_g, [bct_jlo,jlo,scal_arr]
       AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
       const int bct = bct_jlo(i,jlo-1,k,0);
@@ -132,7 +132,7 @@ bmx::set_species_diffusivities_g_bcs (Real time,
 
     int jhi = dom_hi[1];
 
-    amrex::ParallelFor(bx_xz_hi_3D, nspecies_g, [bct_jhi,jhi,scal_arr]
+    amrex::ParallelFor(bx_xz_hi_3D, nchem_species_g, [bct_jhi,jhi,scal_arr]
       AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
       const int bct = bct_jhi(i,jhi+1,k,0);
@@ -149,7 +149,7 @@ bmx::set_species_diffusivities_g_bcs (Real time,
 
     int klo = dom_lo[2];
 
-    amrex::ParallelFor(bx_xy_lo_3D, nspecies_g, [bct_klo,klo,scal_arr]
+    amrex::ParallelFor(bx_xy_lo_3D, nchem_species_g, [bct_klo,klo,scal_arr]
       AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
       const int bct = bct_klo(i,j,klo-1,0);
@@ -166,7 +166,7 @@ bmx::set_species_diffusivities_g_bcs (Real time,
 
     int khi = dom_hi[2];
 
-    amrex::ParallelFor(bx_xy_hi_3D, nspecies_g, [bct_khi,khi,scal_arr]
+    amrex::ParallelFor(bx_xy_hi_3D, nchem_species_g, [bct_khi,khi,scal_arr]
       AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
       const int bct = bct_khi(i,j,khi+1,0);

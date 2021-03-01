@@ -25,8 +25,8 @@ class DiffusionOp
   public:
     // Constructor, with initialisation
     DiffusionOp (amrex::AmrCore* _amrcore,
-                 std::array<amrex::LinOpBCType,AMREX_SPACEDIM> a_specieslbc_lo,
-                 std::array<amrex::LinOpBCType,AMREX_SPACEDIM> a_specieslbc_hi,
+                 std::array<amrex::LinOpBCType,AMREX_SPACEDIM> a_chem_specieslbc_lo,
+                 std::array<amrex::LinOpBCType,AMREX_SPACEDIM> a_chem_specieslbc_hi,
                  int _nghost);
 
     // Destructor
@@ -42,7 +42,7 @@ class DiffusionOp
     void setSolverSettings (amrex::MLMG& solver);
 
     // Species mass fraction diffusion
-    void diffuse_species (amrex::Vector< amrex::MultiFab* > X_gk,
+    void diffuse_chem_species (amrex::Vector< amrex::MultiFab* > X_gk,
                           const amrex::Vector< amrex::MultiFab* > D_gk,
                           amrex::Real theta, amrex::Real dt);
 
@@ -62,8 +62,8 @@ class DiffusionOp
     int nghost = 0;
 
     // Boundary conditions
-    std::array<amrex::LinOpBCType,3> m_speciesbc_lo;
-    std::array<amrex::LinOpBCType,3> m_speciesbc_hi;
+    std::array<amrex::LinOpBCType,3> m_chem_speciesbc_lo;
+    std::array<amrex::LinOpBCType,3> m_chem_speciesbc_hi;
 
     // Internal data used in the matrix solve
     //
@@ -76,16 +76,16 @@ class DiffusionOp
     amrex::Vector<std::unique_ptr<amrex::MultiFab>> phi;
     amrex::Vector<std::unique_ptr<amrex::MultiFab>> rhs;
 
-    amrex::Vector<std::unique_ptr<amrex::MultiFab>> species_phi;
-    amrex::Vector<std::unique_ptr<amrex::MultiFab>> species_rhs;
+    amrex::Vector<std::unique_ptr<amrex::MultiFab>> chem_species_phi;
+    amrex::Vector<std::unique_ptr<amrex::MultiFab>> chem_species_rhs;
     //
     // MultiLevel cell-centered Laplacian:
     //
     // ( alpha a - beta div ( b grad ) ) phi = rhs
     //
-    std::unique_ptr<amrex::MLABecLaplacian> species_matrix;
+    std::unique_ptr<amrex::MLABecLaplacian> chem_species_matrix;
 
-    amrex::Vector<amrex::Array<std::unique_ptr<amrex::MultiFab>, AMREX_SPACEDIM>> species_b;
+    amrex::Vector<amrex::Array<std::unique_ptr<amrex::MultiFab>, AMREX_SPACEDIM>> chem_species_b;
 
     // DiffusionOp verbosity
     int verbose = 0;

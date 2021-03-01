@@ -1,6 +1,6 @@
 #include <bmx.H>
 #include <bmx_fluid_parms.H>
-#include <bmx_species_parms.H>
+#include <bmx_chem_species_parms.H>
 
 void
 bmx::ResizeArrays ()
@@ -77,8 +77,8 @@ bmx::RegridArrays (int lev)
     //
     int src_ngrow = 0;
 
-    if (advect_fluid_species) {
-      // Gas species mass fraction
+    if (advect_fluid_chem_species) {
+      // Gas chem_species mass fraction
       MultiFab* X_gk_new = new MultiFab(grids[lev], dmap[lev],
                                        m_leveldata[lev]->X_gk->nComp(),
                                        m_leveldata[lev]->X_gk->nGrow(),
@@ -90,7 +90,7 @@ bmx::RegridArrays (int lev)
       std::swap(m_leveldata[lev]->X_gk, X_gk_new);
       delete X_gk_new;
 
-      // Old gas species mass fraction
+      // Old gas chem_species mass fraction
       MultiFab* X_gko_new = new MultiFab(grids[lev], dmap[lev],
                                        m_leveldata[lev]->X_gk->nComp(),
                                        m_leveldata[lev]->X_gk->nGrow(),

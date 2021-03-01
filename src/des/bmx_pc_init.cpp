@@ -1,6 +1,6 @@
 #include <bmx_pc.H>
 #include <bmx_dem_parms.H>
-#include <bmx_species_parms.H>
+#include <bmx_chem_species_parms.H>
 // #include <bmx_ic_parms.H>
 
 using namespace amrex;

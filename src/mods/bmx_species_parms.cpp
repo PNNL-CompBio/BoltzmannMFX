@@ -5,66 +5,66 @@
 #include <AMReX_Utility.H>
 #include <AMReX_ParallelDescriptor.H>
 
-#include <bmx_species_parms.H>
+#include <bmx_chem_species_parms.H>
 
 namespace SPECIES
 {
-  // Flag to solve species equations
+  // Flag to solve chem_species equations
   int solve;
 
-  // Total number of species
-  int nspecies(0);
+  // Total number of chem_species
+  int nchem_species(0);
 
   // Species names
-  std::vector<std::string> species(0);
+  std::vector<std::string> chem_species(0);
 
   // Species unique identifying code (at the moment = their index in the input
   // entries)
-  std::vector<int> species_id(0);
+  std::vector<int> chem_species_id(0);
 
-  // Specified species diffusion coefficients
+  // Specified chem_species diffusion coefficients
   std::vector<amrex::Real> D_k0(0);
 
-  // Specified constant species specific heat
+  // Specified constant chem_species specific heat
   std::vector<amrex::Real> cp_k0(0);
 
 
   void Initialize ()
   {
-    amrex::ParmParse pp("species");
+    amrex::ParmParse pp("chem_species");
 
     if (pp.contains("solve"))
     {
-      pp.getarr("solve", species);
+      pp.getarr("solve", chem_species);
 
-      AMREX_ALWAYS_ASSERT_WITH_MESSAGE(species.size() > 0,
-          "No input provided for species.solve");
+      AMREX_ALWAYS_ASSERT_WITH_MESSAGE(chem_species.size() > 0,
+          "No input provided for chem_species.solve");
 
-      // Disable the species solver if the species are defined as "None" (case
+      // Disable the chem_species solver if the chem_species are defined as "None" (case
       // insensitive) or 0
-      if (amrex::toLower(species[0]).compare("none") == 0 or
-          (species[0]).compare("0") == 0)
+      if (amrex::toLower(chem_species[0]).compare("none") == 0 or
+          (chem_species[0]).compare("0") == 0)
       {
         solve = 0;
       }
       else
       {
         solve = 1;
-        nspecies = species.size();
+        nchem_species = chem_species.size();
 
-        species_id.resize(nspecies);
-        for (int n(0); n < nspecies; n++) {
-          species_id[n] = n;
+        chem_species_id.resize(nchem_species);
+        for (int n(0); n < nchem_species; n++) {
+          chem_species_id[n] = n;
         }
 
-        D_k0.resize(nspecies);
+        D_k0.resize(nchem_species);
       }
 
       if(solve)
       {
         // Get molecular weights input --------------------------------//
-        for (int n(0); n < nspecies; n++) {
-          std::string name = "species." + species[n];
+        for (int n(0); n < nchem_species; n++) {
+          std::string name = "chem_species." + chem_species[n];
           amrex::ParmParse ppSpecies(name.c_str());
         }
 

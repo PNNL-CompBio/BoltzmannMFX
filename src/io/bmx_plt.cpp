@@ -27,8 +27,8 @@ bmx::InitIOPltData ()
         pp.query("plt_X",     plt_X_gk   );
         pp.query("plt_D",     plt_D_gk   );
  
-        if( plt_X_gk == 1)  pltVarCount += FLUID::nspecies;
-        if( plt_D_gk == 1)  pltVarCount += FLUID::nspecies;
+        if( plt_X_gk == 1)  pltVarCount += FLUID::nchem_species;
+        if( plt_D_gk == 1)  pltVarCount += FLUID::nchem_species;
     }
 }
 
@@ -54,14 +54,14 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
       Vector<std::string> pltFldNames;
       Vector< std::unique_ptr<MultiFab> > mf(nlev);
 
-      // Fluid species mass fractions
-      if(FLUID::solve_species and plt_X_gk == 1)
-        for(std::string specie: FLUID::species)
+      // Fluid chem_species mass fractions
+      if(FLUID::solve_chem_species and plt_X_gk == 1)
+        for(std::string specie: FLUID::chem_species)
           pltFldNames.push_back("X_"+specie);
 
-      // Fluid species mass diffusivities
-      if(FLUID::solve_species and plt_D_gk == 1)
-        for(std::string specie: FLUID::species)
+      // Fluid chem_species mass diffusivities
+      if(FLUID::solve_chem_species and plt_D_gk == 1)
+        for(std::string specie: FLUID::chem_species)
           pltFldNames.push_back("D_"+specie);
 
       for (int lev = 0; lev < nlev; ++lev)
@@ -72,19 +72,19 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
 
         int lc=0;
 
-        if(FLUID::solve_species and plt_X_gk == 1 ) {
-          for(int n(0); n < FLUID::nspecies; n++) {
+        if(FLUID::solve_chem_species and plt_X_gk == 1 ) {
+          for(int n(0); n < FLUID::nchem_species; n++) {
             MultiFab::Copy(*mf[lev], *m_leveldata[lev]->X_gk, n, lc+n, 1, 0);
           }
-          lc += FLUID::nspecies;
+          lc += FLUID::nchem_species;
         }
 
         // Species mass fraction
-        if(FLUID::solve_species and plt_D_gk == 1 ) {
-          for(int n(0); n < FLUID::nspecies; n++) {
+        if(FLUID::solve_chem_species and plt_D_gk == 1 ) {
+          for(int n(0); n < FLUID::nchem_species; n++) {
             MultiFab::Copy(*mf[lev], *m_leveldata[lev]->D_gk, n, lc+n, 1, 0);
           }
-          lc += FLUID::nspecies;
+          lc += FLUID::nchem_species;
         }
       }
 

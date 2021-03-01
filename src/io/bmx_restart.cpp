@@ -123,7 +123,7 @@ bmx::Restart (std::string& restart_file, int *nstep, Real *dt, Real *time)
            // Read scalar variables
            ResetIOChkData();
 
-           if (advect_fluid_species)
+           if (advect_fluid_chem_species)
            {
               for (int i = 0; i < chkSpeciesVars.size(); i++ )
               {
@@ -141,7 +141,7 @@ bmx::Restart (std::string& restart_file, int *nstep, Real *dt, Real *time)
                  // Copy from the mf we used to read in to the mf we will use going forward
                  const int ng_to_copy = 0;
      
-                 (*(chkSpeciesVars[i][lev])).copy(mf, 0, 0, FLUID::nspecies,
+                 (*(chkSpeciesVars[i][lev])).copy(mf, 0, 0, FLUID::nchem_species,
                      ng_to_copy, ng_to_copy);
               }
           }
