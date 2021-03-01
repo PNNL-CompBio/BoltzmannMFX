@@ -15,6 +15,12 @@ jobs:
           echo "Installing python packages for docs..."
           python3 -m pip install sphinx sphinx_rtd_theme breathe
           echo "done."
+          python --version
+          which python
+          python3 --version
+          which python3
+          pip --version
+          pip3 --version
 
       - name: Install and Build
         run: |
