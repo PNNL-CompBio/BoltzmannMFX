@@ -54,4 +54,51 @@ figure (\ref{reducedsys}). This eliminates an internal boundary and should make
 development easier, but may gloss over an issue that will need to be dealt with
 later as the model becomes more realistic.
 
+\begin{figure}
+\centering
+\includegraphics[width=4.0in,keepaspectratio=true]{DiffBC}
+\caption{\label{diffbc} Illustration of the geometry for solving the boundary
+conditions between two media with different diffusion coefficients.}
+\end{figure}
+In the case that there is an internal boundary, the finite volume approach can
+be used incorporate the effects of the jump in diffusion coefficient. For
+simplicity, consider a 1-dimensional system with evenly spaced grid cells of
+size $h$. The centers of the grid cells are indexed by the integers $i$ and the
+faces between the cells are indexed by $i+1/2$. Consider two grid cells at $i=0$
+and $i=1$ and assume that the boundary between them at $i=1/2$ is where the
+diffusion coefficient changes abruptly from the value $D_0$ to $D_1$. The
+cell-centered concentration values are $\phi_0$ and $\phi_1$. The system is
+illustrated schematically in figure (\ref{diffbc})
+
+To derive the boundary condition, assume that the concentration field $\phi$ is
+continuous at the boundary and has the unknown value $\phi_{1/2}$. This value
+can be determined by the requirement that the fluxes calculated on both sides of
+the boundary must be equal. The diffusive flux $f$ has the form
+\[
+f =-D\hat{n}\cdot\nabla\phi
+\]
+where $\hat{n}$ is a unit normal to the surface.
+
+Using a standard finite difference calculation for the discrete form for the
+gradient, the equality of the fluxes $f_0=f_1$ on both sides of the boundary at $i=1/2$
+becomes
+\[
+-\frac{\phi_{1/2}-\phi_0}{h/2}D_0 = -\frac{\phi_{1}-\phi_{1/2}}{h/2}D_1
+\]
+This equation is readily solved for $\phi_{1/2}$ in terms of $\phi_0$ and
+$\phi_1$ to get the weighted average
+\[
+\phi_{1/2} = \frac{D_0\phi_0+D_1\phi_1}{D_0+D_1}
+\]
+Substituting this result back into formulas for the fluxes gives
+\[
+f_0=f_1=-2\frac{D_0 D_1}{D_0+D_1}\frac{\phi_1-\phi_0}{h}
+\]
+This formula is very interesting and suggest that if diffusion coefficients are
+defined on the faces of grid cells, then a step discontinuity in the value of
+the diffusion coefficient in two cells can be handle by using the value
+\[
+2\frac{D_0 D_1}{D_0+D_1}
+\]
+on the face seperating the two cells.
 \end{document}
