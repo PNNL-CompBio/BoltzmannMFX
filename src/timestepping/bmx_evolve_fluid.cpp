@@ -89,6 +89,10 @@ bmx::EvolveFluid (int nstep,
 
     if (m_diff_type != DiffusionType::Implicit)
         diffusion_op->ComputeLapX(lap_X, get_X_gk_old(), get_D_gk_const());
+    else
+       for (int lev = 0; lev <= finest_level; lev++)
+           lap_X[lev]->setVal(0.);
+     
 
     // *************************************************************************************
     // Compute right hand side terms on the old status
@@ -102,8 +106,8 @@ bmx::EvolveFluid (int nstep,
     // theta = 1 for fully explicit, theta = 1/2 for Crank-Nicolson
     Real theta;
 
-    if (m_diff_type == DiffusionType::Explicit) theta = 0.0;
-    if (m_diff_type == DiffusionType::Implicit) theta = 1.0;
+    if (m_diff_type == DiffusionType::Explicit) theta = 1.0;
+    if (m_diff_type == DiffusionType::Implicit) theta = 0.0;
     if (m_diff_type == DiffusionType::Crank_Nicolson) theta = 0.5;
 
     for (int lev = 0; lev <= finest_level; lev++)
@@ -127,11 +131,16 @@ bmx::EvolveFluid (int nstep,
             {
                 // amrex::Print() << "OLD LAP " << IntVect(i,j,k) << " " << 
                 //         X_gk_o(i,j,k,n) << " " << lap_X_arr(i,j,k,n) << std::endl;
+
                 X_gk_n(i,j,k,n) += theta * l_dt * lap_X_arr(i,j,k,n) + l_dt * X_RHS_arr(i,j,k,n);
-                if (i == 16 and j == 16 and k == 16) 
+
+                if (i == 16 and j == 16 and k == 8) 
+                {
+                   amrex::Print() << "LAP       " << IntVect(i,j,k) << " " << lap_X_arr(i,j,k,n) << std::endl;
+                   amrex::Print() << "SOURCE    " << IntVect(i,j,k) << " " << X_RHS_arr(i,j,k,n) << std::endl;
                    amrex::Print() << "OLD / NEW " << IntVect(i,j,k) << " " << 
-                   X_gk_o(i,j,k,n) << " " << X_gk_n(i,j,k,n) << std::endl;
-                // amrex::Print() << "SOURCE TERM " << X_RHS_arr(i,j,k,n) << std::endl;
+                      X_gk_o(i,j,k,n) << " " << X_gk_n(i,j,k,n) << std::endl;
+                }
             });
         } // mfi
     } // lev
@@ -143,7 +152,8 @@ bmx::EvolveFluid (int nstep,
     {
         bmx_set_chem_species_bcs(time, get_X_gk(), get_D_gk());
 
-        diffusion_op->diffuse_chem_species(get_X_gk(), get_D_gk(), theta, l_dt);
+        Real omt = 1. - theta;
+        diffusion_op->diffuse_chem_species(get_X_gk(), get_D_gk(), omt, l_dt);
     }
 
     for (int lev = 0; lev <= finest_level; lev++)

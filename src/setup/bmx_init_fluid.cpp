@@ -93,11 +93,11 @@ void set_ic_chem_species_g (const Box& sbx,
           Real y   = (j+.5)*dy;
           Real z   = (k+.5)*dz;
 
+#if 0
           Real ra = 0.1;
           Real rb = 0.2;
 
           Real rsq = (x-.5)*(x-.5) +  (y-.5)*(y-.5) +  (z-.5)*(z-.5); 
-#if 0
           // non-zero only within fixed radius
           if (n == 0)
           {
@@ -112,8 +112,11 @@ void set_ic_chem_species_g (const Box& sbx,
                   X_gk(i,j,k,n) = 0.0;
           }
 #else
-         // constant value everywhere
-         X_gk(i,j,k,n) = 1.0;
+         // two layers
+         if (z > 0.4)
+            X_gk(i,j,k,n) = 0.0;
+         else
+            X_gk(i,j,k,n) = 1.0;
 #endif
       }); 
 }

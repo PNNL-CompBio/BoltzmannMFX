@@ -112,8 +112,8 @@ bmx::bmx ()
         }
     }
 
-    m_X_gk_bc_types["Dirichlet"] = {bc_list.get_minf(), bc_list.get_pinf()};
-    m_X_gk_bc_types["Neumann"] = {bc_list.get_pout()};
+    m_X_gk_bc_types["Dirichlet"] = {bc_list.get_minf()};
+    m_X_gk_bc_types["Neumann"]   = {bc_list.get_pout()};
 
     Gpu::synchronize();
 }

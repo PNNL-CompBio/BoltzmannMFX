@@ -243,7 +243,6 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
                 for (int kk = -1; kk <= 0; ++kk) {
 
                   amrex::Real weight_vol = weights[ii+1][jj+1][kk+1];
-                  amrex::Print() << "WEIGHT " << IntVect(ii,jj,kk) << " " << weight_vol << std::endl;
 
                   amrex::Gpu::Atomic::Add(&txfr_arr(i+ii,j+jj,k+kk,0), weight_vol*p_A);
                   amrex::Gpu::Atomic::Add(&txfr_arr(i+ii,j+jj,k+kk,1), weight_vol*p_B);

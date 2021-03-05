@@ -206,9 +206,9 @@ bmx::bmx_calc_txfr_particle (Real time)
                   p.rdata(realData::fluid_A) << " " << 
                   p.rdata(realData::fluid_B) << std::endl;;
 
-              // The particle will consume 10% of what the mesh value is
-              p.rdata(realData::consume_A) = -0.1*interp_loc[0];
-              p.rdata(realData::consume_B) = -0.1*interp_loc[1];
+              // The particle will consume (dt * 50%) of what the mesh value is
+              p.rdata(realData::consume_A) = -0.5*interp_loc[0];
+              p.rdata(realData::consume_B) = -0.5*interp_loc[1];
             });
       } // pti
     } // omp region

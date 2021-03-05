@@ -13,7 +13,7 @@
 namespace BC
 {
   struct BC_t {
-    // BC type (mi, pi, po, nsw)
+    // BC type (mi, po, nsw)
     int type;
   };
 

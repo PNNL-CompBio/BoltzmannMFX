@@ -8,8 +8,8 @@ using namespace amrex;
 // Implicit solve for chem_species mass fraction
 //
 void DiffusionOp::diffuse_chem_species (      Vector< MultiFab* >    X_gk_in,
-                                   const Vector< MultiFab* >    D_gk_in,
-                                   Real theta, Real dt)
+                                        const Vector< MultiFab* >    D_gk_in,
+                                        Real theta, Real dt)
 {
     BL_PROFILE("DiffusionOp::diffuse_chem_species");
 
@@ -42,6 +42,52 @@ void DiffusionOp::diffuse_chem_species (      Vector< MultiFab* >    X_gk_in,
     for(int lev = 0; lev <= finest_level; lev++)
     {
         average_cellcenter_to_face( GetArrOfPtrs(chem_species_b[lev]), *D_gk_in[lev], geom[lev], nchem_species_g );
+
+        chem_species_b[lev][0]->FillBoundary(geom[lev].periodicity());
+        chem_species_b[lev][1]->FillBoundary(geom[lev].periodicity());
+        chem_species_b[lev][2]->FillBoundary(geom[lev].periodicity());
+
+        // Zero out the coefficients in the high-z part
+        const Box& domain = geom[lev].Domain();
+        const int zhi = domain.bigEnd()[2] / 2;
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+        for (MFIter mfi(*X_gk_in[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+          Box const& bx = mfi.tilebox();
+          if (bx.ok())
+          {
+            Array4<Real> const& bx_arr = chem_species_b[lev][0]->array(mfi);
+            Array4<Real> const& by_arr = chem_species_b[lev][1]->array(mfi);
+            Array4<Real> const& bz_arr = chem_species_b[lev][2]->array(mfi);
+
+            Box const& xbx = mfi.growntilebox(IntVect(1,0,0));
+            amrex::ParallelFor(xbx, nchem_species_g, [=]
+              AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            {
+                if (k > zhi/2)
+                    bx_arr(i,j,k,n) = 0.;
+            });
+
+            Box const& ybx = mfi.growntilebox(IntVect(0,1,0));
+            amrex::ParallelFor(ybx, nchem_species_g, [=]
+              AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            {
+                if (k > zhi/2)
+                    by_arr(i,j,k,n) = 0.;
+            });
+
+            Box const& zbx = mfi.growntilebox(IntVect(0,0,1));
+            amrex::ParallelFor(zbx, nchem_species_g, [=]
+              AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            {
+                if (k > zhi/2)
+                    bz_arr(i,j,k,n) = 0.;
+            });
+          }
+        }
 
         // This sets the coefficients
         chem_species_matrix->setACoeffs (lev, 1.);

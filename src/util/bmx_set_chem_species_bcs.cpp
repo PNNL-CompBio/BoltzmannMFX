@@ -6,7 +6,7 @@
 using namespace amrex;
 
 //
-// Set the BCs for density only
+// Set the BCs 
 //
 void
 bmx::bmx_set_chem_species_bcs (Real time,
@@ -34,9 +34,9 @@ bmx::bmx_set_chem_species_bcs (Real time,
 
 void 
 bmx::set_chem_species_diffusivities_g_bcs (Real time,
-                                       const int lev,
-                                       FArrayBox& scal_fab,
-                                       const Box& domain)
+                                           const int lev,
+                                           FArrayBox& scal_fab,
+                                           const Box& domain)
 {
   IntVect dom_lo(domain.loVect());
   IntVect dom_hi(domain.hiVect());

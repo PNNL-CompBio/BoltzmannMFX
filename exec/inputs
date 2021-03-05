@@ -8,8 +8,7 @@
 
 bmx.fixed_dt = 0.01
 
-bmx.max_step = 1
-bmx.max_step = 20
+bmx.max_step = 100
 
 dem.solve = bacteria
 bmx.particle_init_type = "AsciiFile"
@@ -23,7 +22,7 @@ amr.blocking_factor = 2
 amr.max_level = 0
 
 geometry.coord_sys   = 0                       # 0: Cartesian
-geometry.is_periodic = 1       1       1       # Is periodic in each direction?
+geometry.is_periodic = 1       1       0       # Is periodic in each direction?
 geometry.prob_lo     = 0.      0.      0.      # lo corner of physical domain
 geometry.prob_hi     = 1.0     1.0     1.0     # hi corner of physical domain
 
@@ -76,7 +75,7 @@ amr.regrid_int         = -1
 amr.par_ascii_int  = -1
 amr.par_ascii_file ="vis"
 
-amr.plot_int       = 1
+amr.plot_int       = 10
 amr.plot_file      ="plt"
 
 amr.check_int      = -1
@@ -85,7 +84,6 @@ amr.check_file     ="chk"
 #! Restart from checkpoint
 #!-----------------------------------------------------------//
 #amr.restart   ="chk00100"
-
 
 #_______________________________________________________________________
 # Fluid model settings

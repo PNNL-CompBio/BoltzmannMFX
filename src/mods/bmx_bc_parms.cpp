@@ -30,10 +30,8 @@ namespace BC
   std::array<amrex::LinOpBCType,3> diff_chem_species_lobc;
   std::array<amrex::LinOpBCType,3> diff_chem_species_hibc;
 
-
   // Data structure storing individual BC information
   amrex::Vector<BC_t> bc;
-
 
   void Initialize (amrex::Geometry& geom)
   {
@@ -42,10 +40,8 @@ namespace BC
 
     // Integer ids for BCs
     const int pout_ = bc_mask.get_pout();
-    const int pinf_ = bc_mask.get_pinf();
     const int minf_ = bc_mask.get_minf();
     const int nsw_  = bc_mask.get_nsw();
-    const int eb_   = bc_mask.get_eb();
 
     // Set flag to keep particles from leaving unless periodic.
     for (int dir(0); dir<3; ++dir) {
@@ -58,8 +54,7 @@ namespace BC
       }
     }
 
-
-    // Default all sides of the domain to Neumann
+    // Default bc to Dirichlet if not periodic
     for (int dir=0; dir < 3; dir ++ ){
       if (geom.isPeriodic(dir))
       {
