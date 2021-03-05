@@ -156,6 +156,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
             updateNeighbors();
         }
 
+#if 0
         /********************************************************************
          * Particles routines                                               *
          *******************************************************************/
@@ -417,6 +418,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
                 (*cost)[pti].plus<RunOn::Device>(wt, tbx);
             }
         }
+#endif
 
         // Update substep count
         n += 1;

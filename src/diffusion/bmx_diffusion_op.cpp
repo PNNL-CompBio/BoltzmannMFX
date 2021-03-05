@@ -235,7 +235,7 @@ void DiffusionOp::ComputeLapX (const Vector< MultiFab* >& lapX_out,
         });
       }
 
-      Box& grown_bx = Box(bx).growLo(2,1).setBig(2,0);
+      Box grown_bx(bx); grown_bx.growLo(2,1); grown_bx.setBig(2,0);
 
       // Set Dirichlet conditions on solution
       if (grown_bx.ok())

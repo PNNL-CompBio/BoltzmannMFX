@@ -134,6 +134,7 @@ bmx::EvolveFluid (int nstep,
 
                 X_gk_n(i,j,k,n) += theta * l_dt * lap_X_arr(i,j,k,n) + l_dt * X_RHS_arr(i,j,k,n);
 
+#if 0
                 if (i == 16 and j == 16 and k == 8) 
                 {
                    amrex::Print() << "LAP       " << IntVect(i,j,k) << " " << lap_X_arr(i,j,k,n) << std::endl;
@@ -141,6 +142,7 @@ bmx::EvolveFluid (int nstep,
                    amrex::Print() << "OLD / NEW " << IntVect(i,j,k) << " " << 
                       X_gk_o(i,j,k,n) << " " << X_gk_n(i,j,k,n) << std::endl;
                 }
+#endif
             });
         } // mfi
     } // lev
