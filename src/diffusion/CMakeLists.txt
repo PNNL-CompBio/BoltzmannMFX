@@ -4,6 +4,7 @@ target_include_directories(bmxcore
 
 target_sources( bmxcore
    PRIVATE
+   bmx_define_coeffs_on_faces.cpp
    bmx_diffusion_op.cpp
    bmx_diffusion_op.H
    bmx_diffuse_chem_species.cpp

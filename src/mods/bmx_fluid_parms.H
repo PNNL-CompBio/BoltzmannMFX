@@ -23,7 +23,7 @@ namespace FLUID
   extern int nchem_species;
 
   // Specified constant gas phase chem_species diffusion coefficients
-  extern std::vector<amrex::Real> D_gk0;
+  extern std::vector<amrex::Real> D_k0;
 
   // Name to later reference when building input regions
   extern std::string name;

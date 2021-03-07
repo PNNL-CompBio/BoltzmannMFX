@@ -25,8 +25,8 @@ bmx::InitIOChkData ()
 {
     if (ooo_debug) amrex::Print() << "InitIOChkData" << std::endl;
 
-    chkChemSpeciesVarsName = {"X_gk"};
-    //chkChemSpeciesVarsName = {"X_gk", "D_gk"};
+    chkChemSpeciesVarsName = {"X_k"};
+    //chkChemSpeciesVarsName = {"X_k", "D_k"};
 
     ResetIOChkData();
 }
@@ -43,8 +43,8 @@ bmx::ResetIOChkData ()
 
   for (int lev(0); lev < nlev; ++lev) {
     if (advect_fluid_chem_species) {
-      chkChemSpeciesVars[0][lev] = m_leveldata[lev]->X_gk;
-      //chkChemSpeciesVars[2][lev] = m_leveldata[lev]->D_gk;
+      chkChemSpeciesVars[0][lev] = m_leveldata[lev]->X_k;
+      //chkChemSpeciesVars[2][lev] = m_leveldata[lev]->D_k;
     }
   }
 }

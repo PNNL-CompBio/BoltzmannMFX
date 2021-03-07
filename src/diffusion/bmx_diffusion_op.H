@@ -41,15 +41,18 @@ class DiffusionOp
     // Set user-supplied solver settings (must be done every time step)
     void setSolverSettings (amrex::MLMG& solver);
 
+    // ChemSpecies -- define face-based diffusion coeffs from D_k at cell centers
+    void define_coeffs_on_faces (const amrex::Vector< amrex::MultiFab const*> D_k);
+
     // ChemSpecies mass fraction diffusion
-    void diffuse_chem_species (amrex::Vector< amrex::MultiFab* > X_gk,
-                          const amrex::Vector< amrex::MultiFab* > D_gk,
+    void diffuse_chem_species (amrex::Vector< amrex::MultiFab* > X_k,
+                          const amrex::Vector< amrex::MultiFab const* > D_k,
                           amrex::Real theta, amrex::Real dt);
 
     // Explicit tensor temperature term
     void ComputeLapX (const amrex::Vector< amrex::MultiFab* >& lapX_out,
-                      const amrex::Vector< amrex::MultiFab* >& X_gk_in,
-                      const amrex::Vector< amrex::MultiFab const*>& D_gk);
+                      const amrex::Vector< amrex::MultiFab* >& X_k_in,
+                      const amrex::Vector< amrex::MultiFab const*>& D_k);
 
   private:
     // AmrCore data
@@ -71,11 +74,6 @@ class DiffusionOp
     //
     // ( alpha a - beta div ( b grad ) ) phi = rhs
     //
-    amrex::Vector<amrex::Array<std::unique_ptr<amrex::MultiFab>, AMREX_SPACEDIM>> b;
-
-    amrex::Vector<std::unique_ptr<amrex::MultiFab>> phi;
-    amrex::Vector<std::unique_ptr<amrex::MultiFab>> rhs;
-
     amrex::Vector<std::unique_ptr<amrex::MultiFab>> chem_species_phi;
     amrex::Vector<std::unique_ptr<amrex::MultiFab>> chem_species_rhs;
     //

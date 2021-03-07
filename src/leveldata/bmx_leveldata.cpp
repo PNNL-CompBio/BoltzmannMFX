@@ -7,22 +7,22 @@ using namespace amrex;
 LevelData::LevelData (BoxArray const& ba,
                       DistributionMapping const& dmap,
                       const int nghost)
-  : X_gk(nullptr)
-  , X_gko(nullptr)
+  : X_k(nullptr)
+  , X_ko(nullptr)
   , X_rhs(nullptr)
-  , D_gk(nullptr)
+  , D_k(nullptr)
 {
     amrex::Print() << "MAKING ARRAYS " << FLUID::nchem_species << std::endl;
-    X_gk  = new MultiFab(ba, dmap, FLUID::nchem_species, nghost, MFInfo());
-    X_gko = new MultiFab(ba, dmap, FLUID::nchem_species, nghost, MFInfo());
+    X_k  = new MultiFab(ba, dmap, FLUID::nchem_species, nghost, MFInfo());
+    X_ko = new MultiFab(ba, dmap, FLUID::nchem_species, nghost, MFInfo());
     X_rhs = new MultiFab(ba, dmap, FLUID::nchem_species, nghost, MFInfo());
-    D_gk  = new MultiFab(ba, dmap, FLUID::nchem_species, nghost, MFInfo());
+    D_k  = new MultiFab(ba, dmap, FLUID::nchem_species, nghost, MFInfo());
 }
 
 LevelData::~LevelData ()
 {
-    delete X_gk;
-    delete X_gko;
+    delete X_k;
+    delete X_ko;
     delete X_rhs;
-    delete D_gk;
+    delete D_k;
 }

@@ -8,6 +8,6 @@
 #include <AMReX_SPACE.H>
 
 // Compute fluid chem_species diffusivity
-void calc_D_gk (const Box& bx,
-               FArrayBox& D_gk_fab);
+void calc_D_k (const Box& bx, const Box& domain,
+               FArrayBox& D_k_fab);
 #endif

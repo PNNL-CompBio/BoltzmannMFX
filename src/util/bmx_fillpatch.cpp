@@ -21,19 +21,19 @@ void set_ptr_to_bmx (bmx& bmx_for_fillpatching_in)
 //    CpuBndryFuncFab in amrex/Src/Base/AMReX_PhysBCFunct.H
 inline
 void ChemSpeciesFillBox (Box const& bx,
-                     Array4<amrex::Real> const& dest,
-                     const int dcomp,
-                     const int numcomp,
-                     GeometryData const& geom,
-                     const Real time_in,
-                     const BCRec* bcr,
-                     const int bcomp,
-                     const int orig_comp)
+                         Array4<amrex::Real> const& dest,
+                         const int dcomp,
+                         const int numcomp,
+                         GeometryData const& geom,
+                         const Real time_in,
+                         const BCRec* bcr,
+                         const int bcomp,
+                         const int orig_comp)
 {
     if (dcomp != 0)
          amrex::Abort("Must have dcomp = 0 in ChemSpeciesFillBox");
     if (numcomp != FLUID::nchem_species)
-         amrex::Abort("Must have numcomp = nchem_species_g in ChemSpeciesFillBox");
+         amrex::Abort("Must have numcomp = nchem_species in ChemSpeciesFillBox");
 
     const Box& domain = geom.Domain();
 
@@ -55,27 +55,20 @@ void ChemSpeciesFillBox (Box const& bx,
     FArrayBox dest_fab(dest);
     Elixir eli_dest_fab = dest_fab.elixir();
 
-   if( orig_comp == 0 )
-   {
-      // bmx_for_fillpatching->set_mass_fractions_g_bcs(time, lev, dest_fab, domain);
-   } else if(orig_comp == 1)
-      bmx_for_fillpatching->set_chem_species_diffusivities_g_bcs(time, lev, dest_fab, domain);
-   else
-      amrex::Abort("Unknown component in ScalarFillBox!");
+    bmx_for_fillpatching->set_neumann_bcs(time, lev, dest_fab, geom);
 
 }
 
 // Compute a new multifab by copying array from valid region and filling ghost cells
 // works for single level and 2-level cases (fill fine grid ghost by interpolating from coarse)
-// NOTE: icomp here refers to whether we are filling 0: fluid chem_species
 void
 bmx::FillPatchChemSpecies (int lev,
-                        Real time,
-                        MultiFab& mf,
-                        int icomp,
-                        int ncomp,
-                        const Vector<BCRec>& bcs)
-{
+                           Real time,
+                           MultiFab& mf,
+                           int icomp,
+                           int ncomp,
+                           const Vector<BCRec>& bcs)
+   {
     // Hack so that ghost cells are not undefined
     mf.setVal(covered_val);
 
@@ -131,22 +124,22 @@ bmx::GetDataChemSpecies (int lev,
     if (time > t_new[lev] - teps && time < t_new[lev] + teps)
     {
         if (icomp == 0) {
-           data.push_back(m_leveldata[lev]->X_gk);
+           data.push_back(m_leveldata[lev]->X_k);
         }
         datatime.push_back(t_new[lev]);
     }
     else if (time > t_old[lev] - teps && time < t_old[lev] + teps)
     {
         if (icomp == 0) {
-           data.push_back(m_leveldata[lev]->X_gko);
+           data.push_back(m_leveldata[lev]->X_ko);
         }
         datatime.push_back(t_old[lev]);
     }
     else
     {
         if (icomp == 0) {
-           data.push_back(m_leveldata[lev]->X_gko);
-           data.push_back(m_leveldata[lev]->X_gk);
+           data.push_back(m_leveldata[lev]->X_ko);
+           data.push_back(m_leveldata[lev]->X_k);
         }
         datatime.push_back(t_old[lev]);
         datatime.push_back(t_new[lev]);
@@ -154,7 +147,7 @@ bmx::GetDataChemSpecies (int lev,
 }
 
 void
-bmx::fillpatch_all ( Vector< MultiFab* > const& X_gk_in,
+bmx::fillpatch_all ( Vector< MultiFab* > const& X_k_in,
                      Real time)
 {
 
@@ -170,7 +163,7 @@ bmx::fillpatch_all ( Vector< MultiFab* > const& X_gk_in,
       state_comp = 0;
       num_comp = l_nchem_species;
       FillPatchChemSpecies(lev, time, Sborder_X, state_comp, num_comp, bcs_X);
-      MultiFab::Copy(*X_gk_in[lev], Sborder_X, 0, 0, num_comp, X_gk_in[lev]->nGrow());
+      MultiFab::Copy(*X_k_in[lev], Sborder_X, 0, 0, num_comp, X_k_in[lev]->nGrow());
     }
   }
 }

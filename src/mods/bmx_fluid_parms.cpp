@@ -27,7 +27,7 @@ namespace FLUID
   int nchem_species(0);
 
   // Specified constant gas phase chem_species diffusion coefficients
-  std::vector<amrex::Real> D_gk0(0);
+  std::vector<amrex::Real> D_k0(0);
 
   // Name to later reference when building inputs for IC/BC regions
   std::string name;
@@ -70,11 +70,11 @@ namespace FLUID
         for (int n = 0; n < nchem_species; n++)
            amrex::Print() << "chem_species " << n << " is " << chem_species[n] << std::endl;
 
-        D_gk0.resize(nchem_species);
+        D_k0.resize(nchem_species);
 
-        ppFluid.getarr("chem_species_diff", D_gk0);
+        ppFluid.getarr("chem_species_diff", D_k0);
         for (int n = 0; n < nchem_species; n++)
-           amrex::Print() << "diff coeffs for chem_species " << n << " is " << D_gk0[n] << std::endl;
+           amrex::Print() << "diff coeffs for chem_species " << n << " is " << D_k0[n] << std::endl;
 
         amrex::Print() << " " << std::endl;
 

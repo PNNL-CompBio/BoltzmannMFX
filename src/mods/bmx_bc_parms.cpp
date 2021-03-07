@@ -38,11 +38,6 @@ namespace BC
 
     BCList bc_mask;
 
-    // Integer ids for BCs
-    const int pout_ = bc_mask.get_pout();
-    const int minf_ = bc_mask.get_minf();
-    const int nsw_  = bc_mask.get_nsw();
-
     // Set flag to keep particles from leaving unless periodic.
     for (int dir(0); dir<3; ++dir) {
       if (geom.isPeriodic(dir)) {
@@ -58,7 +53,6 @@ namespace BC
     for (int dir=0; dir < 3; dir ++ ){
       if (geom.isPeriodic(dir))
       {
-
         diff_chem_species_lobc[dir] = amrex::LinOpBCType::Periodic;
         diff_chem_species_hibc[dir] = amrex::LinOpBCType::Periodic;
 

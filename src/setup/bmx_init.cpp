@@ -27,14 +27,14 @@ bmx::InitParams ()
   // We have to do it here because the size has to match the number of fluid
   // chem_species
   // NOTE: once we will have a class for BCs this won't be needed anymore
-  m_bc_X_gk.resize(FLUID::nchem_species, Gpu::DeviceVector<Real>(50, 0));
-  m_bc_X_gk_ptr.resize(FLUID::nchem_species, nullptr);
+  m_bc_X_k.resize(FLUID::nchem_species, Gpu::DeviceVector<Real>(50, 0));
+  m_bc_X_k_ptr.resize(FLUID::nchem_species, nullptr);
   {
       Vector<Real*> tmp(FLUID::nchem_species);
       for (int i = 0; i < FLUID::nchem_species; ++i) {
-          tmp[i] = m_bc_X_gk[i].data();
+          tmp[i] = m_bc_X_k[i].data();
       }
-      Gpu::copyAsync(Gpu::hostToDevice, tmp.begin(), tmp.end(), m_bc_X_gk_ptr.begin());
+      Gpu::copyAsync(Gpu::hostToDevice, tmp.begin(), tmp.end(), m_bc_X_k_ptr.begin());
       Gpu::synchronize();
   }
   bcs_X.resize(2*FLUID::nchem_species);
@@ -558,18 +558,18 @@ bmx::bmx_init_fluid (int is_restarting, Real dt, Real stop_time)
           const Box& sbx = dummy[mfi].box();
 
           if ( is_restarting ) {
-            init_fluid_parameters(bx, mfi, ld, advect_fluid_chem_species);
+            init_fluid_parameters(bx, domain, mfi, ld, advect_fluid_chem_species);
           } else {
             init_fluid(sbx, bx, domain, mfi, ld, dx, dy, dz, xlen, ylen, zlen, plo,
                        advect_fluid_chem_species);
           }
        }
 
-       MultiFab::Copy(*m_leveldata[lev]->X_gko, *m_leveldata[lev]->X_gk, 0, 0,
-             m_leveldata[lev]->X_gk->nComp(), 0);
+       MultiFab::Copy(*m_leveldata[lev]->X_ko, *m_leveldata[lev]->X_k, 0, 0,
+             m_leveldata[lev]->X_k->nComp(), 0);
 
-       m_leveldata[lev]->X_gk->FillBoundary(geom[lev].periodicity());
-       m_leveldata[lev]->D_gk->FillBoundary(geom[lev].periodicity());
+       m_leveldata[lev]->X_k->FillBoundary(geom[lev].periodicity());
+       m_leveldata[lev]->D_k->FillBoundary(geom[lev].periodicity());
     }
 
     if (is_restarting == 0)
@@ -577,8 +577,8 @@ bmx::bmx_init_fluid (int is_restarting, Real dt, Real stop_time)
       Real time = 0.0;
 
       if (advect_fluid_chem_species) {
-        bmx_set_chem_species_bcs(time, get_X_gk(), get_D_gk());
-        bmx_set_chem_species_bcs(time, get_X_gk_old(), get_D_gk());
+        bmx_set_chem_species_bcs(time, get_X_k(), get_D_k());
+        bmx_set_chem_species_bcs(time, get_X_k_old(), get_D_k());
       }
     }
 }
