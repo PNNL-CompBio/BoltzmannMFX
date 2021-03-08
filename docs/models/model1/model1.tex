@@ -101,4 +101,44 @@ the diffusion coefficient in two cells can be handle by using the value
 2\frac{D_0 D_1}{D_0+D_1}
 \]
 on the face seperating the two cells.
+
+\section{Biological Cell Dynamics}
+This model will employ a very simple set of equations to describe dynamics within the
+cell. Three chemical constituents are considered, $A$, $B$ and $C$. $A$ and $C$ exist
+both inside and outside the cell (in the agar medium) and the concentrations outside
+the cell are denoted with the subscript $out$ and those inside the cell are labeled
+with the subscript $in$. The compound $B$ is only located inside the cell. These species
+are related to each other as follows:
+\begin{eqnarray*}
+A_{out} &\stackrel{k_{1},k_{-1}}{\longleftrightarrow}& A_{in} \\
+A_{in} &\stackrel{k_2,k_{-2}}{\longleftrightarrow}& B_{in} + C_{in} \\
+C_{in} &\stackrel{k_3,k_{-3}}{\longleftrightarrow}& C_{out}
+\end{eqnarray*}
+The intracellular concentration of these species is governed by the set of equations
+\begin{eqnarray*}
+\frac{\partial A_{out}}{\partial t} &=&-k_1 A_{out}+k_{-1} A_{in} \\
+\frac{\partial A_{in}}{\partial t} &=&k_1 A_{out}-k_{-1} A_{in} - k_2 A_{in}
+ - k_{-2}B_{in}C_{in}\\
+\frac{\partial B_{in}}{\partial t} &=&k_2 A_{in} - k_{-2}B_{in}C_{in}\\
+\frac{\partial C_{in}}{\partial t} &=&k_2 A_{in} - k_{-2}B_{in}C_{in}-k_3 C_{in}
++ k_{-3} C_{out} \\
+\frac{\partial C_{out}}{\partial t} &=&k_3 C_{in}-k_{-3} C_{out}
+\end{eqnarray*}
+The cells are subject to two additional rules:
+\begin{list}{$\bullet$}{}
+\item If $\partial B_{in}/\partial t$ falls to zero, the cell dies.
+\item If $\partial B_{in}/\partial t$ and the amount of $B_{in}$ increases to 10, the
+cell splits into two new cells.
+\end{list}
+These reactions also act as sources and sinks for $A_{in}$ and $C_{in}$, which are governed
+by diffusion in the agar growth medium.
+
+Some additional questions:
+\begin{list}{$\bullet$}{}
+\item What are the rules governing mechanical interactions between the cells?
+\item Is their a growth rule for the cells e.g. $\partial V/\partial t = f(A_{in},
+B_{in},C_{in})$ or possibly $\partial V/\partial t = f(\partial A_{in}/\partial t,
+\partial B_{in}/\partial t, \partial C_{in}/\partial t)$?
+\item What are initial conditions, both inside and outside the cell?
+\end{list}
 \end{document}
