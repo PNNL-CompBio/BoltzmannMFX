@@ -100,7 +100,10 @@ the diffusion coefficient in two cells can be handle by using the value
 \[
 2\frac{D_0 D_1}{D_0+D_1}
 \]
-on the face seperating the two cells.
+on the face seperating the two grid cells. Note that for dimensions greater than 1, this
+derivation has ignored a factor of the face area that appears in the formulas for the
+fluxes. However, this factor is the same for the fluxes into and out of grid cells
+sharing a face and cancels out.
 
 \section{Biological Cell Dynamics}
 This model will employ a very simple set of equations to describe dynamics within the
@@ -127,17 +130,17 @@ The intracellular concentration of these species is governed by the set of equat
 The cells are subject to two additional rules:
 \begin{list}{$\bullet$}{}
 \item If $\partial B_{in}/\partial t$ falls to zero, the cell dies.
-\item If $\partial B_{in}/\partial t$ and the amount of $B_{in}$ increases to 10, the
+\item If $\partial B_{in}/\partial t \ge 0$ and the amount of $B_{in}$ increases to 10, the
 cell splits into two new cells.
 \end{list}
-These reactions also act as sources and sinks for $A_{in}$ and $C_{in}$, which are governed
+These reactions also act as sources and sinks for $A_{out}$ and $C_{out}$, which are governed
 by diffusion in the agar growth medium.
 
 Some additional questions:
 \begin{list}{$\bullet$}{}
 \item What are the rules governing mechanical interactions between the cells?
-\item Is their a growth rule for the cells e.g. $\partial V/\partial t = f(A_{in},
-B_{in},C_{in})$ or possibly $\partial V/\partial t = f(\partial A_{in}/\partial t,
+\item Is their a growth rule for the cells e.g. $\partial V_{cell}/\partial t = f(A_{in},
+B_{in},C_{in})$ or possibly $\partial V_{cell}/\partial t = f(\partial A_{in}/\partial t,
 \partial B_{in}/\partial t, \partial C_{in}/\partial t)$?
 \item What are initial conditions, both inside and outside the cell?
 \end{list}
