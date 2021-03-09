@@ -170,8 +170,8 @@ bmx::Restart (std::string& restart_file, int *nstep, Real *dt, Real *time)
         for (int lev = 0; lev <= finestLevel(); lev++)
         {
           // Fill the bc's just in case
-          m_leveldata[lev]->X_gk->FillBoundary(geom[lev].periodicity());
-          m_leveldata[lev]->D_gk->FillBoundary(geom[lev].periodicity());
+          m_leveldata[lev]->X_k->FillBoundary(geom[lev].periodicity());
+          m_leveldata[lev]->D_k->FillBoundary(geom[lev].periodicity());
         }
     }
 

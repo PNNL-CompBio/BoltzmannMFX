@@ -79,38 +79,38 @@ bmx::RegridArrays (int lev)
 
     if (advect_fluid_chem_species) {
       // Gas chem_species mass fraction
-      MultiFab* X_gk_new = new MultiFab(grids[lev], dmap[lev],
-                                       m_leveldata[lev]->X_gk->nComp(),
-                                       m_leveldata[lev]->X_gk->nGrow(),
+      MultiFab* X_k_new = new MultiFab(grids[lev], dmap[lev],
+                                       m_leveldata[lev]->X_k->nComp(),
+                                       m_leveldata[lev]->X_k->nGrow(),
                                        MFInfo());
-      X_gk_new->setVal(0);
-      X_gk_new->ParallelCopy(*m_leveldata[lev]->X_gk, 0, 0,
-          m_leveldata[lev]->X_gk->nComp(), src_ngrow,
-          m_leveldata[lev]->X_gk->nGrow(), geom[lev].periodicity());
-      std::swap(m_leveldata[lev]->X_gk, X_gk_new);
-      delete X_gk_new;
+      X_k_new->setVal(0);
+      X_k_new->ParallelCopy(*m_leveldata[lev]->X_k, 0, 0,
+          m_leveldata[lev]->X_k->nComp(), src_ngrow,
+          m_leveldata[lev]->X_k->nGrow(), geom[lev].periodicity());
+      std::swap(m_leveldata[lev]->X_k, X_k_new);
+      delete X_k_new;
 
       // Old gas chem_species mass fraction
-      MultiFab* X_gko_new = new MultiFab(grids[lev], dmap[lev],
-                                       m_leveldata[lev]->X_gk->nComp(),
-                                       m_leveldata[lev]->X_gk->nGrow(),
+      MultiFab* X_ko_new = new MultiFab(grids[lev], dmap[lev],
+                                       m_leveldata[lev]->X_k->nComp(),
+                                       m_leveldata[lev]->X_k->nGrow(),
                                        MFInfo());
-      X_gko_new->setVal(0);
-      X_gko_new->ParallelCopy(*m_leveldata[lev]->X_gko, 0, 0,
-          m_leveldata[lev]->X_gko->nComp(), src_ngrow,
-          m_leveldata[lev]->X_gko->nGrow(), geom[lev].periodicity());
-      std::swap(m_leveldata[lev]->X_gko, X_gko_new);
-      delete X_gko_new;
+      X_ko_new->setVal(0);
+      X_ko_new->ParallelCopy(*m_leveldata[lev]->X_ko, 0, 0,
+          m_leveldata[lev]->X_ko->nComp(), src_ngrow,
+          m_leveldata[lev]->X_ko->nGrow(), geom[lev].periodicity());
+      std::swap(m_leveldata[lev]->X_ko, X_ko_new);
+      delete X_ko_new;
 
       // ChemSpecies diffusion coefficients
-      MultiFab* D_gk_new = new MultiFab(grids[lev], dmap[lev],
-                                       m_leveldata[lev]->D_gk->nComp(),
-                                       m_leveldata[lev]->D_gk->nGrow(),
+      MultiFab* D_k_new = new MultiFab(grids[lev], dmap[lev],
+                                       m_leveldata[lev]->D_k->nComp(),
+                                       m_leveldata[lev]->D_k->nGrow(),
                                        MFInfo());
-      D_gk_new->setVal(0);
-      D_gk_new->ParallelCopy(*m_leveldata[lev]->D_gk, 0, 0, m_leveldata[lev]->D_gk->nComp(),
-                     src_ngrow, m_leveldata[lev]->D_gk->nGrow(), geom[lev].periodicity());
-      std::swap(m_leveldata[lev]->D_gk, D_gk_new);
-      delete D_gk_new;
+      D_k_new->setVal(0);
+      D_k_new->ParallelCopy(*m_leveldata[lev]->D_k, 0, 0, m_leveldata[lev]->D_k->nComp(),
+                     src_ngrow, m_leveldata[lev]->D_k->nGrow(), geom[lev].periodicity());
+      std::swap(m_leveldata[lev]->D_k, D_k_new);
+      delete D_k_new;
     }
 }

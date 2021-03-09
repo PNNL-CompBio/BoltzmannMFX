@@ -45,58 +45,37 @@ void DiffusionOp::setup (AmrCore* _amrcore)
 
     int max_level = amrcore->maxLevel();
 
-    const int nchem_species_g = FLUID::nchem_species;
-
-    // Resize and reset data
-    b.resize(max_level + 1);
-
-    phi.resize(max_level + 1);
-    rhs.resize(max_level + 1);
+    const int nchem_species = FLUID::nchem_species;
 
     chem_species_phi.resize(max_level + 1);
     chem_species_rhs.resize(max_level + 1);
+    chem_species_b.resize  (max_level + 1);
 
     for(int lev = 0; lev <= max_level; lev++)
     {
+        // One ghost cell needed for solution "chem_species_phi"
+        chem_species_phi[lev].reset(new MultiFab(grids[lev], dmap[lev], nchem_species, 1, MFInfo()));
+
+        // No ghost cells needed for rhs
+        chem_species_rhs[lev].reset(new MultiFab(grids[lev], dmap[lev], nchem_species, 0, MFInfo()));
+
+        // No ghost cells needed for face-based coeff array
         for(int dir = 0; dir < AMREX_SPACEDIM; dir++)
         {
-            BoxArray edge_ba = grids[lev];
-            edge_ba.surroundingNodes(dir);
-            b[lev][dir].reset(new MultiFab(edge_ba, dmap[lev], 1, nghost, MFInfo()));
+              BoxArray edge_ba = grids[lev];
+              edge_ba.surroundingNodes(dir);
+              chem_species_b[lev][dir].reset(new MultiFab(edge_ba, dmap[lev], nchem_species, 0, MFInfo()));
         }
-
-        phi[lev].reset(new MultiFab(grids[lev], dmap[lev], 3, 1, MFInfo()));
-
-        // No ghost cells needed for rhs
-        rhs[lev].reset(new MultiFab(grids[lev], dmap[lev], 3, 0, MFInfo()));
-
-        chem_species_phi[lev].reset(new MultiFab(grids[lev], dmap[lev], nchem_species_g, 1, MFInfo()));
-
-        // No ghost cells needed for rhs
-        chem_species_rhs[lev].reset(new MultiFab(grids[lev], dmap[lev], nchem_species_g, 0, MFInfo()));
     }
 
     LPInfo info;
     info.setMaxCoarseningLevel(mg_max_coarsening_level);
 
-    amrex::Print() << "Initializing solver with " << nchem_species_g << " components " << std::endl;
-    chem_species_matrix.reset(new MLABecLaplacian(geom, grids, dmap, info, {}, nchem_species_g));
+    amrex::Print() << "Initializing solver with " << nchem_species << " components " << std::endl;
+    chem_species_matrix.reset(new MLABecLaplacian(geom, grids, dmap, info, {}, nchem_species));
 
     chem_species_matrix->setMaxOrder(2);
-
     chem_species_matrix->setDomainBC(m_chem_speciesbc_lo, m_chem_speciesbc_hi);
-
-    chem_species_b.resize(max_level + 1);
-
-    for(int lev = 0; lev <= max_level; lev++)
-    {
-        for(int dir = 0; dir < AMREX_SPACEDIM; dir++)
-        {
-              BoxArray edge_ba = grids[lev];
-              edge_ba.surroundingNodes(dir);
-              chem_species_b[lev][dir].reset(new MultiFab(edge_ba, dmap[lev], nchem_species_g, nghost, MFInfo()));
-        }
-    }
 }
 
 DiffusionOp::~DiffusionOp ()
@@ -149,112 +128,32 @@ void DiffusionOp::setSolverSettings (MLMG& solver)
 }
 
 void DiffusionOp::ComputeLapX (const Vector< MultiFab* >& lapX_out,
-                               const Vector< MultiFab* >& X_gk_in,
-                               const Vector< MultiFab const*>& D_gk_in)
+                               const Vector< MultiFab* >& X_k_in,
+                               const Vector< MultiFab const*>& D_k_in)
 {
   BL_PROFILE("DiffusionOp::ComputeLapX");
 
   int finest_level = amrcore->finestLevel();
 
   // Number of fluid chem_species
-  const int nchem_species_g = FLUID::nchem_species;
+  const int nchem_species = FLUID::nchem_species;
 
-  // We want to return div (D_gk grad)) phi
+  // We want to return div (D_k grad)) phi
   chem_species_matrix->setScalars(0.0, -1.0);
 
   Vector<BCRec> bcs_X; 
-  bcs_X.resize(3*nchem_species_g);
+  bcs_X.resize(3*nchem_species);
 
-  // Zero out the coefficients in the high-z part
+  define_coeffs_on_faces(D_k_in);
+
   for (int lev = 0; lev <= finest_level; lev++)
   {
-    MultiFab b_coeffs(X_gk_in[lev]->boxArray(), X_gk_in[lev]->DistributionMap(), nchem_species_g, 1, MFInfo());
-    b_coeffs.setVal(0.);
-
-#ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
-    for (MFIter mfi(*X_gk_in[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
-    {
-      Box const& bx = mfi.growntilebox(IntVect(1,1,1));
-
-      if (bx.ok())
-      {
-        Array4<Real const> const& D_gk_arr     = D_gk_in[lev]->const_array(mfi);
-        Array4<Real      > const& b_coeffs_arr = b_coeffs.array(mfi);
-
-        amrex::ParallelFor(bx, nchem_species_g, [=]
-          AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        {
-            b_coeffs_arr(i,j,k,n) = D_gk_arr(i,j,k,n);
-        });
-      }
-    }
-
-    average_cellcenter_to_face( GetArrOfPtrs(chem_species_b[lev]), b_coeffs, geom[lev], nchem_species_g );
-
-    // Zero out the coefficients in the high-z part
-    const Box& domain = geom[lev].Domain();
-    const int zhi = domain.bigEnd()[2];
-
-#ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
-    for (MFIter mfi(*X_gk_in[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
-    {
-      Box const& bx = mfi.tilebox();
-
-      if (bx.ok())
-      {
-        Array4<Real> const& bx_arr = chem_species_b[lev][0]->array(mfi);
-        Array4<Real> const& by_arr = chem_species_b[lev][1]->array(mfi);
-        Array4<Real> const& bz_arr = chem_species_b[lev][2]->array(mfi);
-
-        Box const& xbx = mfi.growntilebox(IntVect(1,0,0));
-        amrex::ParallelFor(xbx, nchem_species_g, [=]
-          AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        {
-            if (k > zhi/2)
-                bx_arr(i,j,k,n) = 0.;
-        });
-
-        Box const& ybx = mfi.growntilebox(IntVect(0,1,0));
-        amrex::ParallelFor(ybx, nchem_species_g, [=]
-          AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        {
-            if (k > zhi/2)
-                by_arr(i,j,k,n) = 0.;
-        });
-
-        Box const& zbx = mfi.growntilebox(IntVect(0,0,1));
-        amrex::ParallelFor(zbx, nchem_species_g, [=]
-          AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        {
-            if (k > zhi/2)
-                bz_arr(i,j,k,n) = 0.;
-        });
-      }
-
-      Box& grown_bx = Box(bx).growLo(2,1).setBig(2,0);
-
-      // Set Dirichlet conditions on solution
-      if (grown_bx.ok())
-      {
-        Array4<Real> const& soln_arr = X_gk_in[lev]->array(mfi);
-        amrex::ParallelFor(grown_bx, nchem_species_g, [=]
-          AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        {
-            soln_arr(i,j,k,n) = 1.;
-        });
-      }
-    }
-
     chem_species_matrix->setBCoeffs(lev, GetArrOfConstPtrs(chem_species_b[lev]));
 
-    chem_species_matrix->setLevelBC(lev, GetVecOfConstPtrs(X_gk_in)[lev]);
+    chem_species_matrix->setLevelBC(lev, GetVecOfConstPtrs(X_k_in)[lev]);
   }
 
   MLMG solver(*chem_species_matrix);
 
-  solver.apply(lapX_out, X_gk_in);
+  solver.apply(lapX_out, X_k_in);
 }

@@ -24,11 +24,11 @@ bmx::InitIOPltData ()
     {
         ParmParse pp("amr");
 
-        pp.query("plt_X",     plt_X_gk   );
-        pp.query("plt_D",     plt_D_gk   );
+        pp.query("plt_X",     plt_X_k   );
+        pp.query("plt_D",     plt_D_k   );
  
-        if( plt_X_gk == 1)  pltVarCount += FLUID::nchem_species;
-        if( plt_D_gk == 1)  pltVarCount += FLUID::nchem_species;
+        if( plt_X_k == 1)  pltVarCount += FLUID::nchem_species;
+        if( plt_D_k == 1)  pltVarCount += FLUID::nchem_species;
     }
 }
 
@@ -55,12 +55,12 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
       Vector< std::unique_ptr<MultiFab> > mf(nlev);
 
       // Fluid chem_species mass fractions
-      if(FLUID::solve_chem_species and plt_X_gk == 1)
+      if(FLUID::solve_chem_species and plt_X_k == 1)
         for(std::string specie: FLUID::chem_species)
           pltFldNames.push_back("X_"+specie);
 
       // Fluid chem_species mass diffusivities
-      if(FLUID::solve_chem_species and plt_D_gk == 1)
+      if(FLUID::solve_chem_species and plt_D_k == 1)
         for(std::string specie: FLUID::chem_species)
           pltFldNames.push_back("D_"+specie);
 
@@ -72,17 +72,17 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
 
         int lc=0;
 
-        if(FLUID::solve_chem_species and plt_X_gk == 1 ) {
+        if(FLUID::solve_chem_species and plt_X_k == 1 ) {
           for(int n(0); n < FLUID::nchem_species; n++) {
-            MultiFab::Copy(*mf[lev], *m_leveldata[lev]->X_gk, n, lc+n, 1, 0);
+            MultiFab::Copy(*mf[lev], *m_leveldata[lev]->X_k, n, lc+n, 1, 0);
           }
           lc += FLUID::nchem_species;
         }
 
         // ChemSpecies mass fraction
-        if(FLUID::solve_chem_species and plt_D_gk == 1 ) {
+        if(FLUID::solve_chem_species and plt_D_k == 1 ) {
           for(int n(0); n < FLUID::nchem_species; n++) {
-            MultiFab::Copy(*mf[lev], *m_leveldata[lev]->D_gk, n, lc+n, 1, 0);
+            MultiFab::Copy(*mf[lev], *m_leveldata[lev]->D_k, n, lc+n, 1, 0);
           }
           lc += FLUID::nchem_species;
         }

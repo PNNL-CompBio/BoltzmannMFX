@@ -1,3 +1,4 @@
+CEXE_sources += bmx_define_coeffs_on_faces.cpp
 CEXE_sources += bmx_diffusion_op.cpp
 CEXE_headers += bmx_diffusion_op.H
 CEXE_sources += bmx_diffuse_chem_species.cpp

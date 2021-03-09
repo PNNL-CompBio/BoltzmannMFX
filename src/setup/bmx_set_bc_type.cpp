@@ -194,12 +194,12 @@ bmx::bmx_set_bc_type (int lev)
         (m_bcrec_chem_species_d.data(), m_bcrec_chem_species.data(), sizeof(BCRec)*l_chem_species);
     }
 
-    m_h_bc_X_gk.resize(FLUID::nchem_species, Vector<Real>(bc.size()));
+    m_h_bc_X_k.resize(FLUID::nchem_species, Vector<Real>(bc.size()));
 
     if ( FLUID::solve and advect_fluid_chem_species) {
         for (int n = 0; n < FLUID::nchem_species; ++n) {
-            Gpu::copyAsync(Gpu::hostToDevice, m_h_bc_X_gk[n].begin(), m_h_bc_X_gk[n].end(),
-                           m_bc_X_gk[n].begin());
+            Gpu::copyAsync(Gpu::hostToDevice, m_h_bc_X_k[n].begin(), m_h_bc_X_k[n].end(),
+                           m_bc_X_k[n].begin());
         }
     }
     Gpu::synchronize();

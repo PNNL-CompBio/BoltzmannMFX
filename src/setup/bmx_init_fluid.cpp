@@ -4,14 +4,13 @@
 #include <bmx_calc_cell.H>
 #include <bmx_fluid_parms.H>
 #include <bmx_chem_species_parms.H>
-// #include <bmx_ic_parms.H>
 
 using namespace amrex;
 
 // Forward declarations
-void set_ic_chem_species_g (const Box& sbx, const Box& domain,
+void set_ic_chem_species (const Box& sbx, const Box& domain,
                        const Real dx, const Real dy, const Real dz,
-                       const GpuArray<Real, 3>& plo, FArrayBox& X_gk_fab);
+                       const GpuArray<Real, 3>& plo, FArrayBox& X_k_fab);
 
 //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv!
 //                                                                      !
@@ -36,11 +35,11 @@ void init_fluid (const Box& sbx,
   // Fluid SPECIES Initialization
   if (advect_fluid_chem_species) {
     // Set the initial fluid chem_species mass fractions
-    set_ic_chem_species_g(sbx, domain, dx, dy, dz, plo, (*ld.X_gk)[mfi]);
+    set_ic_chem_species(sbx, domain, dx, dy, dz, plo, (*ld.X_k)[mfi]);
   }
 
   // Initialize all the fluid and fluid chem_species parameters
-  init_fluid_parameters(bx, mfi, ld, advect_fluid_chem_species);
+  init_fluid_parameters(bx, domain, mfi, ld, advect_fluid_chem_species);
 }
 
 //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv!
@@ -49,14 +48,14 @@ void init_fluid (const Box& sbx,
 //                                                                      !
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 void init_fluid_parameters (const Box& bx,
+                            const Box& domain,
                             const MFIter& mfi,
                             LevelData& ld,
                             const int advect_fluid_chem_species)
 {
-  // Initialize D_gk
-  if (advect_fluid_chem_species) {
-    calc_D_gk(bx, (*ld.D_gk)[mfi]);
-  }
+  // Initialize D_k
+  if (advect_fluid_chem_species)  
+      calc_D_k(bx, domain, (*ld.D_k)[mfi]);
 
   Gpu::synchronize();
 }
@@ -66,13 +65,13 @@ void init_fluid_parameters (const Box& bx,
 //!  Purpose: Set fluid chem_species mass fractions initial conditions.       !
 //!                                                                      !
 //!^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
-void set_ic_chem_species_g (const Box& sbx,
+void set_ic_chem_species (const Box& sbx,
                        const Box& domain,
                        const Real dx,
                        const Real dy,
                        const Real dz,
                        const GpuArray<Real, 3>& plo,
-                       FArrayBox& X_gk_fab)
+                       FArrayBox& X_k_fab)
 {
   const IntVect slo(sbx.loVect());
   const IntVect shi(sbx.hiVect());
@@ -80,13 +79,13 @@ void set_ic_chem_species_g (const Box& sbx,
   const IntVect domlo(domain.loVect());
   const IntVect domhi(domain.hiVect());
 
-  Array4<Real> const& X_gk = X_gk_fab.array();
+  Array4<Real> const& X_k = X_k_fab.array();
 
-  const int nchem_species_g = X_gk_fab.nComp();
+  const int nchem_species = X_k_fab.nComp();
 
   amrex::Print() << "SETTING INITIAL CONDITIONS FOR SPECIES " << std::endl;
 
-  ParallelFor(sbx, nchem_species_g, [=]
+  ParallelFor(sbx, nchem_species, [=]
        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
       { 
           Real x   = (i+.5)*dx;
@@ -102,21 +101,21 @@ void set_ic_chem_species_g (const Box& sbx,
           if (n == 0)
           {
               if (rsq < ra*ra) 
-                  X_gk(i,j,k,n) = 1.0;
+                  X_k(i,j,k,n) = 1.0;
               else
-                  X_gk(i,j,k,n) = 0.0;
+                  X_k(i,j,k,n) = 0.0;
           } else {
               if (rsq < rb*rb) 
-                  X_gk(i,j,k,n) = 2.0;
+                  X_k(i,j,k,n) = 2.0;
               else
-                  X_gk(i,j,k,n) = 0.0;
+                  X_k(i,j,k,n) = 0.0;
           }
 #else
          // two layers
          if (z > 0.4)
-            X_gk(i,j,k,n) = 0.0;
+            X_k(i,j,k,n) = 0.0;
          else
-            X_gk(i,j,k,n) = 1.0;
+            X_k(i,j,k,n) = 1.0;
 #endif
       }); 
 }

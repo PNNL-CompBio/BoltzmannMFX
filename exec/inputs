@@ -6,9 +6,9 @@
 #! Fluid solver
 #!-----------------------------------------------------------//
 
-bmx.fixed_dt = 0.01
+bmx.fixed_dt = 0.005
 
-bmx.max_step = 100
+bmx.max_step = 200
 
 dem.solve = bacteria
 bmx.particle_init_type = "AsciiFile"

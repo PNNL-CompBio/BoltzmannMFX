@@ -65,7 +65,6 @@ bmx::bmx_calc_txfr_fluid (Real time)
 
   // Deposit the chem_species_rhs to the grid
   for (int lev = 0; lev < nlev; lev++) {
-    amrex::Print() << "CALLING XFR DEPOSITIO " << std::endl;
     pc->InterphaseTxfrDeposition(lev, *txfr_ptr[lev]); 
   }
 
@@ -116,7 +115,7 @@ bmx::bmx_calc_txfr_particle (Real time)
 
   BL_PROFILE("bmx::bmx_calc_txfr_particle()");
 
-  bmx_set_chem_species_bcs(time, get_X_gk(), get_D_gk());
+  bmx_set_chem_species_bcs(time, get_X_k(), get_D_k());
 
   for (int lev = 0; lev < nlev; lev++)
   {
@@ -131,7 +130,7 @@ bmx::bmx_calc_txfr_particle (Real time)
     const int interp_ng    = 1;    // Only one layer needed for interpolation
     const int interp_ncomp = 2;
 
-    if (m_leveldata[0]->X_gk->nComp() != 2)
+    if (m_leveldata[0]->X_k->nComp() != 2)
       amrex::Abort("We are not interpolating the right number of components in calc_txfr_particle");
 
     if (OnSameGrids)
@@ -140,8 +139,8 @@ bmx::bmx_calc_txfr_particle (Real time)
       interp_ptr = new MultiFab(grids[lev], dmap[lev], interp_ncomp, interp_ng, MFInfo());
 
       // Copy 
-      interp_ptr->copy(*m_leveldata[lev]->X_gk, 0, 0,
-                        m_leveldata[lev]->X_gk->nComp(),
+      interp_ptr->copy(*m_leveldata[lev]->X_k, 0, 0,
+                        m_leveldata[lev]->X_k->nComp(),
                         interp_ng, interp_ng);
       interp_ptr->FillBoundary(geom[lev].periodicity());
 
@@ -155,8 +154,8 @@ bmx::bmx_calc_txfr_particle (Real time)
       interp_ptr = new MultiFab(pba, pdm, interp_ncomp, interp_ng, MFInfo());
 
       // Copy 
-      interp_ptr->copy(*m_leveldata[lev]->X_gk, 0, 0,
-                        m_leveldata[lev]->X_gk->nComp(),
+      interp_ptr->copy(*m_leveldata[lev]->X_k, 0, 0,
+                        m_leveldata[lev]->X_k->nComp(),
                         interp_ng, interp_ng);
 
       interp_ptr->FillBoundary(geom[lev].periodicity());

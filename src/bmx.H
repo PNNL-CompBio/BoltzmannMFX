@@ -94,13 +94,13 @@ class bmx : public AmrCore
     void bmx_calc_txfr_fluid    (Real time);
 
     void bmx_set_chem_species_bcs (Real time,
-                               Vector< MultiFab* > const& X_gk,
-                               Vector< MultiFab* > const& D_gk);
+                                   Vector< MultiFab* > const& X_k,
+                                   Vector< MultiFab* > const& D_k);
 
-    void set_chem_species_diffusivities_g_bcs (Real time,
-                                          const int lev,
-                                          FArrayBox& D_gk_fab,
-                                          const Box& domain);
+    void set_neumann_bcs (Real time,
+                          const int lev,
+                          FArrayBox& dest_fab,
+                          const GeometryData& geom);
 
     void set_chem_species_bc0 (const Box& sbx,
                           MFIter* mfi,
@@ -165,11 +165,11 @@ class bmx : public AmrCore
 
     BCList bc_list;
 
-    Vector< Gpu::DeviceVector<Real> > m_bc_X_gk;
-    Gpu::DeviceVector<Real*> m_bc_X_gk_ptr;
-    Vector<Vector<Real> > m_h_bc_X_gk;
+    Vector< Gpu::DeviceVector<Real> > m_bc_X_k;
+    Gpu::DeviceVector<Real*> m_bc_X_k_ptr;
+    Vector<Vector<Real> > m_h_bc_X_k;
 
-    std::map< std::string, Gpu::DeviceVector<int> > m_X_gk_bc_types;
+    std::map< std::string, Gpu::DeviceVector<int> > m_X_k_bc_types;
 
   protected:
     void FillPatchChemSpecies (int lev, Real time, MultiFab & mf, int icomp, int ncomp,
@@ -208,7 +208,7 @@ class bmx : public AmrCore
     void check_for_nans (int lev);
 
 
-    void fillpatch_all (Vector< MultiFab* > const& X_gk_in, Real time);
+    void fillpatch_all (Vector< MultiFab* > const& X_k_in, Real time);
 
   public:
     void bmx_apply_predictor ( Vector< MultiFab* >& chem_species_RHS_old,
@@ -222,7 +222,7 @@ class bmx : public AmrCore
 
   public:
 
-    void bmx_normalize_fluid_chem_species(const Vector< MultiFab* >& X_gk);
+    void bmx_normalize_fluid_chem_species(const Vector< MultiFab* >& X_k);
 
   private:
 
@@ -246,14 +246,14 @@ class bmx : public AmrCore
 
     Vector< std::unique_ptr<LevelData> > m_leveldata;
 
-    Vector< MultiFab* > get_X_gk () noexcept;
-    Vector< MultiFab* > get_X_gk_old () noexcept;
-    Vector< MultiFab* > get_D_gk () noexcept;
+    Vector< MultiFab* > get_X_k () noexcept;
+    Vector< MultiFab* > get_X_k_old () noexcept;
+    Vector< MultiFab* > get_D_k () noexcept;
 
-    amrex::Vector< amrex::MultiFab const* > get_X_gk_const () const noexcept;
-    amrex::Vector< amrex::MultiFab const* > get_X_gk_old_const () const noexcept;
+    amrex::Vector< amrex::MultiFab const* > get_X_k_const () const noexcept;
+    amrex::Vector< amrex::MultiFab const* > get_X_k_old_const () const noexcept;
 
-    amrex::Vector< amrex::MultiFab const* > get_D_gk_const () const noexcept;
+    amrex::Vector< amrex::MultiFab const* > get_D_k_const () const noexcept;
 
     amrex::Vector<int> const& get_chem_species_iconserv () const noexcept { return m_iconserv_chem_species; }
   
@@ -327,8 +327,8 @@ class bmx : public AmrCore
     int last_plt = -1;
 
     // Flags for saving fluid data in plot files
-    int plt_X_gk    = 1;
-    int plt_D_gk    = 0;
+    int plt_X_k    = 1;
+    int plt_D_k    = 0;
 
     // Total number of variables to write in plot file
     int pltVarCount = 0;

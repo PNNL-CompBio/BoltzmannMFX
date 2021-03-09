@@ -10,8 +10,8 @@ using namespace amrex;
 //
 void
 bmx::bmx_set_chem_species_bcs (Real time,
-                            Vector< MultiFab* > const& X_gk_in,
-                            Vector< MultiFab* > const& D_gk_in)
+                               Vector< MultiFab* > const& X_k_in,
+                               Vector< MultiFab* > const& D_k_in)
 {
   BL_PROFILE("bmx::bmx_set_chem_species_bcs()");
 
@@ -22,54 +22,47 @@ bmx::bmx_set_chem_species_bcs (Real time,
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-     for (MFIter mfi(*(m_leveldata[lev]->X_gk), false); mfi.isValid(); ++mfi)
+     for (MFIter mfi(*(m_leveldata[lev]->X_k), false); mfi.isValid(); ++mfi)
      {
-        set_chem_species_diffusivities_g_bcs(time, lev, (*D_gk_in[lev])[mfi], domain);
+        set_neumann_bcs(time, lev, (*X_k_in[lev])[mfi], geom[lev].data());
+        set_neumann_bcs(time, lev, (*D_k_in[lev])[mfi], geom[lev].data());
      }
 
-     X_gk_in[lev]->FillBoundary(geom[lev].periodicity());
-     D_gk_in[lev]->FillBoundary(geom[lev].periodicity());
+     X_k_in[lev]->FillBoundary(geom[lev].periodicity());
+     D_k_in[lev]->FillBoundary(geom[lev].periodicity());
   }
 }
 
 void 
-bmx::set_chem_species_diffusivities_g_bcs (Real time,
-                                           const int lev,
-                                           FArrayBox& scal_fab,
-                                           const Box& domain)
+bmx::set_neumann_bcs (Real time,
+                      const int lev,
+                      FArrayBox& scal_fab,
+                      const GeometryData& geom)
 {
+  const Box& domain = geom.Domain();
+
   IntVect dom_lo(domain.loVect());
   IntVect dom_hi(domain.hiVect());
 
-  Array4<const int> const& bct_ilo = bc_ilo[lev]->array();
-  Array4<const int> const& bct_ihi = bc_ihi[lev]->array();
-  Array4<const int> const& bct_jlo = bc_jlo[lev]->array();
-  Array4<const int> const& bct_jhi = bc_jhi[lev]->array();
-  Array4<const int> const& bct_klo = bc_klo[lev]->array();
-  Array4<const int> const& bct_khi = bc_khi[lev]->array();
-
   Array4<Real> const& scal_arr = scal_fab.array();
 
-  const int nchem_species_g = FLUID::nchem_species;
+  const int nchem_species = FLUID::nchem_species;
 
-  Gpu::DeviceVector< Real > D_gk0_d(nchem_species_g);
-  Gpu::copyAsync(Gpu::hostToDevice, FLUID::D_gk0.begin(), FLUID::D_gk0.end(), D_gk0_d.begin());
+  Gpu::DeviceVector< Real > D_k0_d(nchem_species);
+  Gpu::copyAsync(Gpu::hostToDevice, FLUID::D_k0.begin(), FLUID::D_k0.end(), D_k0_d.begin());
 
-  Real* p_D_gk0 = D_gk0_d.data();
+  Real* p_D_k0 = D_k0_d.data();
 
   IntVect scal_lo(scal_fab.loVect());
   IntVect scal_hi(scal_fab.hiVect());
 
-  const int nlft = std::max(0, dom_lo[0]-scal_lo[0]);
-  const int nbot = std::max(0, dom_lo[1]-scal_lo[1]);
-  const int ndwn = std::max(0, dom_lo[2]-scal_lo[2]);
+  const int nlft = geom.isPeriodic(0) ? 0 : std::max(0, dom_lo[0]-scal_lo[0]);
+  const int nbot = geom.isPeriodic(1) ? 0 : std::max(0, dom_lo[1]-scal_lo[1]);
+  const int ndwn = geom.isPeriodic(2) ? 0 : std::max(0, dom_lo[2]-scal_lo[2]);
 
-  const int nrgt = std::max(0, scal_hi[0]-dom_hi[0]);
-  const int ntop = std::max(0, scal_hi[1]-dom_hi[1]);
-  const int nup  = std::max(0, scal_hi[2]-dom_hi[2]);
-
-  const int minf = bc_list.get_minf();
-  const int pout = bc_list.get_pout();
+  const int nrgt = geom.isPeriodic(0) ? 0 : std::max(0, scal_hi[0]-dom_hi[0]);
+  const int ntop = geom.isPeriodic(1) ? 0 : std::max(0, scal_hi[1]-dom_hi[1]);
+  const int nup  = geom.isPeriodic(2) ? 0 : std::max(0, scal_hi[2]-dom_hi[2]);
 
   if (nlft > 0)
   {
@@ -79,11 +72,9 @@ bmx::set_chem_species_diffusivities_g_bcs (Real time,
 
     int ilo = dom_lo[0];
 
-    amrex::ParallelFor(bx_yz_lo_3D, nchem_species_g, [bct_ilo,ilo,scal_arr]
+    amrex::ParallelFor(bx_yz_lo_3D, nchem_species, [ilo,scal_arr]
       AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-      const int bct = bct_ilo(ilo-1,j,k,0);
-
       scal_arr(i,j,k,n) = scal_arr(ilo,j,k,n);
 
     });
@@ -97,11 +88,9 @@ bmx::set_chem_species_diffusivities_g_bcs (Real time,
 
     int ihi = dom_hi[0];
 
-    amrex::ParallelFor(bx_yz_hi_3D, nchem_species_g, [bct_ihi,ihi,scal_arr]
+    amrex::ParallelFor(bx_yz_hi_3D, nchem_species, [ihi,scal_arr]
       AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-      const int bct = bct_ihi(ihi+1,j,k,0);
-
       scal_arr(i,j,k,n) = scal_arr(ihi,j,k,n);
 
     });
@@ -115,11 +104,9 @@ bmx::set_chem_species_diffusivities_g_bcs (Real time,
 
     int jlo = dom_lo[1];
 
-    amrex::ParallelFor(bx_xz_lo_3D, nchem_species_g, [bct_jlo,jlo,scal_arr]
+    amrex::ParallelFor(bx_xz_lo_3D, nchem_species, [jlo,scal_arr]
       AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-      const int bct = bct_jlo(i,jlo-1,k,0);
-
       scal_arr(i,j,k,n) = scal_arr(i,jlo,k,n);
     });
   }
@@ -132,11 +119,9 @@ bmx::set_chem_species_diffusivities_g_bcs (Real time,
 
     int jhi = dom_hi[1];
 
-    amrex::ParallelFor(bx_xz_hi_3D, nchem_species_g, [bct_jhi,jhi,scal_arr]
+    amrex::ParallelFor(bx_xz_hi_3D, nchem_species, [jhi,scal_arr]
       AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-      const int bct = bct_jhi(i,jhi+1,k,0);
-
       scal_arr(i,j,k,n) = scal_arr(i,jhi,k,n);
     });
   }
@@ -149,11 +134,9 @@ bmx::set_chem_species_diffusivities_g_bcs (Real time,
 
     int klo = dom_lo[2];
 
-    amrex::ParallelFor(bx_xy_lo_3D, nchem_species_g, [bct_klo,klo,scal_arr]
+    amrex::ParallelFor(bx_xy_lo_3D, nchem_species, [klo,scal_arr]
       AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-      const int bct = bct_klo(i,j,klo-1,0);
-
       scal_arr(i,j,k,n) = scal_arr(i,j,klo,n);
     });
   }
@@ -166,11 +149,9 @@ bmx::set_chem_species_diffusivities_g_bcs (Real time,
 
     int khi = dom_hi[2];
 
-    amrex::ParallelFor(bx_xy_hi_3D, nchem_species_g, [bct_khi,khi,scal_arr]
+    amrex::ParallelFor(bx_xy_hi_3D, nchem_species, [khi,scal_arr]
       AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-      const int bct = bct_khi(i,j,khi+1,0);
-
       scal_arr(i,j,k,n) = scal_arr(i,j,khi,n);
     });
   }

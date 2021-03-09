@@ -83,7 +83,7 @@ bmx::bmx ()
      *                                                                          *
      ***************************************************************************/
 
-    bcs_X.resize(0); // X_gk, D_gk
+    bcs_X.resize(0); // X_k, D_k
 
     //___________________________________________________________________________
     // Boundary conditions used for level-sets
@@ -112,8 +112,7 @@ bmx::bmx ()
         }
     }
 
-    m_X_gk_bc_types["Dirichlet"] = {bc_list.get_minf()};
-    m_X_gk_bc_types["Neumann"]   = {bc_list.get_pout()};
+    m_X_k_bc_types["Dirichlet"] = {bc_list.get_minf()};
 
     Gpu::synchronize();
 }
@@ -126,62 +125,62 @@ bmx::avgDown (int crse_lev, const MultiFab& S_fine, MultiFab& S_crse)
     average_down(S_fine, S_crse, 0, S_fine.nComp(), refRatio(crse_lev));
 }
 
-Vector< MultiFab* > bmx::get_X_gk () noexcept
+Vector< MultiFab* > bmx::get_X_k () noexcept
 {
   Vector<MultiFab*> r;
   r.reserve(m_leveldata.size());
   for (int lev = 0; lev < m_leveldata.size(); ++lev) {
-    r.push_back(m_leveldata[lev]->X_gk);
+    r.push_back(m_leveldata[lev]->X_k);
   }
   return r;
 }
 
-Vector< MultiFab* > bmx::get_X_gk_old () noexcept
+Vector< MultiFab* > bmx::get_X_k_old () noexcept
 {
   Vector<MultiFab*> r;
   r.reserve(m_leveldata.size());
   for (int lev = 0; lev < m_leveldata.size(); ++lev) {
-    r.push_back(m_leveldata[lev]->X_gko);
+    r.push_back(m_leveldata[lev]->X_ko);
   }
   return r;
 }
 
-Vector< MultiFab* > bmx::get_D_gk () noexcept
+Vector< MultiFab* > bmx::get_D_k () noexcept
 {
   Vector<MultiFab*> r;
   r.reserve(m_leveldata.size());
   for (int lev = 0; lev < m_leveldata.size(); ++lev) {
-    r.push_back(m_leveldata[lev]->D_gk);
+    r.push_back(m_leveldata[lev]->D_k);
   }
   return r;
 }
 
-Vector< MultiFab const*> bmx::get_X_gk_const () const noexcept
+Vector< MultiFab const*> bmx::get_X_k_const () const noexcept
 {
   Vector<MultiFab const*> r;
   r.reserve(m_leveldata.size());
   for (int lev = 0; lev < m_leveldata.size(); ++lev) {
-    r.push_back(m_leveldata[lev]->X_gk);
+    r.push_back(m_leveldata[lev]->X_k);
   }
   return r;
 }
 
-Vector< MultiFab const*> bmx::get_X_gk_old_const () const noexcept
+Vector< MultiFab const*> bmx::get_X_k_old_const () const noexcept
 {
   Vector<MultiFab const*> r;
   r.reserve(m_leveldata.size());
   for (int lev = 0; lev < m_leveldata.size(); ++lev) {
-    r.push_back(m_leveldata[lev]->X_gko);
+    r.push_back(m_leveldata[lev]->X_ko);
   }
   return r;
 }
 
-Vector< MultiFab const*> bmx::get_D_gk_const () const noexcept
+Vector< MultiFab const*> bmx::get_D_k_const () const noexcept
 {
   Vector<MultiFab const*> r;
   r.reserve(m_leveldata.size());
   for (int lev = 0; lev < m_leveldata.size(); ++lev) {
-    r.push_back(m_leveldata[lev]->D_gk);
+    r.push_back(m_leveldata[lev]->D_k);
   }
   return r;
 }

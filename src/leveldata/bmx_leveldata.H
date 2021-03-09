@@ -21,14 +21,14 @@ class LevelData
     ~LevelData ();
 
     // Gas chem_species (new and old)
-    amrex::MultiFab* X_gk;
-    amrex::MultiFab* X_gko;
+    amrex::MultiFab* X_k;
+    amrex::MultiFab* X_ko;
 
     // Gas chem_species source/sink from particles
     amrex::MultiFab* X_rhs;
 
     // ChemSpecies diffusion coefficients
-    amrex::MultiFab* D_gk;
+    amrex::MultiFab* D_k;
 };
 
 #endif
