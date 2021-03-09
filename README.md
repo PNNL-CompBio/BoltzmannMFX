@@ -22,4 +22,26 @@ The following single command will also probably work
 ```
 git submodule update --init
 ```
+## Configure and Run BoltzmannMFX
 
+To configure BoltzmannMFX using CMake, create a build directory at the top
+level, cd into it and run
+
+```
+cmake ..
+```
+
+(you can add the option  <code>-DCMAKE_BUILD_TYPE=Debug</code> for additional
+debugging information.
+
+After configuration is complete, type <code>make</code> to build the executable.
+
+The test case can be run by cd'ing into the <code>exec</code> directory from the
+top level directory and typing
+
+```
+../build/bmx inputs
+```
+
+Depending on where the build directory is located, the location of the
+<code>bmx</code> executable may be different.
