@@ -2,7 +2,8 @@
 #include <bmx_fluid_parms.H>
 #include <bmx_dem_parms.H>
 
-// This subroutine is the driver for the whole time stepping (fluid + particles )
+// This subroutine is the driver for time stepping the whole system
+// (fluid + particles )
 void
 bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
 {
@@ -11,6 +12,11 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
     Real coupling_timing(0.);
     Real drag_timing(0.);
 
+    /****************************************************************************
+     *                                                                          *
+     * Evolve Fluid                                                             *
+     *                                                                          *
+     ***************************************************************************/
     Real start_fluid = ParallelDescriptor::second();
     BL_PROFILE_VAR("FLUID SOLVE",fluidSolve);
     for (int lev = 0; lev <= finest_level; lev++)
@@ -42,6 +48,7 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
 
     if (DEM::solve)
     {
+        // pc is a BMXParticleContainer defined in bmx.H
         if (finest_level == 0)
         {
             //___________________________________________________________________

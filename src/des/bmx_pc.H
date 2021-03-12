@@ -14,6 +14,10 @@
 #include <AMReX_NeighborParticles.H>
 #include <bmx_bc_list.H>
 
+/**
+ * Note: if the enumeration starts at 0, then count will represent the total
+ * number of values defined prior to the count variable.
+ */
 struct realData
 {
   enum { // Real particle data stored in p.m_data
@@ -62,6 +66,7 @@ struct BMXCheckPair
   }
 };
 
+// Cannot inherit from this class?
 class BMXParticleContainer final
     : public amrex::NeighborParticleContainer<realData::count,intData::count>
 {

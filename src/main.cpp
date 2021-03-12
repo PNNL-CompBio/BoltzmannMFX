@@ -37,6 +37,11 @@ void writeBuildInfo ();
 void ReadParameters ()
 {
   {
+     // The "amr" in the constructor means that "amr" is automatically assumed
+     // to be a prefix for the variables in this particular instance, so only
+     // variables prefixed with "amr" are read by this particular ParmParse
+     // object. Note that check_file and check_int etc. appear in the input file
+     // as amr.check_file and amr.check_int
      ParmParse pp("amr");
 
      pp.query("check_file", check_file);
@@ -66,6 +71,17 @@ void ReadParameters ()
 
 }
 
+/**
+ * Currently just guessing about these parameters.
+ * @brief routine to write out information at current time step. This is
+ * probably complicated by the fact that the code maybe using different time
+ * increments in different parts of the code (grid and particle dynamics) and
+ * that grids at different levels are also using different time increments.
+ * @param[in] nstep integer value of current time step
+ * @param[in] time real value of current time
+ * @param[in] dt time step increment
+ * @param[in] bmx simulation object
+ */
 void writeNow (int nstep, Real time, Real dt, bmx& bmx)
 {
     int plot_test = 0;
@@ -130,7 +146,8 @@ int main (int argc, char* argv[])
 {
 
 
-    // check to see if it contains --describe
+    // check to see if it contains --describe. If so, write out information on
+    // the build.
     if (argc >= 2) {
         for (auto i = 1; i < argc; i++) {
             if (std::string(argv[i]) == "--describe") {
@@ -149,13 +166,17 @@ int main (int argc, char* argv[])
 
     // AMReX will now read the inputs file and the command line arguments, but the
     //        command line arguments are in bmx-format so it will just ignore them.
+    //        The inputs file contents are available any time a ParmParser
+    //        object is created. The contents can be filtered by specifying a
+    //        prefix in the ParmParser constructor.
     amrex::Initialize(argc,argv,true,MPI_COMM_WORLD);
     { // This start bracket and the end bracket before Finalize are essential so
       // that the bmx object is deleted before Finalize
     BL_PROFILE_VAR("main()", pmain)
     BL_PROFILE_REGION_START("bmx::main()");
 
-    // Write out the BMX git hash (the AMReX git hash is already written)
+    // Write out the BMX git hash (the AMReX git hash is already written (if
+    // --define specified?))
     const char* githash_bmx = buildInfoGetGitHash(1);
     amrex::Print() << "BMX git hash: " << githash_bmx<< "\n";
 
@@ -174,6 +195,8 @@ int main (int argc, char* argv[])
     //  => Geometry is constructed here: (constructs Geometry) ----+
     bmx bmx;
 
+    // Parameters have already been read in when initialize was called.
+    // These are now available to bmx
     ReadParameters();
 
     // Set global static pointer to bmx object. Used by fill-patch utility
@@ -200,8 +223,8 @@ int main (int argc, char* argv[])
         bmx.Restart(restart_file, &nstep, &dt, &time);
     }
 
-    if (FLUID::solve){
-      bmx.bmx_init_solvers();
+    if (FLUID::solve) {
+        bmx.bmx_init_solvers();
     }
 
     // This checks if we want to regrid
@@ -277,6 +300,9 @@ int main (int argc, char* argv[])
                    bmx.Regrid();
                 }
 
+                // This is probably the key routine to understand if we want to
+                // customize code for new models The routine is defined in
+                // timestepping/bmx_evolve.cpp
                 bmx.Evolve(nstep, dt, prev_dt, time, stop_time);
 
                 Real end_step = ParallelDescriptor::second() - strt_step;

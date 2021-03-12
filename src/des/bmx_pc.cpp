@@ -142,7 +142,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
 
     while (n < nsubsteps)
     {
-        // Redistribute particles ever so often BUT always update the neighbour
+        // Redistribute particles every so often BUT always update the neighbour
         // list (Note that this fills the neighbour list after every
         // redistribute operation)
         if (n % 25 == 0) {
@@ -155,6 +155,10 @@ void BMXParticleContainer::EvolveParticles (int lev,
         } else {
             updateNeighbors();
         }
+        /********************************************************************
+         * Looks like this section evaluates mechanical interactions        *
+         * between particles                                                *
+         *******************************************************************/
 
 #if 0
         /********************************************************************

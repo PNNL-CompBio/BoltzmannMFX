@@ -9,6 +9,10 @@
 #include <bmx_mf_helpers.H>
 #include <bmx_dem_parms.H>
 
+/**
+ * @brief this function transfers data from particles to the continuum chemical
+ * species fields defined on the AMR grid
+ */
 void
 bmx::bmx_calc_txfr_fluid (Real time)
 {
