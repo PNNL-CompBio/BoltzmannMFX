@@ -1,0 +1,3 @@
+CEXE_headers += bmx_chem.H
+
+CEXE_sources += bmx_chem.cpp
