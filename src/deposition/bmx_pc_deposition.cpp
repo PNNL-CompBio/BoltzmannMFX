@@ -8,6 +8,10 @@
 #include <bmx_fluid_parms.H>
 #include <bmx_algorithm.H>
 
+#ifdef NEW_CHEM
+#include <bmx_chem.H>
+#endif
+
 using namespace amrex;
 
 void BMXParticleContainer::
@@ -180,6 +184,10 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
 
   const auto      reg_cell_vol = dx[0]*dx[1]*dx[2];
 
+#ifdef NEW_CHEM
+  BMXChemistry *bmxchem = BMXChemistry::instance();
+#endif
+
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -228,6 +236,32 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
 
             GpuArray<GpuArray<GpuArray<Real,2>,2>,2> weights;
 
+#ifdef NEW_CHEM
+            WeightFunc(plo, dx, dxi, p.pos(), p.rdata(realIdx::a_size), i, j, k, weights,
+                       deposition_scale_factor);
+
+            int nvals = p.idata(intIdx::num_reals);
+            amrex::Real *p_vals = &p.rdate(realIdx::first_data);
+            amrex::Real *chem_incr = p_vals + p.idata(intIdx::first_real_inc);
+            amrex::Real grid_vol = ???
+            amrex::Real dt = ???
+            amrex::Real cell_vol = p.rdata(realIdx::vol);
+            amrex::Real cell_area = p.rdata(realIdx::area);
+            bmxchem->xferParticleToMesh(grid_vol, cell_vol, cell_area, chem_incr, p_vals, Real dt)
+            for (int ii = -1; ii <= 0; ++ii) {
+              for (int jj = -1; jj <= 0; ++jj) {
+                for (int kk = -1; kk <= 0; ++kk) {
+                  for (int nn = 0; nn < nvals; ++nn) {
+
+                    amrex::Real weight_vol = weights[ii+1][jj+1][kk+1];
+
+                    amrex::Gpu::Atomic::Add(&txfr_arr(i+ii,j+jj,k+kk,0), weight_vol*chem_incr[nn]);
+                  }
+
+                }
+              }
+            }
+#else
             WeightFunc(plo, dx, dxi, p.pos(), p.rdata(realData::radius), i, j, k, weights,
                        deposition_scale_factor);
 
@@ -250,6 +284,7 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
                 }
               }
             }
+#endif
           });
 
 #ifdef _OPENMP

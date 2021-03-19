@@ -9,6 +9,10 @@
 #include <bmx_mf_helpers.H>
 #include <bmx_dem_parms.H>
 
+#ifdef NEW_CHEM
+#include <bmx_chem.H>
+#endif
+
 /**
  * @brief this function transfers data from particles to the continuum chemical
  * species fields defined on the AMR grid
@@ -117,6 +121,10 @@ bmx::bmx_calc_txfr_particle (Real time)
 {
   using BMXParIter = BMXParticleContainer::BMXParIter;
 
+#ifdef NEW_CHEM
+  BMXChemistry *bmxchem = BMXChemistry::instance();
+#endif
+  //
   BL_PROFILE("bmx::bmx_calc_txfr_particle()");
 
   bmx_set_chem_species_bcs(time, get_X_k(), get_D_k());
@@ -201,6 +209,16 @@ bmx::bmx_calc_txfr_particle (Real time)
               trilinear_interp(p.pos(), &interp_loc[0],
                                interp_array, plo, dxi, interp_ncomp);
 
+#ifdef NEW_CHEM
+              Real cell_vol = p.rdata(realIdx::vol);
+              Real cell_area = p.rdata(realIdx::area);
+              Real grid_vol = ???
+              Real dt = ???
+              Real *p_vals = &p.rdata(readIdx::first_data);
+              bmxchem->xferMeshToParticle(grid_vol, cell_vol, cell_area,
+                        &interp_loc[0], p_vals, dt)
+              bmxchem->updateChemistry(dt);
+#else
               // Interpolate values from mesh to particles
               p.rdata(realData::fluid_A) = interp_loc[0];
               p.rdata(realData::fluid_B) = interp_loc[1];
@@ -212,6 +230,7 @@ bmx::bmx_calc_txfr_particle (Real time)
               // The particle will consume (dt * 50%) of what the mesh value is
               p.rdata(realData::consume_A) = -0.5*interp_loc[0];
               p.rdata(realData::consume_B) = -0.5*interp_loc[1];
+#endif
             });
       } // pti
     } // omp region
