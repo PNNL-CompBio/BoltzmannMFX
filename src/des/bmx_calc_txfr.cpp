@@ -18,7 +18,7 @@
  * species fields defined on the AMR grid
  */
 void
-bmx::bmx_calc_txfr_fluid (Real time)
+bmx::bmx_calc_txfr_fluid (Real time, Real dt)
 {
   const Real strttime = ParallelDescriptor::second();
 
@@ -117,7 +117,7 @@ bmx::bmx_calc_txfr_fluid (Real time)
 // Interpolate fluid chem_species onto particle locations
 //
 void
-bmx::bmx_calc_txfr_particle (Real time)
+bmx::bmx_calc_txfr_particle (Real time, Real dt)
 {
   using BMXParIter = BMXParticleContainer::BMXParIter;
 

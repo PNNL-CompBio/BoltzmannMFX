@@ -64,10 +64,10 @@ bmx::EvolveFluid (int nstep,
     }
 
     // Interpolate chem_species to particle locations
-    bmx_calc_txfr_particle(time);
+    bmx_calc_txfr_particle(time, dt);
 
     // Deposit sources/sink from individual particles to grid
-    bmx_calc_txfr_fluid(time);
+    bmx_calc_txfr_fluid(time, dt);
 
     //
     // Time integration step

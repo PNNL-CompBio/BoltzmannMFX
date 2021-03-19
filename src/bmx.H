@@ -90,8 +90,8 @@ class bmx : public AmrCore
     static inline std::string get_load_balance_type ()
     { return load_balance_type; }
 
-    void bmx_calc_txfr_particle (Real time);
-    void bmx_calc_txfr_fluid    (Real time);
+    void bmx_calc_txfr_particle (Real time, Real dt);
+    void bmx_calc_txfr_fluid    (Real time, Real dt);
 
     void bmx_set_chem_species_bcs (Real time,
                                    Vector< MultiFab* > const& X_k,
