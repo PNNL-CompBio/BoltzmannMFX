@@ -73,7 +73,7 @@ bmx::bmx_calc_txfr_fluid (Real time, Real dt)
 
   // Deposit the chem_species_rhs to the grid
   for (int lev = 0; lev < nlev; lev++) {
-    pc->InterphaseTxfrDeposition(lev, *txfr_ptr[lev]); 
+    pc->InterphaseTxfrDeposition(lev, *txfr_ptr[lev], dt); 
   }
 
   {
@@ -185,6 +185,7 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
       const amrex::RealVect dxi(dxi_array[0], dxi_array[1], dxi_array[2]);
       const amrex::RealVect plo(plo_array[0], plo_array[1], plo_array[2]);
 
+      Real grid_vol = dx[0]*dx[1]*dx[2];
 
       for (BMXParIter pti(*pc, lev); pti.isValid(); ++pti)
       {
@@ -212,8 +213,6 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 #ifdef NEW_CHEM
               Real cell_vol = p.rdata(realIdx::vol);
               Real cell_area = p.rdata(realIdx::area);
-              Real grid_vol = ???
-              Real dt = ???
               Real *p_vals = &p.rdata(readIdx::first_data);
               bmxchem->xferMeshToParticle(grid_vol, cell_vol, cell_area,
                         &interp_loc[0], p_vals, dt)

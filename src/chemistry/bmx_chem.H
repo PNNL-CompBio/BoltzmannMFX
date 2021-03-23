@@ -7,6 +7,9 @@
 
 using amrex::Real;
 
+#define MAX_CHEM_REAL_VAR 31
+#define MAX_CHEM_INT_VAR 5
+
 class BMXChemistry
 {
   public:
@@ -108,6 +111,8 @@ class BMXChemistry
   Real k2, kr2;   // rate coefficients for converting A into B and C inside biological cell
   Real k3, kr3;   // rate coefficients for species C into and out of biological cell
 
+  // Value of pi
+  Real p_pi;
   static BMXChemistry *p_instance;
 };
 #endif

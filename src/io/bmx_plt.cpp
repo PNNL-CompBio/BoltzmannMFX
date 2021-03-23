@@ -136,6 +136,32 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
         Vector<std::string> real_comp_names;
         Vector<std::string>  int_comp_names;
 
+#ifdef NEW_CHEM
+        real_comp_names.push_back("a axis");
+        real_comp_names.push_back("b axis");
+        real_comp_names.push_back("c axis");
+        real_comp_names.push_back("psi");
+        real_comp_names.push_back("theta");
+        real_comp_names.push_back("phi");
+        real_comp_names.push_back("cell surface area");
+        real_comp_names.push_back("cell volume");
+        real_comp_names.push_back("velocity x");
+        real_comp_names.push_back("velocity y");
+        real_comp_names.push_back("velocity z");
+        real_comp_names.push_back("angular velocity x");
+        real_comp_names.push_back("angular velocity y");
+        real_comp_names.push_back("angular velocity z");
+        real_comp_names.push_back("force x");
+        real_comp_names.push_back("force y");
+        real_comp_names.push_back("force z");
+        real_comp_names.push_back("torque x");
+        real_comp_names.push_back("torque y");
+        real_comp_names.push_back("torque z");
+        real_comp_names.push_back("cell surface area growth rate");
+        real_comp_names.push_back("cell volume growth rate");
+        Vector<int> write_int_comp  = Vector<int>(intIdx::count-1,1);
+        Vector<int> write_real_comp = Vector<int>(realIdx::count-1,1);
+#else
         real_comp_names.push_back("velx");
         real_comp_names.push_back("vely");
         real_comp_names.push_back("velz");
@@ -151,6 +177,7 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
 
         Vector<int> write_int_comp  = Vector<int>(intData::count,1);
         Vector<int> write_real_comp = Vector<int>(realData::count,1);
+#endif
 
         pc->WritePlotFile(plotfilename, "particles", write_real_comp,
                           write_int_comp, real_comp_names, int_comp_names);

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include <bmx_chem.H>
 
 BMXChemistry *BMXChemistry::p_instance = NULL;
@@ -24,6 +25,7 @@ BMXChemistry::BMXChemistry()
   p_num_reals = 3*p_num_species;
   p_num_ints = 0;
   p_inc_offset = 2*p_num_species;
+  p_pi = 4.0*atan(1.0);
 }
 
 /**

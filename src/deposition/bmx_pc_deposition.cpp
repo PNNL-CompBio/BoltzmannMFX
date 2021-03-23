@@ -143,23 +143,23 @@ SolidsVolumeDeposition (F WeightFunc, int lev,
 
 void BMXParticleContainer::
 InterphaseTxfrDeposition (int lev,
-                          amrex::MultiFab & txfr_mf)
+                          amrex::MultiFab & txfr_mf, Real dt)
 {
   if (bmx::m_deposition_scheme == DepositionScheme::trilinear) {
 
-    InterphaseTxfrDeposition(TrilinearDeposition(), lev, txfr_mf);
+    InterphaseTxfrDeposition(TrilinearDeposition(), lev, txfr_mf, dt);
 
   } else if (bmx::m_deposition_scheme == DepositionScheme::square_dpvm) {
 
-    InterphaseTxfrDeposition(TrilinearDPVMSquareDeposition(), lev, txfr_mf);
+    InterphaseTxfrDeposition(TrilinearDPVMSquareDeposition(), lev, txfr_mf, dt);
 
   } else if (bmx::m_deposition_scheme == DepositionScheme::true_dpvm) {
 
-    InterphaseTxfrDeposition(TrueDPVMDeposition(), lev, txfr_mf);
+    InterphaseTxfrDeposition(TrueDPVMDeposition(), lev, txfr_mf, dt);
 
   } else if (bmx::m_deposition_scheme == DepositionScheme::centroid) {
 
-    InterphaseTxfrDeposition(CentroidDeposition(), lev, txfr_mf);
+    InterphaseTxfrDeposition(CentroidDeposition(), lev, txfr_mf, dt);
 
   } else {
 
@@ -172,7 +172,7 @@ InterphaseTxfrDeposition (int lev,
 template <typename F>
 void BMXParticleContainer::
 InterphaseTxfrDeposition (F WeightFunc, int lev,
-                          amrex::MultiFab & txfr_mf)
+                          amrex::MultiFab & txfr_mf, Real dt)
 {
   BL_PROFILE("BMXParticleContainer::InterphaseTxfrDeposition()");
 
@@ -182,7 +182,7 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
   const auto      dx  = gm.CellSizeArray();
   const auto      dxi = gm.InvCellSizeArray();
 
-  const auto      reg_cell_vol = dx[0]*dx[1]*dx[2];
+  const auto      grid_vol = dx[0]*dx[1]*dx[2];
 
 #ifdef NEW_CHEM
   BMXChemistry *bmxchem = BMXChemistry::instance();
@@ -225,7 +225,11 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
         amrex::Print() << "DEPOSITION OF " << nrp << " particles ... " << std::endl;
 
         amrex::ParallelFor(nrp,
+#ifdef NEW_CHEM
+          [pstruct,plo,dx,dxi,deposition_scale_factor,WeightFunc,txfr_arr,bmxchem,grid_vol]
+#else
           [pstruct,plo,dx,dxi,deposition_scale_factor,WeightFunc,txfr_arr]
+#endif
            AMREX_GPU_DEVICE (int ip) noexcept
           {
             const ParticleType& p = pstruct[ip];
@@ -241,13 +245,11 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
                        deposition_scale_factor);
 
             int nvals = p.idata(intIdx::num_reals);
-            amrex::Real *p_vals = &p.rdate(realIdx::first_data);
+            amrex::Real *p_vals = &p.rdata(realIdx::first_data);
             amrex::Real *chem_incr = p_vals + p.idata(intIdx::first_real_inc);
-            amrex::Real grid_vol = ???
-            amrex::Real dt = ???
             amrex::Real cell_vol = p.rdata(realIdx::vol);
             amrex::Real cell_area = p.rdata(realIdx::area);
-            bmxchem->xferParticleToMesh(grid_vol, cell_vol, cell_area, chem_incr, p_vals, Real dt)
+            bmxchem->xferParticleToMesh(grid_vol, grid_vol, cell_area, chem_incr, p_vals, dt)
             for (int ii = -1; ii <= 0; ++ii) {
               for (int jj = -1; jj <= 0; ++jj) {
                 for (int kk = -1; kk <= 0; ++kk) {
