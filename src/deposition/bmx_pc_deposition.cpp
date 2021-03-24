@@ -226,7 +226,7 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
 
         amrex::ParallelFor(nrp,
 #ifdef NEW_CHEM
-          [pstruct,plo,dx,dxi,deposition_scale_factor,WeightFunc,txfr_arr,bmxchem,grid_vol]
+          [pstruct,plo,dx,dxi,deposition_scale_factor,WeightFunc,txfr_arr,bmxchem,grid_vol,dt]
 #else
           [pstruct,plo,dx,dxi,deposition_scale_factor,WeightFunc,txfr_arr]
 #endif
@@ -249,7 +249,7 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
             amrex::Real *chem_incr = p_vals + p.idata(intIdx::first_real_inc);
             amrex::Real cell_vol = p.rdata(realIdx::vol);
             amrex::Real cell_area = p.rdata(realIdx::area);
-            bmxchem->xferParticleToMesh(grid_vol, grid_vol, cell_area, chem_incr, p_vals, dt)
+            bmxchem->xferParticleToMesh(grid_vol, grid_vol, cell_area, chem_incr, p_vals, dt);
             for (int ii = -1; ii <= 0; ++ii) {
               for (int jj = -1; jj <= 0; ++jj) {
                 for (int kk = -1; kk <= 0; ++kk) {

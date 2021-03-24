@@ -13,7 +13,9 @@
 #include <AMReX_Particles.H>
 #include <AMReX_NeighborParticles.H>
 #include <bmx_bc_list.H>
+#ifdef NEW_CHEM
 #include <bmx_chem.H>
+#endif
 
 /**
  * Note: if the enumeration starts at 0, then count will represent the total
