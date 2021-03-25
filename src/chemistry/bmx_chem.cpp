@@ -126,6 +126,7 @@ void BMXChemistry::xferMeshToParticle(Real grid_vol, Real cell_vol, Real cell_ar
 
 /**
  * Evaluate chemical rate of change inside chemistry module
+ * @param pval current values of concentrations in particles
  * @param dt time step interval
  */
 void BMXChemistry::updateChemistry(Real *p_vals, Real dt)

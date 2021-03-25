@@ -199,7 +199,7 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
         const auto& interp_array = interp_ptr->array(pti);
 
         amrex::ParallelFor(np,
-            [pstruct,interp_array,plo,dxi]
+            [pstruct,interp_array,plo,dxi,bmxchem,grid_vol,dt]
             AMREX_GPU_DEVICE (int pid) noexcept
               {
               // Local array storing interpolated values
@@ -213,10 +213,10 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 #ifdef NEW_CHEM
               Real cell_vol = p.rdata(realIdx::vol);
               Real cell_area = p.rdata(realIdx::area);
-              Real *p_vals = &p.rdata(readIdx::first_data);
+              Real *p_vals = &p.rdata(realIdx::first_data);
               bmxchem->xferMeshToParticle(grid_vol, cell_vol, cell_area,
-                        &interp_loc[0], p_vals, dt)
-              bmxchem->updateChemistry(dt);
+                        &interp_loc[0], p_vals, dt);
+              bmxchem->updateChemistry(p_vals, dt);
 #else
               // Interpolate values from mesh to particles
               p.rdata(realData::fluid_A) = interp_loc[0];

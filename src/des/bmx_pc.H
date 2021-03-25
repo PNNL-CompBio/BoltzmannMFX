@@ -14,6 +14,8 @@
 #include <AMReX_NeighborParticles.H>
 #include <bmx_bc_list.H>
 #ifdef NEW_CHEM
+#define MAX_CHEM_REAL_VAR 31
+#define MAX_CHEM_INT_VAR 5
 #include <bmx_chem.H>
 #endif
 

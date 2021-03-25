@@ -7,9 +7,6 @@
 
 using amrex::Real;
 
-#define MAX_CHEM_REAL_VAR 31
-#define MAX_CHEM_INT_VAR 5
-
 class BMXChemistry
 {
   public:

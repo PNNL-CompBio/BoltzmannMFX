@@ -196,8 +196,10 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
 
     for (BMXParIter pti(*this, lev); pti.isValid(); ++pti) {
 
-      const auto& particles = pti.GetArrayOfStructs();
-      const ParticleType* pstruct = particles().dataPtr();
+      //const auto& particles = pti.GetArrayOfStructs();
+      auto& particles = pti.GetArrayOfStructs();
+      //const ParticleType* pstruct = particles().dataPtr();
+      ParticleType* pstruct = particles().dataPtr();
 
       const long nrp = pti.numParticles();
 
@@ -232,7 +234,8 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
 #endif
            AMREX_GPU_DEVICE (int ip) noexcept
           {
-            const ParticleType& p = pstruct[ip];
+            //const ParticleType& p = pstruct[ip];
+            ParticleType& p = pstruct[ip];
 
             int i;
             int j;
@@ -249,7 +252,7 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
             amrex::Real *chem_incr = p_vals + p.idata(intIdx::first_real_inc);
             amrex::Real cell_vol = p.rdata(realIdx::vol);
             amrex::Real cell_area = p.rdata(realIdx::area);
-            bmxchem->xferParticleToMesh(grid_vol, grid_vol, cell_area, chem_incr, p_vals, dt);
+            bmxchem->xferParticleToMesh(grid_vol, cell_vol, cell_area, chem_incr, p_vals, dt);
             for (int ii = -1; ii <= 0; ++ii) {
               for (int jj = -1; jj <= 0; ++jj) {
                 for (int kk = -1; kk <= 0; ++kk) {
