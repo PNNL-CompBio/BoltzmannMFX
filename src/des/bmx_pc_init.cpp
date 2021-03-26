@@ -1,6 +1,7 @@
 #include <bmx_pc.H>
 #include <bmx_dem_parms.H>
 #include <bmx_chem_species_parms.H>
+#include <bmx_fluid_parms.H>
 // #include <bmx_ic_parms.H>
 
 using namespace amrex;
@@ -16,6 +17,7 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
     if (!ifs.good())
       amrex::FileOpenFailed(file);
 
+    // read in number of particles from input file
     int np = -1;
     ifs >> np >> std::ws;
 
@@ -40,10 +42,37 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
 
     for (int i = 0; i < np; i++)
     {
+#ifdef NEW_CHEM
       // Read from input file
       ifs >> host_particles[i].pos(0);
       ifs >> host_particles[i].pos(1);
       ifs >> host_particles[i].pos(2);
+      ifs >> host_particles[i].rdata(realIdx::a_size);
+      ifs >> host_particles[i].rdata(realIdx::b_size);
+      ifs >> host_particles[i].rdata(realIdx::c_size);
+      ifs >> host_particles[i].rdata(realIdx::psi);
+      ifs >> host_particles[i].rdata(realIdx::theta);
+      ifs >> host_particles[i].rdata(realIdx::phi);
+      ifs >> host_particles[i].rdata(realIdx::area);
+      ifs >> host_particles[i].rdata(realIdx::vol);
+      ifs >> host_particles[i].rdata(realIdx::velx);
+      ifs >> host_particles[i].rdata(realIdx::vely);
+      ifs >> host_particles[i].rdata(realIdx::velz);
+      ifs >> host_particles[i].rdata(realIdx::wx);
+      ifs >> host_particles[i].rdata(realIdx::wy);
+      ifs >> host_particles[i].rdata(realIdx::wz);
+      ifs >> host_particles[i].rdata(realIdx::fx);
+      ifs >> host_particles[i].rdata(realIdx::fy);
+      ifs >> host_particles[i].rdata(realIdx::fz);
+      ifs >> host_particles[i].rdata(realIdx::taux);
+      ifs >> host_particles[i].rdata(realIdx::tauy);
+      ifs >> host_particles[i].rdata(realIdx::tauz);
+      ifs >> host_particles[i].rdata(realIdx::dadt);
+      ifs >> host_particles[i].rdata(realIdx::dvdt);
+      for (int c=0; c<FLUID::nchem_species; c++) {
+        host_particles[i].rdata(realIdx::first_data+i) = FLUID::init_conc[i];
+      }
+#else
       ifs >> host_particles[i].rdata(realData::velx);
       ifs >> host_particles[i].rdata(realData::vely);
       ifs >> host_particles[i].rdata(realData::velz);
@@ -60,6 +89,7 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
       //  these will be deposited onto the grid to change X_A and X_B
       host_particles[i].rdata(realData::consume_A) = 0.;
       host_particles[i].rdata(realData::consume_B) = 0.;
+#endif
 
       // Set id and cpu for this particle
       host_particles[i].id()  = ParticleType::NextID();

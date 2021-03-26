@@ -36,6 +36,7 @@
  * a=b=c=radius and the Euler angles, rotation velocity and torques are all
  * zero.
  */
+#ifdef NEW_CHEM
 struct realIdx
 {
   enum { // Locations of real particle data stored in particle type
@@ -66,6 +67,7 @@ struct realIdx
   };
 };
 
+#else
 struct realData
 {
   enum { // Real particle data stored in p.m_data
@@ -81,6 +83,7 @@ struct realData
     count
   };
 };
+#endif
 
 /**
  * Generic set of indices for integer variables characterizing a cell. Specific
@@ -88,6 +91,7 @@ struct realData
  * that can be fed to other routines. The total number of real and integer
  * variables in this block and the readIdx block are stored in this struct.
  */
+#ifdef NEW_CHEM
 struct intIdx
 {
   enum { // Locations of integer data stored in particle type
@@ -100,6 +104,7 @@ struct intIdx
     count           // total number of elements in this enumeration
   };
 };
+#else
 
 struct intData
 {
@@ -109,6 +114,7 @@ struct intData
     count
   };
 };
+#endif
 
 ///
 /// We add a particle to the neighbor list if its center is within 3 particle radii

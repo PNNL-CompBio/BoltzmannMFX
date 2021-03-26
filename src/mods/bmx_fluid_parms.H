@@ -22,6 +22,11 @@ namespace FLUID
   // Total number of fluid chem_species
   extern int nchem_species;
 
+#ifdef NEW_CHEM
+  // Initial fluid concentrations of species
+  extern std::vector<amrex::Real> init_conc;
+#endif
+
   // Specified constant gas phase chem_species diffusion coefficients
   extern std::vector<amrex::Real> D_k0;
 

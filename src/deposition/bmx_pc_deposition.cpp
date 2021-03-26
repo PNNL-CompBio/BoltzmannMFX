@@ -113,11 +113,17 @@ SolidsVolumeDeposition (F WeightFunc, int lev,
 
             GpuArray<GpuArray<GpuArray<Real,2>,2>,2> weights;
 
+#ifdef NEW_CHEM
+            WeightFunc(plo, dx, dxi, p.pos(), p_realarray[realIdx::a_size][ip], i, j, k, weights,
+                deposition_scale_factor);
+
+            amrex::Real pvol = p_realarray[realIdx::vol][ip] / reg_cell_vol;
+#else
             WeightFunc(plo, dx, dxi, p.pos(), p_realarray[realData::radius][ip], i, j, k, weights,
                 deposition_scale_factor);
 
             amrex::Real pvol = p_realarray[realData::volume][ip] / reg_cell_vol;
-
+#endif
             for (int kk = -1; kk <= 0; ++kk) {
               for (int jj = -1; jj <= 0; ++jj) {
                 for (int ii = -1; ii <= 0; ++ii) {

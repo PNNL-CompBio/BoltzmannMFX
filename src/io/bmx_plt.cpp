@@ -179,8 +179,8 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
         Vector<int> write_real_comp = Vector<int>(realData::count,1);
 #endif
 
-        pc->WritePlotFile(plotfilename, "particles", write_real_comp,
-                          write_int_comp, real_comp_names, int_comp_names);
+        //pc->WritePlotFile(plotfilename, "particles", write_real_comp,
+        //                  write_int_comp, real_comp_names, int_comp_names);
 
     }
 
