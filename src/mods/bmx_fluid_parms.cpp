@@ -86,7 +86,7 @@ namespace FLUID
 #ifdef NEW_CHEM
         ppFluid.getarr("init_conc_species", init_conc);
         for (int n = 0; n < nchem_species; n++)
-           amrex::Print() << "Initial concentration for chem_species " << n << " is " << D_k0[n] << std::endl;
+           amrex::Print() << "Initial concentration for chem_species " << n << " is " << init_conc[n] << std::endl;
 
         amrex::Print() << " " << std::endl;
 #endif

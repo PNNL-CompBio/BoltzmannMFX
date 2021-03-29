@@ -10,6 +10,9 @@
 
 #include <bmx.H>
 #include <bmx_fluid_parms.H>
+#ifdef NEW_CHEM
+#include <bmx_chem.H>
+#endif
 
 int  max_step   = -1;
 int  regrid_int = -1;
@@ -198,6 +201,13 @@ int main (int argc, char* argv[])
     // Parameters have already been read in when initialize was called.
     // These are now available to bmx
     ReadParameters();
+
+    // Read in chemistry parameters. Currently hardwiring these so file
+    // name is set to arbitrary string
+#ifdef NEW_CHEM
+    BMXChemistry *bmxchem = BMXChemistry::instance();
+    bmxchem->setParams("NullFile");
+#endif
 
     // Set global static pointer to bmx object. Used by fill-patch utility
     set_ptr_to_bmx(bmx);

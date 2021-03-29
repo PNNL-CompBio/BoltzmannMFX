@@ -139,11 +139,29 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
     // Pointer to Multifab for interpolation
     MultiFab* interp_ptr;
 
+#ifdef NEW_CHEM
+#if 0
+    int nint, nreal, tot_int, tot_real;
+    bmxchem->getVarArraySizes(&nint, &nreal, &tot_int, &tot_real);
+
+    const int interp_ng    = 1;    // Only one layer needed for interpolation
+    const int interp_ncomp = static_cast<const int>(nreal);
+
+    if (m_leveldata[0]->X_k->nComp() != nreal)
+      amrex::Abort("We are not interpolating the right number of components in calc_txfr_particle");
+#endif
+    const int interp_ng    = 1;    // Only one layer needed for interpolation
+    const int interp_ncomp = 3;
+
+    if (m_leveldata[0]->X_k->nComp() != 3)
+      amrex::Abort("We are not interpolating the right number of components in calc_txfr_particle");
+#else
     const int interp_ng    = 1;    // Only one layer needed for interpolation
     const int interp_ncomp = 2;
 
     if (m_leveldata[0]->X_k->nComp() != 2)
       amrex::Abort("We are not interpolating the right number of components in calc_txfr_particle");
+#endif
 
     if (OnSameGrids)
     {
@@ -216,6 +234,10 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
               Real *p_vals = &p.rdata(realIdx::first_data);
               bmxchem->xferMeshToParticle(grid_vol, cell_vol, cell_area,
                         &interp_loc[0], p_vals, dt);
+              amrex::Print() << "VALUE OF CHEMICAL SPECIES ON PARTICLE " << 
+                  p.rdata(realIdx::first_data) << " " << 
+                  p.rdata(realIdx::first_data+1) << " " << 
+                  p.rdata(realIdx::first_data+2) << std::endl;;
               bmxchem->updateChemistry(p_vals, dt);
 #else
               // Interpolate values from mesh to particles

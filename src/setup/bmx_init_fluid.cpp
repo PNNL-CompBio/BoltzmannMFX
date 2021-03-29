@@ -81,6 +81,10 @@ void set_ic_chem_species (const Box& sbx,
 
   Array4<Real> const& X_k = X_k_fab.array();
 
+#ifdef NEW_CHEM
+  const RealVect chem(&FLUID::init_conc[0]);
+#endif
+
   const int nchem_species = X_k_fab.nComp();
 
   amrex::Print() << "SETTING INITIAL CONDITIONS FOR SPECIES " << std::endl;
@@ -115,7 +119,11 @@ void set_ic_chem_species (const Box& sbx,
          if (z > 0.4)
             X_k(i,j,k,n) = 0.0;
          else
+#ifdef NEW_CHEM
+            X_k(i,j,k,n) = chem[n];
+#else
             X_k(i,j,k,n) = 1.0;
+#endif
 #endif
       }); 
 }

@@ -8,7 +8,7 @@
 
 bmx.fixed_dt = 0.005
 
-bmx.max_step = 200
+bmx.max_step = 10
 
 dem.solve = bacteria
 bmx.particle_init_type = "AsciiFile"
