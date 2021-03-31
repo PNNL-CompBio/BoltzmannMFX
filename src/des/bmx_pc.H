@@ -210,6 +210,8 @@ public:
                                    int lev,
                                    amrex::MultiFab& txfr_mf, amrex::Real dt);
 
+    void split_particles ();
+
   private:
     int nlev;
 

@@ -10,5 +10,6 @@ target_sources( bmxcore
    bmx_pc_init.cpp
    bmx_calc_volume_fraction.cpp
    bmx_calc_txfr.cpp
+   bmx_split_particles.cpp
    )
 
