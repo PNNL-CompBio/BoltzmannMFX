@@ -2,6 +2,9 @@
 #include <bmx_dem_parms.H>
 #include <bmx_chem_species_parms.H>
 #include <bmx_fluid_parms.H>
+#ifdef NEW_CHEM
+#include <bmx_chem.H>
+#endif
 // #include <bmx_ic_parms.H>
 
 using namespace amrex;
@@ -13,6 +16,10 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
   {
     std::ifstream ifs;
     ifs.open(file.c_str(), std::ios::in);
+
+#ifdef NEW_CHEM
+    BMXChemistry *bmxchem = BMXChemistry::instance();
+#endif
 
     if (!ifs.good())
       amrex::FileOpenFailed(file);
@@ -72,6 +79,8 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
       for (int c=0; c<FLUID::nchem_species; c++) {
         host_particles[i].rdata(realIdx::first_data+i) = FLUID::init_conc[i];
       }
+      bmxchem->setIntegers(&host_particles[i].idata(0));
+      
 #else
       ifs >> host_particles[i].rdata(realData::velx);
       ifs >> host_particles[i].rdata(realData::vely);

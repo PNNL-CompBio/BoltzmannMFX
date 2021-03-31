@@ -234,10 +234,6 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
               Real *p_vals = &p.rdata(realIdx::first_data);
               bmxchem->xferMeshToParticle(grid_vol, cell_vol, cell_area,
                         &interp_loc[0], p_vals, dt);
-              amrex::Print() << "VALUE OF CHEMICAL SPECIES ON PARTICLE " << 
-                  p.rdata(realIdx::first_data) << " " << 
-                  p.rdata(realIdx::first_data+1) << " " << 
-                  p.rdata(realIdx::first_data+2) << std::endl;;
               bmxchem->updateChemistry(p_vals, dt);
 #else
               // Interpolate values from mesh to particles

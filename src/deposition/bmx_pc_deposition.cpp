@@ -272,6 +272,7 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
                 }
               }
             }
+            bmxchem->printCellConcentrations(p_vals);
 #else
             WeightFunc(plo, dx, dxi, p.pos(), p.rdata(realData::radius), i, j, k, weights,
                        deposition_scale_factor);

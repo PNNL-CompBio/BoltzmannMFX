@@ -71,7 +71,7 @@ class BMXChemistry
    * @param grid_vol volume of grid cell that contains biological cell
    * @param cell_vol volume of biological cell
    * @param cell_area surface area of biological cell
-   * @param mesh_inc values to increment concentrations on mesh
+   * @param mesh_inc values of rate of transfer of concentrations to mesh
    * @param p_vals values of concentrations in particles
    * @param dt time step interval
    */

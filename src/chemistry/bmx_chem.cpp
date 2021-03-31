@@ -22,9 +22,9 @@ BMXChemistry::BMXChemistry()
 {
   p_num_species = 3;
   p_num_ivals = 0;
-  p_num_reals = 3*p_num_species;
+  p_num_reals = 2*p_num_species;
   p_num_ints = 0;
-  p_inc_offset = 2*p_num_species;
+  p_inc_offset = p_num_species;
   p_pi = 4.0*atan(1.0);
 }
 
@@ -106,15 +106,11 @@ void BMXChemistry::xferMeshToParticle(Real grid_vol, Real cell_vol, Real cell_ar
   fA = mesh_vals[0];
   fB = mesh_vals[1];
   fC = mesh_vals[2];
-  printf("cell_area: %f cell_vol: %f\n",cell_area, cell_vol);
-  printf("fA: %12.6f fB: %12.6f fC: %12.6f\n",fA,fB,fC);
   // cell concentrations
   Real cA, cB, cC;
   cA = p_vals[0];
   cB = p_vals[1];
   cC = p_vals[2];
-  printf("cA: %12.6f cB: %12.6f cC: %12.6f\n",cA,cB,cC);
-  printf("k1: %12.6f k2: %12.6f k3: %12.6f\n",k1,k2,k3);
   // incremental changes
   Real dA, dB, dC;
   dA = dt*cell_area*(k1*fA-kr1*cA);
@@ -124,17 +120,10 @@ void BMXChemistry::xferMeshToParticle(Real grid_vol, Real cell_vol, Real cell_ar
   p_vals[0] = p_vals[0]+dA/cell_vol;
   p_vals[1] = p_vals[1]+dB/cell_vol;
   p_vals[2] = p_vals[2]+dC/cell_vol;
-  printf("cA': %12.6f cB': %12.6f cC': %12.6f\n",p_vals[0],p_vals[1],p_vals[2]);
   // adjusted fluid values
   p_vals[3] = fA-dA/grid_vol;
   p_vals[4] = fB-dB/grid_vol;
   p_vals[5] = fC-dC/grid_vol;
-  printf("fA': %12.6f fB': %12.6f fC': %12.6f\n",p_vals[3],p_vals[4],p_vals[5]);
-  // store increments
-  p_vals[6] = dA;
-  p_vals[7] = dB;
-  p_vals[8] = dC;
-  printf("dA: %12.6f dB: %12.6f dC: %12.6f\n",dA,dB,dC);
 }
 
 /**
@@ -149,18 +138,15 @@ void BMXChemistry::updateChemistry(Real *p_vals, Real dt)
   A = p_vals[0];
   B = p_vals[1];
   C = p_vals[2];
-  printf("A: %12.6f B: %12.6f C: %12.6f\n",A,B,C);
   // Rate of change of A, B, C
   Real fA, fB, fC;
   fA = -k2*A + kr2*B*C;
   fB = k2*A - kr2*B*C;
   fC = k2*A - kr2*B*C;
-  printf("dAdt: %12.6f dBdt: %12.6f dCdt: %12.6f\n",fA,fB,fC);
   // Increment concentrations
   p_vals[0] += dt*fA;
   p_vals[1] += dt*fB;
   p_vals[2] += dt*fC;
-  printf("A': %12.6f B': %12.6f C': %12.6f\n",p_vals[0],p_vals[1],p_vals[2]);
 }
 
 /**
@@ -196,9 +182,9 @@ void BMXChemistry::xferParticleToMesh(Real grid_vol, Real cell_vol,
   p_vals[1] = p_vals[1]+dB/cell_vol;
   p_vals[2] = p_vals[2]+dC/cell_vol;
   // fluid concentration increments
-  mesh_vals[0] = -dA/grid_vol;
-  mesh_vals[1] = -dB/grid_vol;
-  mesh_vals[2] = -dC/grid_vol;
+  mesh_vals[0] = -dA/(dt*grid_vol);
+  mesh_vals[1] = -dB/(dt*grid_vol);
+  mesh_vals[2] = -dC/(dt*grid_vol);
 }
 
 /**
