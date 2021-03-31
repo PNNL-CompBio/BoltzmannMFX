@@ -15,8 +15,6 @@
 void 
 BMXParticleContainer::split_particles ()
 {
-// NOTE - DOESNT COMPILE YET
-#if 0
   for (int lev = 0; lev < nlev; lev++) {
 
       for (BMXParIter pti(*this, lev); pti.isValid(); ++pti)
@@ -24,7 +22,7 @@ BMXParticleContainer::split_particles ()
         auto& particles = pti.GetArrayOfStructs();
         BMXParticleContainer::ParticleType* pstruct = particles().dataPtr();
 
-        const int grid = pti.LocalGridIndex(); 
+        const int grid = pti.index();
         const int tile = pti.LocalTileIndex(); 
         auto& particle_tile = this->GetParticles(lev)[std::make_pair(grid,tile)];
 
@@ -35,10 +33,13 @@ BMXParticleContainer::split_particles ()
         // This is just a made-up threshold
         Real max_vol = 0.5;
 
-        amrex::ParallelFor(np,
-            [=]
-            AMREX_GPU_DEVICE (int pid) noexcept
-              {
+        //
+        // Note: this will happen on CPU only -- we will need to add something to count how many
+        //       new particles, resize the particle_tile appropriately, then fill the data for the 
+        //       new particles on the GPU
+        //
+        for (int pid = 0; pid < np; ++pid)     
+        {
               BMXParticleContainer::ParticleType& p_orig = pstruct[pid];
 
               // This is just a made-up test on particle volume to trip splitting
@@ -61,8 +62,7 @@ BMXParticleContainer::split_particles ()
 
                    particle_tile.push_back(p);
               } // if test
-            }); // ParallelFor
+            } // pid
       } // pti
   } // lev
-#endif
 }
