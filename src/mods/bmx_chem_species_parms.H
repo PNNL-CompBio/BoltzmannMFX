@@ -33,6 +33,9 @@ namespace SPECIES
   // Specified chem_species constant diffusion coefficients
   extern std::vector<amrex::Real> D_k0;
 
+  // Maximum cell volume
+  extern amrex::Real max_vol;
+
   struct SPECIES_t {
     // Constructor
     SPECIES_t() :

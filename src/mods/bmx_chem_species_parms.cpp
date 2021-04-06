@@ -28,6 +28,9 @@ namespace SPECIES
   // Specified constant chem_species specific heat
   std::vector<amrex::Real> cp_k0(0);
 
+  // Maximum cell volume
+  amrex::Real max_vol;
+
 
   void Initialize ()
   {
@@ -36,6 +39,8 @@ namespace SPECIES
     if (pp.contains("solve"))
     {
       pp.getarr("solve", chem_species);
+
+      pp.get("max_solve", max_vol);
 
       AMREX_ALWAYS_ASSERT_WITH_MESSAGE(chem_species.size() > 0,
           "No input provided for chem_species.solve");

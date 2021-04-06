@@ -62,6 +62,11 @@ bmx::InitParams ()
 
     pp.query("ooo_debug", ooo_debug);
 
+    // Initialize random number generator
+    int seed = 77389;
+    pp.query("seed", seed);
+    amrex::ResetRandomSeed(seed+ParallelDescriptor::MyProc()+1);
+
     // The default type is "AsciiFile" but we can over-write that in the inputs
     // file with "Random"
     pp.query("particle_init_type", particle_init_type);

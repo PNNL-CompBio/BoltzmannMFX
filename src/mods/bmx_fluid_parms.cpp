@@ -29,6 +29,9 @@ namespace FLUID
 #ifdef NEW_CHEM
   // Initial fluid concentrations of species
   std::vector<amrex::Real> init_conc;
+
+  // Maximum cell volume
+  amrex::Real max_vol;
 #endif
 
   // Specified constant gas phase chem_species diffusion coefficients
@@ -55,6 +58,8 @@ namespace FLUID
       solve = 1;
       name = fluid_name[0];
     }
+
+    pp.get("max_vol", max_vol);
 
     if (solve)
     {

@@ -85,13 +85,6 @@ class BMXChemistry
   static BMXChemistry* instance();
 
   /**
-   * Set the number of integer and real varaibles used by the chemistry model
-   * @param num_ints number of integer variables used by chemistry model
-   * @param num_reals number of real variables used by chemistry models
-   */
-  void setParams(int num_ints, int num_reals);
-
-  /**
    * Setup chemistry model by reading a parameter file
    * @param file name of parameter file used by chemistry model
    */
@@ -117,41 +110,52 @@ class BMXChemistry
   /**
    * Transfer mesh values to internal concentrations
    * @param grid_vol volume of grid cell that contains biological cell
-   * @param cell_vol volume of biological cell
-   * @param cell_area surface area of biological cell
+   * @param cell_par pointer to cell parameter values
    * @param mesh_vals values of concentrations on mesh
    * @param p_vals values of concentrations in particles
    * @param dt time step interval
    */
-  void xferMeshToParticle(Real grid_vol, Real cell_vol, Real cell_area,
-      Real *mesh_vals, Real *p_vals, Real dt);
+  void xferMeshToParticle(Real grid_vol, Real *cell_par, Real *mesh_vals,
+      Real *p_vals, Real dt);
 
   /**
    * Evaluate chemical rate of change inside chemistry module
    * @param p_vals current values of concentrations in particles
+   * @param cell_par pointer to cell parameter values
    * @param dt time step interval
    */
-  void updateChemistry(Real *p_vals, Real dt);
+  void updateChemistry(Real *p_vals, Real *cell_par, Real dt);
 
   /**
    * Calculate transfer increments based on current concentrations in biological
    * cell and in grid cell
    * @param grid_vol volume of grid cell that contains biological cell
+   * @param cell_par pointer to cell parameter values
    * @param cell_vol volume of biological cell
    * @param cell_area surface area of biological cell
    * @param mesh_inc values of rate of transfer of concentrations to mesh
    * @param p_vals values of concentrations in particles
    * @param dt time step interval
    */
-  void xferParticleToMesh(Real grid_vol, Real cell_vol, Real cell_area,
-      Real *mesh_vals, Real *p_vals, Real dt);
+  void xferParticleToMesh(Real grid_vol, Real *cell_par, Real *mesh_vals,
+      Real *p_vals, Real dt);
 
   /**
    * Print concentrations of chemical species in cell
    * @param p_vals values of concentrations in particles
+   * @param p_par values of particle parameters
    */
-  void printCellConcentrations(Real *p_vals);
+  void printCellConcentrations(Real *p_vals, Real *p_par);
 
+  /**
+   * Duplicate data from original particle to child when splitting
+   * @param p_real_orig pointer to real values from original particle
+   * @param p_int_orig pointer to integer values from original particle
+   * @param p_real_child pointer to real values on child  particle
+   * @param p_int_child pointer to integer values on child particle
+   */
+  void setChildParameters(Real *p_real_orig, int *p_int_orig, Real *p_real_child,
+      int *p_int_child);
   protected:
   /**
    * Constructor
@@ -175,6 +179,7 @@ class BMXChemistry
   Real k1, kr1;   // rate coefficients for species A into and out of biological cell
   Real k2, kr2;   // rate coefficients for converting A into B and C inside biological cell
   Real k3, kr3;   // rate coefficients for species C into and out of biological cell
+  Real kg;        // cell growth coefficient
 
   // Value of pi
   Real p_pi;

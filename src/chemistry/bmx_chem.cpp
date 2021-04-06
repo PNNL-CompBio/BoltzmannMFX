@@ -50,15 +50,6 @@ void BMXChemistry::setIntegers(int *ipar)
 }
 
 /**
- * Set the number of integer and real variables used by the chemistry model
- * @param num_ints number of integer variables used by chemistry model
- * @param num_reals number of real variables used by chemistry models
- */
-void BMXChemistry::setParams(int num_ints, int num_reals)
-{
-}
-
-/**
  * Setup chemistry model by reading a parameter file
  * @param file name of parameter file used by chemistry model
  */
@@ -70,6 +61,7 @@ void BMXChemistry::setParams(const char *file)
   kr2 = 0.005;
   k3 = 0.01;
   kr3 = 0.01;
+  kg = 1.0;
 }
 
 /**
@@ -92,15 +84,17 @@ void BMXChemistry::getVarArraySizes(int *num_ints, int *num_reals, int *tot_ints
 /**
  * Transfer mesh values to internal concentrations
  * @param grid_vol volume of grid cell that contains biological cell
- * @param cell_vol volume of biological cell
- * @param cell_area surface area of biological cell
+ * @param cell_par pointer to cell parameter values
  * @param mesh_vals values of concentrations on mesh
  * @param p_vals values of concentrations in particles
  * @param dt time step interval
  */
-void BMXChemistry::xferMeshToParticle(Real grid_vol, Real cell_vol, Real cell_area,
+void BMXChemistry::xferMeshToParticle(Real grid_vol, Real *cell_par,
     Real *mesh_vals, Real *p_vals, Real dt)
 {
+  // cell parameters
+  Real cell_vol = cell_par[realIdx::vol];
+  Real cell_area = cell_par[realIdx::area];
   // fluid concentrations
   Real fA, fB, fC;
   fA = mesh_vals[0];
@@ -129,9 +123,10 @@ void BMXChemistry::xferMeshToParticle(Real grid_vol, Real cell_vol, Real cell_ar
 /**
  * Evaluate chemical rate of change inside chemistry module
  * @param pval current values of concentrations in particles
+ * @param cell_par pointer to cell parameter values
  * @param dt time step interval
  */
-void BMXChemistry::updateChemistry(Real *p_vals, Real dt)
+void BMXChemistry::updateChemistry(Real *p_vals, Real *cell_par, Real dt)
 {
   // Concentrations of A, B, C
   Real A, B, C;
@@ -143,25 +138,45 @@ void BMXChemistry::updateChemistry(Real *p_vals, Real dt)
   fA = -k2*A + kr2*B*C;
   fB = k2*A - kr2*B*C;
   fC = k2*A - kr2*B*C;
+  // Increment volume 
+  Real volume = cell_par[realIdx::vol];
+  Real dvdt = (kg/(1.0-kg*B))*fB;
+  if (fB < 0.0) dvdt = 0.0;
+  cell_par[realIdx::dvdt] = dvdt; 
+  Real new_vol = volume + dt*dvdt;
+  cell_par[realIdx::vol] = new_vol;
+  Real radius = pow((3.0*volume/(4*p_pi)),1.0/3.0);
+  cell_par[realIdx::area] = 4.0*p_pi*radius*radius;
+  cell_par[realIdx::dadt] = 2.0*dvdt/radius;
+  cell_par[realIdx::a_size] = radius;
+  cell_par[realIdx::b_size] = radius;
+  cell_par[realIdx::c_size] = radius;
   // Increment concentrations
   p_vals[0] += dt*fA;
   p_vals[1] += dt*fB;
   p_vals[2] += dt*fC;
+  // Adjust concentrations for change in volume
+  Real ratio = volume/new_vol;
+  p_vals[0] *= ratio;
+  p_vals[1] *= ratio;
+  p_vals[2] *= ratio;
 }
 
 /**
  * Calculate transfer increments based on current concentrations in biological
  * cell and in grid cell
  * @param grid_vol volume of grid cell that contains biological cell
- * @param cell_vol volume of biological cell
- * @param cell_area surface area of biological cell
+ * @param cell_par pointer to cell parameter values
  * @param mesh_inc values to increment concentrations on mesh
  * @param p_vals values of concentrations in particles
  * @param dt time step interval
  */
-void BMXChemistry::xferParticleToMesh(Real grid_vol, Real cell_vol,
-    Real cell_area, Real *mesh_vals, Real *p_vals, Real dt)
+void BMXChemistry::xferParticleToMesh(Real grid_vol, Real *cell_par,
+    Real *mesh_vals, Real *p_vals, Real dt)
 {
+  // cell parameters
+  Real cell_vol = cell_par[realIdx::vol];
+  Real cell_area = cell_par[realIdx::area];
   // fluid concentrations
   Real fA, fB, fC;
   fA = p_vals[3];
@@ -190,10 +205,49 @@ void BMXChemistry::xferParticleToMesh(Real grid_vol, Real cell_vol,
 /**
  * Print concentrations of chemical species in cell
  * @param p_vals values of concentrations in particles
+ * @param p_par values of particle parameters
  */
-void BMXChemistry::printCellConcentrations(Real *p_vals)
+void BMXChemistry::printCellConcentrations(Real *p_vals, Real *p_par)
 {
+  printf("\n");
   printf("        Concentration A: %18.6f\n",p_vals[0]);
   printf("        Concentration B: %18.6f\n",p_vals[1]);
   printf("        Concentration C: %18.6f\n",p_vals[2]);
+  printf("        Cell volume    : %18.6f\n",p_par[realIdx::vol]);
+}
+
+/**
+ * Duplicate data from original particle to child when splitting
+ * @param p_real_orig pointer to real values from original particle
+ * @param p_int_orig pointer to integer values from original particle
+ * @param p_real_child pointer to real values on child  particle
+ * @param p_int_child pointer to integer values on child particle
+ */
+void BMXChemistry::setChildParameters(Real *p_real_orig, int *p_int_orig,
+    Real *p_real_child, int *p_int_child)
+{
+  int i;
+  int nreals = p_num_reals + realIdx::count-1;
+  int nints = p_num_ints + intIdx::count-1;
+  for (i=0; i<nreals; i++) p_real_child[i] = p_real_orig[i];
+  for (i=0; i<nints; i++) p_int_child[i] = p_int_orig[i];
+
+  // fix up values that need to be modified due to splitting
+  Real volume = p_real_orig[realIdx::vol]/2.0;
+  Real radius = pow((3.0*volume/(4*p_pi)),1.0/3.0);
+  Real area = 4.0*p_pi*radius*radius;
+  Real dvdt = p_real_orig[realIdx::dvdt];
+  Real dadt = 2.0*dvdt/radius;
+  p_real_orig[realIdx::vol] = volume;
+  p_real_child[realIdx::vol] = volume;
+  p_real_orig[realIdx::area] = area;
+  p_real_child[realIdx::area] = area;
+  p_real_orig[realIdx::dadt] = dadt;
+  p_real_child[realIdx::dadt] = dadt;
+  p_real_orig[realIdx::a_size] = radius;
+  p_real_child[realIdx::a_size] = radius;
+  p_real_orig[realIdx::b_size] = radius;
+  p_real_child[realIdx::b_size] = radius;
+  p_real_orig[realIdx::c_size] = radius;
+  p_real_child[realIdx::c_size] = radius;
 }

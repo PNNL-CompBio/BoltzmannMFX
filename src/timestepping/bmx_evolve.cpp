@@ -72,6 +72,7 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
             }
         }
     }
+    pc->split_particles();
 
     BL_PROFILE_VAR_STOP(particlesSolve);
 

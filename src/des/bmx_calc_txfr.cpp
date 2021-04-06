@@ -140,16 +140,6 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
     MultiFab* interp_ptr;
 
 #ifdef NEW_CHEM
-#if 0
-    int nint, nreal, tot_int, tot_real;
-    bmxchem->getVarArraySizes(&nint, &nreal, &tot_int, &tot_real);
-
-    const int interp_ng    = 1;    // Only one layer needed for interpolation
-    const int interp_ncomp = static_cast<const int>(nreal);
-
-    if (m_leveldata[0]->X_k->nComp() != nreal)
-      amrex::Abort("We are not interpolating the right number of components in calc_txfr_particle");
-#endif
     const int interp_ng    = 1;    // Only one layer needed for interpolation
     const int interp_ncomp = 3;
 
@@ -229,12 +219,11 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
                                interp_array, plo, dxi, interp_ncomp);
 
 #ifdef NEW_CHEM
-              Real cell_vol = p.rdata(realIdx::vol);
-              Real cell_area = p.rdata(realIdx::area);
+              Real *cell_par = &p.rdata(0);
               Real *p_vals = &p.rdata(realIdx::first_data);
-              bmxchem->xferMeshToParticle(grid_vol, cell_vol, cell_area,
-                        &interp_loc[0], p_vals, dt);
-              bmxchem->updateChemistry(p_vals, dt);
+              bmxchem->xferMeshToParticle(grid_vol, cell_par, &interp_loc[0],
+                  p_vals, dt);
+              bmxchem->updateChemistry(p_vals, cell_par, dt);
 #else
               // Interpolate values from mesh to particles
               p.rdata(realData::fluid_A) = interp_loc[0];

@@ -256,9 +256,8 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
             int nvals = p.idata(intIdx::num_reals);
             amrex::Real *p_vals = &p.rdata(realIdx::first_data);
             amrex::Real *chem_incr = p_vals + p.idata(intIdx::first_real_inc);
-            amrex::Real cell_vol = p.rdata(realIdx::vol);
-            amrex::Real cell_area = p.rdata(realIdx::area);
-            bmxchem->xferParticleToMesh(grid_vol, cell_vol, cell_area, chem_incr, p_vals, dt);
+            amrex::Real *cell_par = &p.rdata(0);
+            bmxchem->xferParticleToMesh(grid_vol, cell_par, chem_incr, p_vals, dt);
             for (int ii = -1; ii <= 0; ++ii) {
               for (int jj = -1; jj <= 0; ++jj) {
                 for (int kk = -1; kk <= 0; ++kk) {
@@ -272,7 +271,7 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
                 }
               }
             }
-            bmxchem->printCellConcentrations(p_vals);
+            bmxchem->printCellConcentrations(p_vals, cell_par);
 #else
             WeightFunc(plo, dx, dxi, p.pos(), p.rdata(realData::radius), i, j, k, weights,
                        deposition_scale_factor);
