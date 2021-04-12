@@ -214,6 +214,9 @@ void BMXChemistry::printCellConcentrations(Real *p_vals, Real *p_par)
   printf("        Concentration B: %18.6f\n",p_vals[1]);
   printf("        Concentration C: %18.6f\n",p_vals[2]);
   printf("        Cell volume    : %18.6f\n",p_par[realIdx::vol]);
+  printf("        X velocity     : %18.6f\n",p_par[realIdx::velx]);
+  printf("        Y velocity     : %18.6f\n",p_par[realIdx::vely]);
+  printf("        Z velocity     : %18.6f\n",p_par[realIdx::velz]);
 }
 
 /**

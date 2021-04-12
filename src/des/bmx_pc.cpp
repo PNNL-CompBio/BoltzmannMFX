@@ -85,6 +85,7 @@ void BMXParticleContainer::ReadStaticParameters ()
         initialized = true;
 }
 
+#if 0
 void BMXParticleContainer::EvolveParticles (int lev,
                                              int nstep,
                                              Real dt,
@@ -497,6 +498,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
 
     BL_PROFILE_REGION_STOP("bmx_dem::EvolveParticles()");
 }
+#endif
 
 void BMXParticleContainer::writeAllAtLevel (int lev)
 {

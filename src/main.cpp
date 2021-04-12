@@ -12,6 +12,7 @@
 #include <bmx_fluid_parms.H>
 #ifdef NEW_CHEM
 #include <bmx_chem.H>
+#include <bmx_cell_interaction.H>
 #endif
 
 int  max_step   = -1;
@@ -207,6 +208,8 @@ int main (int argc, char* argv[])
 #ifdef NEW_CHEM
     BMXChemistry *bmxchem = BMXChemistry::instance();
     bmxchem->setParams("NullFile");
+    BMXCellInteraction *interaction = BMXCellInteraction::instance();
+    interaction->setParams("NullFile");
 #endif
 
     // Set global static pointer to bmx object. Used by fill-patch utility

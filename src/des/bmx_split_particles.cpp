@@ -65,12 +65,12 @@ BMXParticleContainer::split_particles ()
                    Real nx = cos(theta)*cos(phi);
                    Real ny = cos(theta)*sin(phi);
                    Real nz = sin(theta);
-                   p.pos(0) = x + nx*radius;
-                   p.pos(1) = y + ny*radius;
-                   p.pos(2) = z + nz*radius;
-                   p_orig.pos(0) = x - nx*radius;
-                   p_orig.pos(1) = y - ny*radius;
-                   p_orig.pos(2) = z - nz*radius;
+                   p.pos(0) = x + 0.5*nx*radius;
+                   p.pos(1) = y + 0.5*ny*radius;
+                   p.pos(2) = z + 0.5*nz*radius;
+                   p_orig.pos(0) = x - 0.5*nx*radius;
+                   p_orig.pos(1) = y - 0.5*ny*radius;
+                   p_orig.pos(2) = z - 0.5*nz*radius;
 
                    particle_tile.push_back(p);
               } // if test

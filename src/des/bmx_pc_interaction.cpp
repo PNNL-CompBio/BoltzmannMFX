@@ -1,8 +1,15 @@
+#include <bmx_pc.H>
+#include <bmx_dem_parms.H>
+#include <bmx_bc_parms.H>
+#include <bmx_cell_interaction.H>
+
+using namespace amrex;
+
 void BMXParticleContainer::EvolveParticles (int lev,
                                             int nstep,
                                             Real dt,
                                             Real time,
-                                            MultiFab* cost,
+                                            amrex::MultiFab* cost,
                                             std::string& knapsack_weight_type,
                                             int& nsubsteps)
 {
@@ -14,6 +21,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
     amrex::Print() << "Evolving particles on level: " << lev
                    << " ... with fluid dt " << dt << std::endl;
 
+    BMXCellInteraction *interaction = BMXCellInteraction::instance();
     /****************************************************************************
      * DEBUG flag toggles:                                                      *
      *   -> Print number of collisions                                          *
@@ -38,6 +46,8 @@ void BMXParticleContainer::EvolveParticles (int lev,
      ***************************************************************************/
 
     Real subdt;
+    // TODO: This needs to be initialized somewhere else using a better rule
+    DEM::dtsolid = dt;
     // des_init_time_loop(&dt, &nsubsteps, &subdt);
     if ( dt >= DEM::dtsolid )
     {
@@ -49,28 +59,24 @@ void BMXParticleContainer::EvolveParticles (int lev,
     }
 
     /****************************************************************************
-     * Get particle EB geometric info
-     ***************************************************************************/
-    const FabArray<EBCellFlagFab>* flags = &(ebfactory->getMultiEBCellFlagFab());
-
-    /****************************************************************************
      * Init temporary storage:                                                  *
      *   -> particle-particle, and particle-wall forces                         *
      *   -> particle-particle, and particle-wall torques                        *
      ***************************************************************************/
-    std::map<PairIndex, Gpu::DeviceVector<Real>> tow;
-    std::map<PairIndex, Gpu::DeviceVector<Real>> fc, pfor, wfor;
+    std::map<PairIndex, amrex::Gpu::DeviceVector<Real>> tow; // particle-wall torque?
+    std::map<PairIndex, amrex::Gpu::DeviceVector<Real>> fc, pfor, wfor; // total force=particle+wall, particle force, wall force?
 
     std::map<PairIndex, bool> tile_has_walls;
 
+    int count = 0;
     for (BMXParIter pti(*this, lev); pti.isValid(); ++pti)
     {
         const Box& bx = pti.tilebox();
         PairIndex index(pti.index(), pti.LocalTileIndex());
-        tow[index]  = Gpu::DeviceVector<Real>();
-        fc[index]   = Gpu::DeviceVector<Real>();
-        pfor[index] = Gpu::DeviceVector<Real>();
-        wfor[index] = Gpu::DeviceVector<Real>();
+        tow[index]  = amrex::Gpu::DeviceVector<Real>();
+        fc[index]   = amrex::Gpu::DeviceVector<Real>();
+        pfor[index] = amrex::Gpu::DeviceVector<Real>();
+        wfor[index] = amrex::Gpu::DeviceVector<Real>();
     }
 
     /****************************************************************************
@@ -78,9 +84,6 @@ void BMXParticleContainer::EvolveParticles (int lev,
      ***************************************************************************/
 
     int ncoll_total = 0;  // Counts total number of collisions
-    loc_maxvel  = RealVect(0., 0., 0.);  // Tracks max (absolute) velocity
-    loc_maxpfor = RealVect(0., 0., 0.);  // Tracks max particle-particle force
-    loc_maxwfor = RealVect(0., 0., 0.);  // Tracks max particle-wall force
     int n = 0; // Counts sub-steps
 
     while (n < nsubsteps)
@@ -107,7 +110,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
         if (debug_level > 0) 
         {
 #ifdef AMREX_USE_GPU
-          if (Gpu::inLaunchRegion())
+          if (amrex::Gpu::inLaunchRegion())
           {
             // Reduce sum operation for ncoll
             ReduceOps<ReduceOpSum> reduce_op;
@@ -125,9 +128,6 @@ void BMXParticleContainer::EvolveParticles (int lev,
               auto& aos   = ptile.GetArrayOfStructs();
               ParticleType* pstruct = aos().dataPtr();
 
-              auto& soa = ptile.GetStructOfArrays();
-              auto p_realarray = soa.realarray();
-
               auto nbor_data = m_neighbor_list[lev][index].data();
 
               constexpr Real small_number = 1.0e-15;
@@ -140,20 +140,21 @@ void BMXParticleContainer::EvolveParticles (int lev,
 
                 ParticleType p1 = pstruct[i];
                 const RealVect pos1 = p1.pos();
-                const Real radius1 = p_realarray[SoArealData::radius][i];
 
                 const auto neighbs = nbor_data.getNeighbors(i);
                 for (auto mit = neighbs.begin(); mit != neighbs.end(); ++mit)
                 {
-                  const auto p2 = *mit;
+                  auto p2 = *mit;
                   const int j = mit.index();
 
                   const RealVect pos2 = p2.pos();
-                  const Real radius2 = p_realarray[SoArealData::radius][j];
 
                   Real r2 = (pos1 - pos2).radSquared();
 
-                  Real r_lm = radius1 + radius2;
+                  /**********************************************************
+                   * Use interaction cutoff radius, not particle radius
+                   **********************************************************/
+                  Real r_lm = interaction->maxInteractionDistance(&p1.rdata(0),&p2.rdata(0));
 
                   if (r2 <= (r_lm-small_number)*(r_lm-small_number))
                     l_ncoll = 1;
@@ -170,8 +171,9 @@ void BMXParticleContainer::EvolveParticles (int lev,
 #endif
           {
 #ifdef _OPENMP
-#pragma omp parallel reduction(+:ncoll) if (Gpu::notInLaunchRegion())
+#pragma omp parallel reduction(+:ncoll) if (amrex::Gpu::notInLaunchRegion())
 #endif
+            count = 0;
             for (BMXParIter pti(*this, lev); pti.isValid(); ++pti)
             {
               PairIndex index(pti.index(), pti.LocalTileIndex());
@@ -183,9 +185,6 @@ void BMXParticleContainer::EvolveParticles (int lev,
               auto& aos   = ptile.GetArrayOfStructs();
               ParticleType* pstruct = aos().dataPtr();
 
-              auto& soa = ptile.GetStructOfArrays();
-              auto p_realarray = soa.realarray();
-
               auto nbor_data = m_neighbor_list[lev][index].data();
 
               constexpr Real small_number = 1.0e-15;
@@ -194,20 +193,21 @@ void BMXParticleContainer::EvolveParticles (int lev,
               {
                 ParticleType p1 = pstruct[i];
                 const RealVect pos1 = p1.pos();
-                const Real radius1 = p_realarray[SoArealData::radius][i];
 
                 const auto neighbs = nbor_data.getNeighbors(i);
                 for (auto mit = neighbs.begin(); mit != neighbs.end(); ++mit)
                 {
-                  const auto p2 = *mit;
-                  const int j = mit.index();
+                  auto p2 = *mit;
 
                   const RealVect pos2 = p2.pos();
-                  const Real radius2 = p_realarray[SoArealData::radius][j];
 
                   Real r2 = (pos1 - pos2).radSquared();
 
-                  Real r_lm = radius1 + radius2;
+                  /**********************************************************
+                   * Use interaction cutoff radius, not particle radius
+                   **********************************************************/
+                  Real rad2 = p2.rdata(realIdx::a_size);
+                  Real r_lm = interaction->maxInteractionDistance(&p1.rdata(0),&p2.rdata(0));
 
                   if (r2 <= (r_lm-small_number)*(r_lm-small_number))
                   {
@@ -223,7 +223,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
          * Particles routines                                               *
          *******************************************************************/
 #ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
+#pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
 #endif
         for (BMXParIter pti(*this, lev); pti.isValid(); ++pti)
         {
@@ -239,10 +239,6 @@ void BMXParticleContainer::EvolveParticles (int lev,
             ParticleType* pstruct = aos().dataPtr();
 
             const int nrp = GetParticles(lev)[index].numRealParticles();
-
-            auto& soa   = pti.GetStructOfArrays();
-            auto p_realarray = soa.realarray();
-            auto p_intarray = soa.intarray();
 
             // Number of particles including neighbor particles
             int ntot = nrp;
@@ -277,12 +273,11 @@ void BMXParticleContainer::EvolveParticles (int lev,
 
             // now we loop over the neighbor list and compute the forces
             amrex::ParallelFor(nrp,
-                [nrp,pstruct,p_realarray,p_intarray,fc_ptr,tow_ptr,nbor_data,
+                [nrp,pstruct,fc_ptr,tow_ptr,nbor_data,
 #if defined(AMREX_DEBUG) || defined(AMREX_USE_ASSERTION)
                  eps,
 #endif
-                 subdt,ntot,local_mew=DEM::mew,local_kn=DEM::kn,
-                 local_etan=DEM::etan]
+                 subdt,ntot,interaction]
               AMREX_GPU_DEVICE (int i) noexcept
               {
                   auto particle = pstruct[i];
@@ -292,7 +287,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
                   const auto neighbs = nbor_data.getNeighbors(i);
                   for (auto mit = neighbs.begin(); mit != neighbs.end(); ++mit)
                   {
-                      const auto p2 = *mit;
+                      auto p2 = *mit;
                       const int j = mit.index();
 
                       Real dist_x = p2.pos(0) - pos1[0];
@@ -303,10 +298,9 @@ void BMXParticleContainer::EvolveParticles (int lev,
                                 dist_y*dist_y +
                                 dist_z*dist_z;
 
-                      const Real p1radius = p_realarray[SoArealData::radius][i];
-                      const Real p2radius = p_realarray[SoArealData::radius][j];
+                      RealVect diff(dist_x,dist_y,dist_z);
 
-                      Real r_lm = p1radius + p2radius;
+                      Real r_lm = interaction->maxInteractionDistance(&particle.rdata(0),&p2.rdata(0));
 
                       AMREX_ASSERT_WITH_MESSAGE(
                           not (particle.id() == p2.id() and
@@ -330,121 +324,38 @@ void BMXParticleContainer::EvolveParticles (int lev,
                           Real vrel_trans_norm;
                           RealVect vrel_t(0.);
 
-                          RealVect p1vel(p_realarray[SoArealData::velx][i],
-                                         p_realarray[SoArealData::vely][i],
-                                         p_realarray[SoArealData::velz][i]);
-
-                          RealVect p2vel(p_realarray[SoArealData::velx][j],
-                                         p_realarray[SoArealData::vely][j],
-                                         p_realarray[SoArealData::velz][j]);
-
-                          RealVect p1omega(p_realarray[SoArealData::omegax][i],
-                                           p_realarray[SoArealData::omegay][i],
-                                           p_realarray[SoArealData::omegaz][i]);
-
-                          RealVect p2omega(p_realarray[SoArealData::omegax][j],
-                                           p_realarray[SoArealData::omegay][j],
-                                           p_realarray[SoArealData::omegaz][j]);
-
-                          cfrelvel(p1vel, p2vel, p1radius, p2radius, p1omega,
-                              p2omega, vrel_trans_norm, vrel_t, normal, dist_mag);
-
-                          int phase1 = p_intarray[SoAintData::phase][i];
-                          int phase2 = p_intarray[SoAintData::phase][j];
-
-                          Real kn_des = local_kn;
-                          Real etan_des = local_etan(phase1-1,phase2-1);
-
-                          // NOTE - we don't use the tangential components right now,
-                          // but we might in the future
-                          // Real kt_des = DEM::kt;
-                          // Real etat_des = DEM::etat[phase1-1][phase2-1];
 
                           RealVect fn(0.);
                           RealVect ft(0.);
-                          RealVect overlap_t(0.);
-                          Real mag_overlap_t(0.);
-
-                          // calculate the normal contact force
-                          fn[0] = -(kn_des*overlap_n*normal[0]
-                                  + etan_des*vrel_trans_norm*normal[0]);
-                          fn[1] = -(kn_des*overlap_n*normal[1]
-                                  + etan_des*vrel_trans_norm*normal[1]);
-                          fn[2] = -(kn_des*overlap_n*normal[2]
-                                  + etan_des*vrel_trans_norm*normal[2]);
-
-                          // calculate the tangential overlap
-                          overlap_t[0] = subdt*vrel_t[0];
-                          overlap_t[1] = subdt*vrel_t[1];
-                          overlap_t[2] = subdt*vrel_t[2];
-                          mag_overlap_t = sqrt(dot_product(overlap_t, overlap_t));
-
-                          if (mag_overlap_t > 0.0) {
-                              Real fnmd = local_mew * sqrt(dot_product(fn, fn));
-                              RealVect tangent(0.);
-                              tangent[0] = overlap_t[0]/mag_overlap_t;
-                              tangent[1] = overlap_t[1]/mag_overlap_t;
-                              tangent[2] = overlap_t[2]/mag_overlap_t;
-                              ft[0] = -fnmd * tangent[0];
-                              ft[1] = -fnmd * tangent[1];
-                              ft[2] = -fnmd * tangent[2];
-                          } else {
-                              ft[0] = 0.0;
-                              ft[1] = 0.0;
-                              ft[2] = 0.0;
-                          }
+                          Real *coord1 = &particle.rdata(0);
+                          Real *coord2 = &p2.rdata(0);
 
 
+                          interaction->evaluateForce(&diff[0],&p2.rdata(0),&particle.rdata(0),&fn[0]);
 #ifdef _OPENMP
 #pragma omp critical
                           {
 #endif
-                            Gpu::Atomic::Add(&fc_ptr[i         ], fn[0] + ft[0]);
-                            Gpu::Atomic::Add(&fc_ptr[i + ntot  ], fn[1] + ft[1]);
-                            Gpu::Atomic::Add(&fc_ptr[i + 2*ntot], fn[2] + ft[2]);
+                            amrex::Gpu::Atomic::Add(&fc_ptr[i         ], fn[0] + ft[0]);
+                            amrex::Gpu::Atomic::Add(&fc_ptr[i + ntot  ], fn[1] + ft[1]);
+                            amrex::Gpu::Atomic::Add(&fc_ptr[i + 2*ntot], fn[2] + ft[2]);
 
                             if (j < nrp)
                             {
-                              Gpu::Atomic::Add(&fc_ptr[j         ], -(fn[0] + ft[0]));
-                              Gpu::Atomic::Add(&fc_ptr[j + ntot  ], -(fn[1] + ft[1]));
-                              Gpu::Atomic::Add(&fc_ptr[j + 2*ntot], -(fn[2] + ft[2]));
+                              amrex::Gpu::Atomic::Add(&fc_ptr[j         ], -(fn[0] + ft[0]));
+                              amrex::Gpu::Atomic::Add(&fc_ptr[j + ntot  ], -(fn[1] + ft[1]));
+                              amrex::Gpu::Atomic::Add(&fc_ptr[j + 2*ntot], -(fn[2] + ft[2]));
                             }
 #ifdef _OPENMP
                           }
 #endif
 
-                          Real dist_cl1 = 0.5 * (dist_mag + (p1radius*p1radius - p2radius*p2radius) * dist_mag_inv);
-                          dist_cl1 = dist_mag - dist_cl1;
 
-                          Real dist_cl2 = 0.5 * (dist_mag + (p2radius*p2radius - p1radius*p1radius) * dist_mag_inv);
-                          dist_cl2 = dist_mag - dist_cl2;
-
-                          RealVect tow_force(0.);
-
-                          cross_product(normal, ft, tow_force);
-
-#ifdef _OPENMP
-#pragma omp critical
-                          {
-#endif
-                            Gpu::Atomic::Add(&tow_ptr[i         ], dist_cl1*tow_force[0]);
-                            Gpu::Atomic::Add(&tow_ptr[i + ntot  ], dist_cl1*tow_force[1]);
-                            Gpu::Atomic::Add(&tow_ptr[i + 2*ntot], dist_cl1*tow_force[2]);
-
-                            if (j < nrp)
-                            {
-                                Gpu::Atomic::Add(&tow_ptr[j         ], dist_cl2*tow_force[0]);
-                                Gpu::Atomic::Add(&tow_ptr[j + ntot  ], dist_cl2*tow_force[1]);
-                                Gpu::Atomic::Add(&tow_ptr[j + 2*ntot], dist_cl2*tow_force[2]);
-                            }
-#ifdef _OPENMP
-                          }
-#endif
                       }
                   }
               });
 
-            Gpu::Device::synchronize();
+            amrex::Gpu::Device::synchronize();
 
             // Debugging: copy data from the fc (all forces) vector to the wfor
             // (wall forces) vector. Note that since fc already contains the
@@ -474,7 +385,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
             int z_hi_bc = BC::domain_bc[5];
 
             amrex::ParallelFor(nrp,
-              [pstruct,p_realarray,subdt,fc_ptr,ntot,gravity,tow_ptr,eps,p_hi,p_lo,
+              [pstruct,subdt,fc_ptr,ntot,tow_ptr,eps,p_hi,p_lo,
                x_lo_bc,x_hi_bc,y_lo_bc,y_hi_bc,z_lo_bc,z_hi_bc]
               AMREX_GPU_DEVICE (int i) noexcept
               {
@@ -482,31 +393,18 @@ void BMXParticleContainer::EvolveParticles (int lev,
 
                 RealVect ppos(particle.pos());
 
-                Real mass = p_realarray[SoArealData::mass][i];
 
-                p_realarray[SoArealData::velx][i] += subdt * (
-                    (p_realarray[SoArealData::dragx][i] + fc_ptr[i]) /
-                     mass + gravity[0]
-                );
-                p_realarray[SoArealData::vely][i] += subdt * (
-                    (p_realarray[SoArealData::dragy][i] + fc_ptr[i+ntot]) /
-                     mass + gravity[1]
-                );
-                p_realarray[SoArealData::velz][i] += subdt * (
-                    (p_realarray[SoArealData::dragz][i] + fc_ptr[i+2*ntot]) /
-                     mass + gravity[2]
-                );
+                particle.rdata(realIdx::velx) = fc_ptr[i];
+                particle.rdata(realIdx::vely) = fc_ptr[i+ntot];
+                particle.rdata(realIdx::velz) = fc_ptr[i+2*ntot];
 
-                p_realarray[SoArealData::omegax][i] +=
-                  subdt * p_realarray[SoArealData::oneOverI][i] * tow_ptr[i];
-                p_realarray[SoArealData::omegay][i] +=
-                  subdt * p_realarray[SoArealData::oneOverI][i] * tow_ptr[i+ntot];
-                p_realarray[SoArealData::omegaz][i] +=
-                  subdt * p_realarray[SoArealData::oneOverI][i] * tow_ptr[i+2*ntot];
+                particle.rdata(realIdx::wx) = 0.0;
+                particle.rdata(realIdx::wy) = 0.0;
+                particle.rdata(realIdx::wz) = 0.0;
 
-                ppos[0] += subdt * p_realarray[SoArealData::velx][i];
-                ppos[1] += subdt * p_realarray[SoArealData::vely][i];
-                ppos[2] += subdt * p_realarray[SoArealData::velz][i];
+                ppos[0] += subdt * particle.rdata(realIdx::velx);
+                ppos[1] += subdt * particle.rdata(realIdx::vely);
+                ppos[2] += subdt * particle.rdata(realIdx::velz);
 
                 particle.pos(0) = ppos[0];
                 particle.pos(1) = ppos[1];
@@ -515,9 +413,8 @@ void BMXParticleContainer::EvolveParticles (int lev,
 
             BL_PROFILE_VAR_STOP(des_time_march);
 
-            Gpu::synchronize();
+            amrex::Gpu::synchronize();
 
-            usr2_des(nrp, ptile);
 
             /********************************************************************
              * Update runtime cost (used in load-balancing)                     *
@@ -557,34 +454,6 @@ void BMXParticleContainer::EvolveParticles (int lev,
             Print() << "Number of collisions: " << ncoll << " at step " << n << std::endl;
         }
 
-        if (debug_level > 0){
-            UpdateMaxVelocity();
-            UpdateMaxForces(pfor, wfor);
-        }
-
-        if (debug_level > 1) {
-            RealVect max_vel = GetMaxVelocity();
-            Vector<RealVect> max_forces = GetMaxForces();
-
-            const Real * dx_crse = Geom(0).CellSize();
-            amrex::Print() << "Maximum distance traveled:"
-                           << std::endl
-                           <<  "x= " << max_vel[0] * dt
-                           << " y= " << max_vel[1] * dt
-                           << " z= " << max_vel[2] * dt
-                           << " and note that "
-                           << " dx= " << dx_crse[0] << std::endl;
-
-            amrex::Print() << "Maximum particle-particle (pp) and particle-wall (pw) forces:"
-                           << std::endl
-                           <<  "ppx= " << max_forces[0][0]
-                           << " ppy= " << max_forces[0][1]
-                           << " ppz= " << max_forces[0][2] << std::endl
-                           <<  "pwx= " << max_forces[1][0]
-                           << " pwy= " << max_forces[1][1]
-                           << " pwz= " << max_forces[1][2] << std::endl;
-
-        }
 
     } // end of loop over substeps
 
@@ -604,36 +473,8 @@ void BMXParticleContainer::EvolveParticles (int lev,
     }
 
 #ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
+#pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
 #endif
-    for (BMXParIter pti(*this, lev); pti.isValid(); ++pti)
-    {
-        const int nrp   = NumberOfParticles(pti);
-        void* particles = pti.GetArrayOfStructs().data();
-
-        usr3_des(nrp,particles);
-    }
-
-    if (debug_level > 0) {
-        RealVect max_vel = GetMaxVelocity();
-        Vector<RealVect> max_forces = GetMaxForces();
-
-        const Real * dx_crse = Geom(0).CellSize();
-        amrex::Print() << "Maximum possible distance traveled:" << std::endl
-                       <<  "x= " << max_vel[0] * dt
-                       << " y= " << max_vel[1] * dt
-                       << " z= " << max_vel[2] * dt
-                       << " and note that "
-                       << " dx= " << dx_crse[0] << std::endl;
-
-        amrex::Print() << "Maximum particle-particle (pp) and particle-wall (pw) forces:" << std::endl
-                       <<  "ppx= " << max_forces[0][0]
-                       << " ppy= " << max_forces[0][1]
-                       << " ppz= " << max_forces[0][2] << std::endl
-                       <<  "pwx= " << max_forces[1][0]
-                       << " pwy= " << max_forces[1][1]
-                       << " pwz= " << max_forces[1][2] << std::endl;
-    }
 
     amrex::Print() << "done. \n";
 
