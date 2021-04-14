@@ -1,7 +1,10 @@
 #ifndef BMX_SPECIES_PARMS_H_
 #define BMX_SPECIES_PARMS_H_
 
+#include <vector>
+#include <string>
 #include <AMReX_REAL.H>
+#include <AMReX_Vector.H>
 
 namespace SPECIES
 {

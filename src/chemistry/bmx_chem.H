@@ -156,6 +156,24 @@ class BMXChemistry
    */
   void setChildParameters(Real *p_real_orig, int *p_int_orig, Real *p_real_child,
       int *p_int_child);
+
+  /**
+   * Check to see if particle meets criteria for splitting
+   * @param p_par particle parameters
+   * @param p_conc species concentrations
+   * @return true if particle should split
+   */
+  bool checkSplit(Real *p_par, Real *p_conc);
+
+  /**
+   * Create positions and parameter values for new particle pair. This consist
+   * of the original particle and a new particle
+   * @param pos_orig, pos_new positions of original and new particles
+   * @param par_orig, par_new parameter values of original and new particles
+   * @param ipar_orig, ipar_new integer parameter values of original and new particles
+   */
+  void setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig, Real *par_new,
+      int *ipar_orig, int *ipar_new);
   protected:
   /**
    * Constructor
@@ -180,6 +198,9 @@ class BMXChemistry
   Real k2, kr2;   // rate coefficients for converting A into B and C inside biological cell
   Real k3, kr3;   // rate coefficients for species C into and out of biological cell
   Real kg;        // cell growth coefficient
+
+  // Fraction of overlap
+  Real p_overlap;
 
   // Value of pi
   Real p_pi;

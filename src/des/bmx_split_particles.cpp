@@ -9,6 +9,7 @@
 #include <bmx_mf_helpers.H>
 #include <bmx_dem_parms.H>
 #include <bmx_fluid_parms.H>
+#include <bmx_chem.H>
 
 /**
  * @brief this function splits particles if some criterion is met
@@ -43,34 +44,23 @@ BMXParticleContainer::split_particles ()
         {
               BMXParticleContainer::ParticleType& p_orig = pstruct[pid];
 
-              // This is just a made-up test on particle volume to trip splitting
-              if (p_orig.rdata(realIdx::vol) > FLUID::max_vol)
+              // Check to see if particle satisfies some criteria for splitting
+              // into two new  particles
+              if (bmxchem->checkSplit(&p_orig.rdata(0), &p_orig.rdata(realIdx::first_data)))
               {
                    ParticleType p;
                    p.id()  = ParticleType::NextID();
                    p.cpu() = amrex::ParallelDescriptor::MyProc();
-                   Real x,y,z;
-                   x = p_orig.pos(0);
-                   y = p_orig.pos(1);
-                   z = p_orig.pos(2);
-
-                   // Copy values from original particle and modify some values
-                   // as appropriate
-                   bmxchem->setChildParameters(&p_orig.rdata(0), &p_orig.idata(0),
-                       &p.rdata(0),&p.idata(0));
-                   // Find new locations for split particles
-                   Real radius = p.rdata(realIdx::a_size);
-                   Real theta = PI * amrex::Random();
-                   Real phi = 2.0 * PI * amrex::Random();
-                   Real nx = cos(theta)*cos(phi);
-                   Real ny = cos(theta)*sin(phi);
-                   Real nz = sin(theta);
-                   p.pos(0) = x + 0.5*nx*radius;
-                   p.pos(1) = y + 0.5*ny*radius;
-                   p.pos(2) = z + 0.5*nz*radius;
-                   p_orig.pos(0) = x - 0.5*nx*radius;
-                   p_orig.pos(1) = y - 0.5*ny*radius;
-                   p_orig.pos(2) = z - 0.5*nz*radius;
+                   Real *pos_orig = &p_orig.pos(0);
+                   Real *pos_new = &p.pos(0);
+                   Real *par_orig = &p_orig.rdata(0);
+                   Real *par_new = &p.rdata(0);
+                   int *ipar_orig = &p_orig.idata(0);
+                   int *ipar_new = &p.idata(0);
+                   // Set parameters on new particle base on values from
+                   // original particle
+                   bmxchem->setNewCell(pos_orig, pos_new, par_orig,
+                       par_new, ipar_orig, ipar_new);
 
                    particle_tile.push_back(p);
               } // if test

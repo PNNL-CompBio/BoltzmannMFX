@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <math.h>
+#include <bmx.H>
+#include <bmx_fluid_parms.H>
 #include <bmx_chem.H>
 
 BMXChemistry *BMXChemistry::p_instance = NULL;
@@ -61,7 +63,8 @@ void BMXChemistry::setParams(const char *file)
   kr2 = 0.005;
   k3 = 0.01;
   kr3 = 0.01;
-  kg = 1.0;
+  kg = 2000.0;
+  p_overlap = 0.2;
 }
 
 /**
@@ -140,7 +143,7 @@ void BMXChemistry::updateChemistry(Real *p_vals, Real *cell_par, Real dt)
   fC = k2*A - kr2*B*C;
   // Increment volume 
   Real volume = cell_par[realIdx::vol];
-  Real dvdt = (kg/(1.0-kg*B))*fB;
+  Real dvdt = kg*volume*fB;
   if (fB < 0.0) dvdt = 0.0;
   cell_par[realIdx::dvdt] = dvdt; 
   Real new_vol = volume + dt*dvdt;
@@ -253,4 +256,51 @@ void BMXChemistry::setChildParameters(Real *p_real_orig, int *p_int_orig,
   p_real_child[realIdx::b_size] = radius;
   p_real_orig[realIdx::c_size] = radius;
   p_real_child[realIdx::c_size] = radius;
+}
+
+/**
+ * Check to see if particle meets criteria for splitting
+ * @param p_par particle parameters
+ * @param p_conc species concentrations
+ * @return true if particle should split
+ */
+bool BMXChemistry::checkSplit(Real *p_par, Real *p_conc)
+{
+  bool ret = false;
+  if (p_par[realIdx::vol] > FLUID::max_vol) ret = true;
+  return ret;
+}
+
+/**
+ * Create positions and parameter values for new particle pair. This consist
+ * of the original particle and a new particle
+ * @param pos_orig, pos_new positions of original and new particles
+ * @param par_orig, par_new real parameter values of original and new particles
+ * @param ipar_orig, ipar_new integer parameter values of original and new particles
+ */
+void BMXChemistry::setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
+    Real *par_new, int *ipar_orig, int *ipar_new)
+{
+  Real x,y,z;
+  x = pos_orig[0];
+  y = pos_orig[1];
+  z = pos_orig[2];
+
+  // Copy values from original particle and modify some values
+  // as appropriate
+  setChildParameters(par_orig, ipar_orig, par_new,ipar_new);
+  // Find new locations for split particles
+  Real radius = par_new[realIdx::a_size];
+  Real theta = p_pi * amrex::Random();
+  Real phi = 2.0 * p_pi * amrex::Random();
+  Real nx = cos(theta)*cos(phi);
+  Real ny = cos(theta)*sin(phi);
+  Real nz = sin(theta);
+  Real scale = 1.0 - p_overlap;
+  pos_new[0] = x + scale*0.5*nx*radius;
+  pos_new[1] = y + scale*0.5*ny*radius;
+  pos_new[2] = z + scale*0.5*nz*radius;
+  pos_orig[0] = x - scale*0.5*nx*radius;
+  pos_orig[1] = y - scale*0.5*ny*radius;
+  pos_orig[2] = z - scale*0.5*nz*radius;
 }

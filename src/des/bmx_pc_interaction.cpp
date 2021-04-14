@@ -409,6 +409,8 @@ void BMXParticleContainer::EvolveParticles (int lev,
                 particle.pos(0) = ppos[0];
                 particle.pos(1) = ppos[1];
                 particle.pos(2) = ppos[2];
+                printf("particle: %d position: %12.6f %12.6f %12.6f\n",i,particle.pos(0),
+                  particle.pos(1),particle.pos(2));
               });
 
             BL_PROFILE_VAR_STOP(des_time_march);

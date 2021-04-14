@@ -37,7 +37,7 @@ BMXCellInteraction::~BMXCellInteraction()
 void BMXCellInteraction::setParams(const char *file)
 {
   p_bndry_width = 0.05;
-  p_stiffness = 1.0;
+  p_stiffness = 100.0;
 }
 
 /**
