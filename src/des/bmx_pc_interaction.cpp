@@ -327,8 +327,6 @@ void BMXParticleContainer::EvolveParticles (int lev,
 
                           RealVect fn(0.);
                           RealVect ft(0.);
-                          Real *coord1 = &particle.rdata(0);
-                          Real *coord2 = &p2.rdata(0);
 
 
                           interaction->evaluateForce(&diff[0],&p2.rdata(0),&particle.rdata(0),&fn[0]);
@@ -349,11 +347,16 @@ void BMXParticleContainer::EvolveParticles (int lev,
 #ifdef _OPENMP
                           }
 #endif
-
+                          // TODO: Do we need an OPENMP pragma here?
+                          RealVect fw(0.);
+                          interaction->evaluateSurfaceForce(&pos1[0],&particle.rdata(0),&fw[0]);
+                          amrex::Gpu::Atomic::Add(&fc_ptr[i         ], fw[0]);
+                          amrex::Gpu::Atomic::Add(&fc_ptr[i + ntot  ], fw[1]);
+                          amrex::Gpu::Atomic::Add(&fc_ptr[i + 2*ntot], fw[2]);
 
                       }
-                  }
-              });
+                  } // end of neighbor loop
+              }); // end of loop over particles
 
             amrex::Gpu::Device::synchronize();
 

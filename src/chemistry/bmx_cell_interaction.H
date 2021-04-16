@@ -42,6 +42,13 @@ class BMXCellInteraction
    */
   void evaluateForce(const Real *r12, Real *par1, Real *par2, Real *frc);
 
+  /**
+   * Calculate force between growth surface and particle
+   * @param pos position of particle
+   * @param par parameters describing particle
+   * @param frc force on particle from wall
+   */
+  void evaluateSurfaceForce(const Real *pos, Real *par, Real *frc);
   protected:
   /**
    * Constructor
@@ -55,9 +62,13 @@ class BMXCellInteraction
 
   private:
 
-  Real p_bndry_width; // cell surface interaction parameter
-  Real p_stiffness;   // strength of cell interaction. This parameter assumes
-                      // viscous drag is incorporated into force
+  Real p_bndry_width;   // cell surface interaction parameter
+  Real p_stiffness;     // strength of cell interaction. This parameter assumes
+                        // viscous drag is incorporated into force
+
+  Real p_zwall;         // z-location of surface
+  Real p_z_bndry_width; // cell-growth surface interaction parameter
+  Real p_z_stiffness;   // strength of cell-growth surface interaction
 
 
   static BMXCellInteraction *p_instance;
