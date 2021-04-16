@@ -36,11 +36,11 @@ namespace SPECIES
   {
     amrex::ParmParse pp("chem_species");
 
+    pp.get("max_vol", max_vol);
+
     if (pp.contains("solve"))
     {
       pp.getarr("solve", chem_species);
-
-      pp.get("max_solve", max_vol);
 
       AMREX_ALWAYS_ASSERT_WITH_MESSAGE(chem_species.size() > 0,
           "No input provided for chem_species.solve");

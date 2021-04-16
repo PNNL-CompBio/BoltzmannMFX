@@ -1,6 +1,7 @@
 # Miscellaneous parameters
 #_______________________________________________________________________
 
+# Random number seed
 bmx.seed = 21893
 
 #_______________________________________________________________________
@@ -13,7 +14,7 @@ bmx.seed = 21893
 
 bmx.fixed_dt = 0.005
 
-bmx.max_step = 300
+bmx.max_step = 1000
 
 dem.solve = bacteria
 bmx.particle_init_type = "AsciiFile"
@@ -80,7 +81,7 @@ amr.regrid_int         = -1
 amr.par_ascii_int  = -1
 amr.par_ascii_file ="vis"
 
-amr.plot_int       = 10
+amr.plot_int       = -1
 amr.plot_file      ="plt"
 
 amr.check_int      = -1
@@ -97,7 +98,9 @@ fluid.solve = fluid
 fluid.chem_species      = A B C
 fluid.chem_species_diff = 0.01 0.0 0.01
 fluid.init_conc_species = 0.1 0.0 0.01
-fluid.max_vol = 0.001
+fluid.surface_location = 0.75
+fluid.liquid_film_thickness = 0.05
+chem_species.max_vol = 0.001
 
 #Diffusion_type: 0 = explicit, 1 = C-N, 2 = implicit
 bmx.diffusion_type = 0

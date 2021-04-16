@@ -30,8 +30,11 @@ namespace FLUID
   // Initial fluid concentrations of species
   std::vector<amrex::Real> init_conc;
 
-  // Maximum cell volume
-  amrex::Real max_vol;
+  // Location of top of support layer
+  amrex::Real surface_location;
+
+  // Liquid film thickness on top of support layer
+  amrex::Real film_thickness;
 #endif
 
   // Specified constant gas phase chem_species diffusion coefficients
@@ -59,8 +62,12 @@ namespace FLUID
       name = fluid_name[0];
     }
 
-    pp.get("max_vol", max_vol);
+    // Location of top of support layer
+    pp.get("surface_location",surface_location);
 
+    // Liquid film thickness on top of support layer
+    pp.get("liquid_film_thickness",film_thickness);
+      
     if (solve)
     {
       amrex::ParmParse ppFluid(name.c_str());

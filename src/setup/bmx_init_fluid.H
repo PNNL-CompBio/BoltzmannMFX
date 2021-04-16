@@ -24,6 +24,9 @@ void init_fluid (const amrex::Box& sbx,
 
 void init_fluid_parameters (const amrex::Box& bx,
                             const amrex::Box& domain,
+			    const amrex::Real dx,
+			    const amrex::Real dy,
+			    const amrex::Real dz,
                             const amrex::MFIter& mfi,
                             LevelData& ld,
                             const int advect_fluid_chem_species);

@@ -26,8 +26,11 @@ namespace FLUID
   // Initial fluid concentrations of species
   extern std::vector<amrex::Real> init_conc;
 
-  // Maximum cell volume
-  extern amrex::Real max_vol;
+  // Location of top of support layer
+  extern amrex::Real surface_location;
+
+  // Liquid film thickness on top of support layer
+  extern amrex::Real film_thickness;
 #endif
 
   // Specified constant gas phase chem_species diffusion coefficients

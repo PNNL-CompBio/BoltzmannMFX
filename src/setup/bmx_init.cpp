@@ -567,7 +567,7 @@ bmx::bmx_init_fluid (int is_restarting, Real dt, Real stop_time)
           const Box& sbx = dummy[mfi].box();
 
           if ( is_restarting ) {
-            init_fluid_parameters(bx, domain, mfi, ld, advect_fluid_chem_species);
+            init_fluid_parameters(bx, domain, dx, dy, dz, mfi, ld, advect_fluid_chem_species);
           } else {
             init_fluid(sbx, bx, domain, mfi, ld, dx, dy, dz, xlen, ylen, zlen, plo,
                        advect_fluid_chem_species);

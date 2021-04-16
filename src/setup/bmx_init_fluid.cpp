@@ -39,7 +39,7 @@ void init_fluid (const Box& sbx,
   }
 
   // Initialize all the fluid and fluid chem_species parameters
-  init_fluid_parameters(bx, domain, mfi, ld, advect_fluid_chem_species);
+  init_fluid_parameters(bx, domain, dx, dy, dz, mfi, ld, advect_fluid_chem_species);
 }
 
 //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv!
@@ -49,13 +49,16 @@ void init_fluid (const Box& sbx,
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 void init_fluid_parameters (const Box& bx,
                             const Box& domain,
+                            const Real dx,
+                            const Real dy,
+                            const Real dz,
                             const MFIter& mfi,
                             LevelData& ld,
                             const int advect_fluid_chem_species)
 {
   // Initialize D_k
   if (advect_fluid_chem_species)  
-      calc_D_k(bx, domain, (*ld.D_k)[mfi]);
+      calc_D_k(bx, domain, dx, dy, dz, (*ld.D_k)[mfi]);
 
   Gpu::synchronize();
 }
@@ -89,12 +92,20 @@ void set_ic_chem_species (const Box& sbx,
 
   amrex::Print() << "SETTING INITIAL CONDITIONS FOR SPECIES " << std::endl;
 
+  ParmParse pp("geometry");
+  amrex::Vector<Real> bmin, bmax;
+  pp.getarr("prob_lo",bmin);
+  pp.getarr("prob_hi",bmax);
+
+  // We set the coeffs at cell centers to D_k in the lower region and 0 above zhi
+  Real zhi = FLUID::surface_location+FLUID::film_thickness-bmin[2];
+
   ParallelFor(sbx, nchem_species, [=]
        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
       { 
-          Real x   = (i+.5)*dx;
-          Real y   = (j+.5)*dy;
-          Real z   = (k+.5)*dz;
+          Real x   = (i+.5)*dx+bmin[0];
+          Real y   = (j+.5)*dy+bmin[1];
+          Real z   = (k+.5)*dz+bmin[2];
 
 #if 0
           Real ra = 0.1;
@@ -116,7 +127,7 @@ void set_ic_chem_species (const Box& sbx,
           }
 #else
          // two layers
-         if (z > 0.4)
+         if (z > zhi)
             X_k(i,j,k,n) = 0.0;
          else
 #ifdef NEW_CHEM

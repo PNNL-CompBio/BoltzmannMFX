@@ -267,7 +267,7 @@ void BMXChemistry::setChildParameters(Real *p_real_orig, int *p_int_orig,
 bool BMXChemistry::checkSplit(Real *p_par, Real *p_conc)
 {
   bool ret = false;
-  if (p_par[realIdx::vol] > FLUID::max_vol) ret = true;
+  if (p_par[realIdx::vol] > SPECIES::max_vol) ret = true;
   return ret;
 }
 
