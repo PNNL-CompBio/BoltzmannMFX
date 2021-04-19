@@ -81,7 +81,7 @@ amr.regrid_int         = -1
 amr.par_ascii_int  = -1
 amr.par_ascii_file ="vis"
 
-amr.plot_int       = -1
+amr.plot_int       = 10
 amr.plot_file      ="plt"
 
 amr.check_int      = -1
