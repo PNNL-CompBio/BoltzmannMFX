@@ -89,7 +89,7 @@ void DiffusionOp::diffuse_chem_species (      Vector< MultiFab*      > X_k_in,
 
     for(int lev = 0; lev <= finest_level; lev++)
     {
-        chem_species_phi[lev]->FillBoundary(geom[lev].periodicity());
+        chem_species_phi[lev]->FillBoundary(amrcore->Geom(lev).periodicity());
         MultiFab::Copy(*X_k_in[lev], *chem_species_phi[lev], 0, 0, nchem_species, 1);
     }
 }
