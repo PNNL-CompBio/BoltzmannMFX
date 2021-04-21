@@ -221,9 +221,14 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 #ifdef NEW_CHEM
               Real *cell_par = &p.rdata(0);
               Real *p_vals = &p.rdata(realIdx::first_data);
+#if 0
               bmxchem->xferMeshToParticle(grid_vol, cell_par, &interp_loc[0],
                   p_vals, dt);
               bmxchem->updateChemistry(p_vals, cell_par, dt);
+#else
+              bmxchem->xferMeshToParticleAndUpdateChem(grid_vol, cell_par,
+                  &interp_loc[0], p_vals, dt);
+#endif
 #else
               // Interpolate values from mesh to particles
               p.rdata(realData::fluid_A) = interp_loc[0];

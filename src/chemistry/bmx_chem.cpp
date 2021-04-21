@@ -166,6 +166,89 @@ void BMXChemistry::updateChemistry(Real *p_vals, Real *cell_par, Real dt)
 }
 
 /**
+ * Transfer mesh values to internal concentrations and evaluate chemistry
+ * @param grid_vol volume of grid cell that contains biological cell
+ * @param cell_par pointer to cell parameter values
+ * @param mesh_vals values of concentrations on mesh
+ * @param p_vals values of concentrations in particles
+ * @param dt time step interval
+ */
+void BMXChemistry::xferMeshToParticleAndUpdateChem(Real grid_vol,
+    Real *cell_par, Real *mesh_vals, Real *p_vals, Real dt)
+{
+  // cell parameters
+  Real cell_vol = cell_par[realIdx::vol];
+  Real cell_area = cell_par[realIdx::area];
+  // fluid concentrations
+  Real fA, fB, fC;
+  fA = mesh_vals[0];
+  fB = mesh_vals[1];
+  fC = mesh_vals[2];
+  // cell concentrations
+  Real cA, cB, cC;
+  cA = p_vals[0];
+  cB = p_vals[1];
+  cC = p_vals[2];
+  // incremental changes
+  Real dA, dB, dC;
+  dA = dt*cell_area*(k1*fA-kr1*cA);
+  dB = 0.0;
+  dC = dt*cell_area*(k3*fC-kr3*cC);
+  // adjusted cell values
+  cA += dA/cell_vol;
+  cB += dB/cell_vol;
+  cC += dC/cell_vol;
+  // adjusted fluid values
+  fA = fA-dA/grid_vol;
+  fB = fB-dB/grid_vol;
+  fC = fC-dC/grid_vol;
+
+  // Rate of change of A, B, C
+  Real rA, rB, rC;
+  rA = -k2*cA + kr2*cB*cC;
+  rB = k2*cA - kr2*cB*cC;
+  rC = k2*cA - kr2*cB*cC;
+  // Increment volume 
+  Real volume = cell_par[realIdx::vol];
+  Real dvdt = kg*volume*rB;
+  if (rB < 0.0) dvdt = 0.0;
+  cell_par[realIdx::dvdt] = dvdt; 
+  Real new_vol = volume + dt*dvdt;
+  cell_par[realIdx::vol] = new_vol;
+  Real radius = pow((3.0*volume/(4*p_pi)),1.0/3.0);
+  cell_par[realIdx::area] = 4.0*p_pi*radius*radius;
+  cell_par[realIdx::dadt] = 2.0*dvdt/radius;
+  cell_par[realIdx::a_size] = radius;
+  cell_par[realIdx::b_size] = radius;
+  cell_par[realIdx::c_size] = radius;
+  // Increment concentrations
+  cA += dt*rA;
+  cB += dt*rB;
+  cC += dt*rC;
+  // Adjust concentrations for change in volume
+  Real ratio = volume/new_vol;
+  cA *= ratio;
+  cB *= ratio;
+  cC *= ratio;
+
+  // cell parameters
+  cell_vol = cell_par[realIdx::vol];
+  cell_area = cell_par[realIdx::area];
+  // incremental changes
+  dA = dt*cell_area*(k1*fA-kr1*cA);
+  dB = 0.0;
+  dC = dt*cell_area*(k3*fC-kr3*cC);
+  // save adjusted cell concentrations
+  p_vals[3] = cA+dA/cell_vol;
+  p_vals[4] = cB+dB/cell_vol;
+  p_vals[5] = cC+dC/cell_vol;
+  // save fluid concentration increments
+  p_vals[6] = -dA/(dt*grid_vol);
+  p_vals[7] = -dB/(dt*grid_vol);
+  p_vals[8] = -dC/(dt*grid_vol);
+}
+
+/**
  * Calculate transfer increments based on current concentrations in biological
  * cell and in grid cell
  * @param grid_vol volume of grid cell that contains biological cell
@@ -177,6 +260,7 @@ void BMXChemistry::updateChemistry(Real *p_vals, Real *cell_par, Real dt)
 void BMXChemistry::xferParticleToMesh(Real grid_vol, Real *cell_par,
     Real *mesh_vals, Real *p_vals, Real dt)
 {
+#if 0
   // cell parameters
   Real cell_vol = cell_par[realIdx::vol];
   Real cell_area = cell_par[realIdx::area];
@@ -203,6 +287,15 @@ void BMXChemistry::xferParticleToMesh(Real grid_vol, Real *cell_par,
   mesh_vals[0] = -dA/(dt*grid_vol);
   mesh_vals[1] = -dB/(dt*grid_vol);
   mesh_vals[2] = -dC/(dt*grid_vol);
+#else
+  p_vals[0] = p_vals[3];
+  p_vals[1] = p_vals[4];
+  p_vals[2] = p_vals[5];
+
+  mesh_vals[0] = p_vals[6];
+  mesh_vals[1] = p_vals[7];
+  mesh_vals[2] = p_vals[8];
+#endif
 }
 
 /**

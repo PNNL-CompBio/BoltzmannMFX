@@ -127,6 +127,17 @@ class BMXChemistry
   void updateChemistry(Real *p_vals, Real *cell_par, Real dt);
 
   /**
+   * Transfer mesh values to internal concentrations and evaluate chemistry
+   * @param grid_vol volume of grid cell that contains biological cell
+   * @param cell_par pointer to cell parameter values
+   * @param mesh_vals values of concentrations on mesh
+   * @param p_vals values of concentrations in particles
+   * @param dt time step interval
+   */
+  void xferMeshToParticleAndUpdateChem(Real grid_vol, Real *cell_par,
+      Real *mesh_vals, Real *p_vals, Real dt);
+
+  /**
    * Calculate transfer increments based on current concentrations in biological
    * cell and in grid cell
    * @param grid_vol volume of grid cell that contains biological cell
