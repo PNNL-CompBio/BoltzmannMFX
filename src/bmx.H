@@ -90,6 +90,9 @@ class bmx : public AmrCore
     static inline std::string get_load_balance_type ()
     { return load_balance_type; }
 
+    amrex::Vector<amrex::Real> tag_region_lo;
+    amrex::Vector<amrex::Real> tag_region_hi;
+
     void bmx_calc_txfr_particle (Real time, Real dt);
     void bmx_calc_txfr_fluid    (Real time, Real dt);
 
@@ -100,7 +103,7 @@ class bmx : public AmrCore
     void set_neumann_bcs (Real time,
                           const int lev,
                           FArrayBox& dest_fab,
-                          const GeometryData& geom);
+                          const GeometryData& geom_data);
 
     void set_chem_species_bc0 (const Box& sbx,
                           MFIter* mfi,
@@ -173,10 +176,14 @@ class bmx : public AmrCore
 
   protected:
     void FillPatchChemSpecies (int lev, Real time, MultiFab & mf, int icomp, int ncomp,
-                           const Vector<BCRec> & bcr);
+                               const Vector<BCRec> & bcr);
+    void FillPatchChemCoeffs (int lev, Real time, MultiFab & mf, int icomp, int ncomp,
+                              const Vector<BCRec> & bcr);
 
     void GetDataChemSpecies (int lev, Real time, Vector<MultiFab *> & data, int icomp,
-                         Vector<Real> & datatime);
+                            Vector<Real> & datatime);
+    void GetDataChemCoeffs (int lev, Real time, Vector<MultiFab *> & data, int icomp,
+                            Vector<Real> & datatime);
 
   protected:
     void AllocateArrays (int lev);
@@ -208,7 +215,8 @@ class bmx : public AmrCore
     void check_for_nans (int lev);
 
 
-    void fillpatch_all (Vector< MultiFab* > const& X_k_in, Real time);
+    void fillpatch_Xk (Vector< MultiFab* > const& X_k_in, Real time);
+    void fillpatch_Dk (Vector< MultiFab* > const& D_k_in, Real time);
 
   public:
     void bmx_apply_predictor ( Vector< MultiFab* >& chem_species_RHS_old,
@@ -377,6 +385,7 @@ class bmx : public AmrCore
     Vector<Real> t_new;
 
     Vector<BCRec> bcs_X; // For fluid chem_species
+    Vector<BCRec> bcs_D; // For fluid chem diffusion coefficients
     Vector<BCRec> bcs_f; // For generic first-order extrapolation
 
     amrex::Vector<amrex::BCRec> m_bcrec_chem_species;

@@ -81,7 +81,8 @@ bmx::EvolveFluid (int nstep,
     // Local flag for explicit diffusion
     bool l_explicit_diff = (m_diff_type == DiffusionType::Explicit);
 
-    fillpatch_all(get_X_k_old(), new_time);
+    fillpatch_Xk(get_X_k_old(), new_time);
+    fillpatch_Dk(get_D_k(), new_time);
 
     // *************************************************************************************
     // Compute explicit diffusive terms
@@ -119,30 +120,14 @@ bmx::EvolveFluid (int nstep,
         for (MFIter mfi(*ld.X_k,TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
             Box const& bx = mfi.tilebox();
-            Array4<Real      > const& X_k_n    = ld.X_k->array(mfi);
-            Array4<Real const> const& X_k_o    = ld.X_ko->const_array(mfi);
+            Array4<Real      > const& X_k_n     = ld.X_k->array(mfi);
+            Array4<Real const> const& X_RHS_arr = ld.X_rhs->const_array(mfi);
             Array4<Real const> const& lap_X_arr = lap_X[lev]->const_array(mfi);
-            Array4<Real const> const& X_RHS_arr = ld.X_rhs[lev].const_array(mfi);
-
-            amrex::Print() << "UPDATING ON BX " << bx << std::endl;
 
             ParallelFor(bx, nchem_species, [=]
               AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
-                // amrex::Print() << "OLD LAP " << IntVect(i,j,k) << " " << 
-                //         X_k_o(i,j,k,n) << " " << lap_X_arr(i,j,k,n) << std::endl;
-
                 X_k_n(i,j,k,n) += theta * l_dt * lap_X_arr(i,j,k,n) + l_dt * X_RHS_arr(i,j,k,n);
-
-#if 0
-                if (i == 16 and j == 16 and k == 8) 
-                {
-                   amrex::Print() << "LAP       " << IntVect(i,j,k) << " " << lap_X_arr(i,j,k,n) << std::endl;
-                   amrex::Print() << "SOURCE    " << IntVect(i,j,k) << " " << X_RHS_arr(i,j,k,n) << std::endl;
-                   amrex::Print() << "OLD / NEW " << IntVect(i,j,k) << " " << 
-                      X_k_o(i,j,k,n) << " " << X_k_n(i,j,k,n) << std::endl;
-                }
-#endif
             });
         } // mfi
     } // lev

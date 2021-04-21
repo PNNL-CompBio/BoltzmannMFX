@@ -38,12 +38,9 @@ bmx::InitParams ()
       Gpu::synchronize();
   }
   bcs_X.resize(2*FLUID::nchem_species);
+  bcs_D.resize(2*FLUID::nchem_species);
 
   BC::Initialize(geom[0]);
-
-  // set n_error_buf (used in AmrMesh) to default (can overwrite later)
-  for (int i = 0; i < n_error_buf.size(); i++)
-    n_error_buf[i] = {8,8,8};
 
   {
     ParmParse pp("bmx");
@@ -183,13 +180,6 @@ bmx::InitParams ()
       amrex::Abort("Must choose only one of plot_int or plot_per_exact or plot_per_approx");
   }
 }
-
-
-void bmx::ErrorEst (int lev, TagBoxArray & tags, Real time, int ngrow)
-{
-    if (ooo_debug) amrex::Print() << "ErrorEst" << std::endl;
-}
-
 
 void bmx::Init (Real time)
 {

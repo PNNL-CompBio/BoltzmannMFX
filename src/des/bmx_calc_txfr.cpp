@@ -204,8 +204,6 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
         const int np = particles.size();
 
-        Box bx = pti.tilebox ();
-
         const auto& interp_array = interp_ptr->array(pti);
 
         amrex::ParallelFor(np,
