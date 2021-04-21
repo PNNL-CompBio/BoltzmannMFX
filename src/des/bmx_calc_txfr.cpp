@@ -22,7 +22,7 @@ bmx::bmx_calc_txfr_fluid (Real time, Real dt)
 {
   const Real strttime = ParallelDescriptor::second();
 
-  for (int lev = 0; lev < nlev; lev++)
+  for (int lev = 0; lev <= finest_level; lev++)
     m_leveldata[lev]->X_rhs->setVal(0);
 
   if (nlev > 2)
@@ -30,9 +30,10 @@ bmx::bmx_calc_txfr_fluid (Real time, Real dt)
         " BMXParticleContainer::TrilinearDepositionFluidDragForce can only"
         " handle up to 2 levels");
 
-  Vector< MultiFab* > txfr_ptr(nlev, nullptr);
+  Vector< MultiFab* > txfr_ptr(finest_level+1, nullptr);
 
-  for (int lev = 0; lev < nlev; lev++) {
+  for (int lev = 0; lev <= finest_level; lev++)
+  {
 
     bool OnSameGrids = ( (dmap[lev] == (pc->ParticleDistributionMap(lev))) &&
                          (grids[lev].CellEqual(pc->ParticleBoxArray(lev))) );
@@ -72,7 +73,8 @@ bmx::bmx_calc_txfr_fluid (Real time, Real dt)
   const Geometry& gm = Geom(0);
 
   // Deposit the chem_species_rhs to the grid
-  for (int lev = 0; lev < nlev; lev++) {
+  for (int lev = 0; lev <= finest_level; lev++)
+  {
     pc->InterphaseTxfrDeposition(lev, *txfr_ptr[lev], dt); 
   }
 
@@ -99,7 +101,7 @@ bmx::bmx_calc_txfr_fluid (Real time, Real dt)
     m_leveldata[0]->X_rhs->copy(*txfr_ptr[0], 0, 0, m_leveldata[0]->X_rhs->nComp());
   }
 
-  for (int lev = 0; lev < nlev; lev++) {
+  for (int lev = 0; lev <= finest_level; lev++) {
     if (txfr_ptr[lev] != m_leveldata[lev]->X_rhs)
       delete txfr_ptr[lev];
   }
@@ -129,7 +131,7 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
   bmx_set_chem_species_bcs(time, get_X_k(), get_D_k());
 
-  for (int lev = 0; lev < nlev; lev++)
+  for (int lev = 0; lev <= finest_level; lev++)
   {
     Box domain(geom[lev].Domain());
 

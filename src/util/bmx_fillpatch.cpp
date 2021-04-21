@@ -153,7 +153,7 @@ bmx::fillpatch_all ( Vector< MultiFab* > const& X_k_in,
 
   const int l_nchem_species = FLUID::nchem_species;
 
-  for (int lev = 0; lev < nlev; lev++) {
+  for (int lev = 0; lev <= finest_level; lev++) {
 
     int state_comp, num_comp;
 

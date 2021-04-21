@@ -15,7 +15,7 @@ bmx::bmx_set_chem_species_bcs (Real time,
 {
   BL_PROFILE("bmx::bmx_set_chem_species_bcs()");
 
-  for (int lev = 0; lev < nlev; lev++)
+  for (int lev = 0; lev <= finest_level; lev++)
   {
      Box domain(geom[lev].Domain());
 

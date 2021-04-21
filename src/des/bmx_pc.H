@@ -149,6 +149,7 @@ public:
 
   private:
     int nlev;
+    int finest_level;
 
     amrex::IntVect m_sorting_bin = amrex::IntVect::TheZeroVector();
 

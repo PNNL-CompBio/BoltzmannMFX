@@ -20,7 +20,7 @@ BMXParticleContainer::split_particles ()
   BMXChemistry *bmxchem = BMXChemistry::instance();
   Real PI = 4.0*atan(1.0);
 
-  for (int lev = 0; lev < nlev; lev++) {
+  for (int lev = 0; lev <= finest_level; lev++) {
 
       for (BMXParIter pti(*this, lev); pti.isValid(); ++pti)
       {

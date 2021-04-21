@@ -148,8 +148,6 @@ void writeNow (int nstep, Real time, Real dt, bmx& bmx)
 
 int main (int argc, char* argv[])
 {
-
-
     // check to see if it contains --describe. If so, write out information on
     // the build.
     if (argc >= 2) {
