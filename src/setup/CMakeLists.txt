@@ -15,4 +15,5 @@ target_sources( bmxcore
    bmx_arrays.cpp
    bmx_setup_solvers.cpp
    bmx_set_bc_type.cpp
+   bmx_tagging.cpp
    )

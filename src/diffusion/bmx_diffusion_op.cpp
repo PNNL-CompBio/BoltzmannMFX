@@ -1,4 +1,3 @@
-#include <AMReX_MultiFabUtil.H>
 #include <AMReX_ParmParse.H>
 #include <AMReX_Vector.H>
 
@@ -39,19 +38,18 @@ void DiffusionOp::setup (AmrCore* _amrcore)
     // pass the new object in here.
     amrcore = _amrcore;
 
-    geom  = amrcore->Geom();
     grids = amrcore->boxArray();
     dmap  = amrcore->DistributionMap();
 
-    int max_level = amrcore->maxLevel();
+    int finest_level = amrcore->finestLevel();
 
     const int nchem_species = FLUID::nchem_species;
 
-    chem_species_phi.resize(max_level + 1);
-    chem_species_rhs.resize(max_level + 1);
-    chem_species_b.resize  (max_level + 1);
+    chem_species_phi.resize(finest_level + 1);
+    chem_species_rhs.resize(finest_level + 1);
+    chem_species_b.resize  (finest_level + 1);
 
-    for(int lev = 0; lev <= max_level; lev++)
+    for(int lev = 0; lev <= finest_level; lev++)
     {
         // One ghost cell needed for solution "chem_species_phi"
         chem_species_phi[lev].reset(new MultiFab(grids[lev], dmap[lev], nchem_species, 1, MFInfo()));
@@ -72,7 +70,7 @@ void DiffusionOp::setup (AmrCore* _amrcore)
     info.setMaxCoarseningLevel(mg_max_coarsening_level);
 
     amrex::Print() << "Initializing solver with " << nchem_species << " components " << std::endl;
-    chem_species_matrix.reset(new MLABecLaplacian(geom, grids, dmap, info, {}, nchem_species));
+    chem_species_matrix.reset(new MLABecLaplacian(amrcore->Geom(0,finest_level), grids, dmap, info, {}, nchem_species));
 
     chem_species_matrix->setMaxOrder(2);
     chem_species_matrix->setDomainBC(m_chem_speciesbc_lo, m_chem_speciesbc_hi);
@@ -140,9 +138,6 @@ void DiffusionOp::ComputeLapX (const Vector< MultiFab* >& lapX_out,
 
   // We want to return div (D_k grad)) phi
   chem_species_matrix->setScalars(0.0, -1.0);
-
-  Vector<BCRec> bcs_X; 
-  bcs_X.resize(3*nchem_species);
 
   define_coeffs_on_faces(D_k_in);
 

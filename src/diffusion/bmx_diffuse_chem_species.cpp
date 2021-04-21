@@ -36,9 +36,6 @@ void DiffusionOp::diffuse_chem_species (      Vector< MultiFab*      > X_k_in,
     // Number of fluid chem_species
     const int nchem_species = FLUID::nchem_species;
 
-    Vector<BCRec> bcs_X; 
-    bcs_X.resize(3*nchem_species);
-
     define_coeffs_on_faces(D_k_in);
 
     for(int lev = 0; lev <= finest_level; lev++)

@@ -80,8 +80,6 @@ SolidsVolumeDeposition (F WeightFunc, int lev,
       const long nrp = pti.numParticles();
       FArrayBox& fab_to_be_filled = mf_to_be_filled[pti];
 
-      const Box& bx  = pti.tilebox(); // I need a box without ghosts
-
       {
         auto volarr = fab_to_be_filled.array();
 
@@ -210,8 +208,6 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
       const long nrp = pti.numParticles();
 
       FArrayBox& txfr_fab = txfr_mf[pti];
-
-      const Box& box = pti.tilebox(); // I need a box without ghosts
 
       auto        txfr_arr = txfr_fab.array();
 

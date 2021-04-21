@@ -38,12 +38,9 @@ bmx::InitParams ()
       Gpu::synchronize();
   }
   bcs_X.resize(2*FLUID::nchem_species);
+  bcs_D.resize(2*FLUID::nchem_species);
 
   BC::Initialize(geom[0]);
-
-  // set n_error_buf (used in AmrMesh) to default (can overwrite later)
-  for (int i = 0; i < n_error_buf.size(); i++)
-    n_error_buf[i] = {8,8,8};
 
   {
     ParmParse pp("bmx");
@@ -184,13 +181,6 @@ bmx::InitParams ()
   }
 }
 
-
-void bmx::ErrorEst (int lev, TagBoxArray & tags, Real time, int ngrow)
-{
-    if (ooo_debug) amrex::Print() << "ErrorEst" << std::endl;
-}
-
-
 void bmx::Init (Real time)
 {
     if (ooo_debug) amrex::Print() << "Init" << std::endl;
@@ -221,9 +211,9 @@ void bmx::Init (Real time)
      ***************************************************************************/
 
     // Define coarse level BoxArray and DistributionMap
-    const BoxArray& ba = MakeBaseGrids();
-    DistributionMapping dm(ba, ParallelDescriptor::NProcs());
-    MakeNewLevelFromScratch(0, time, ba, dm);
+    // This is an AmrCore member function which recursively makes new levels
+    // with MakeNewLevelFromScratch.
+    InitFromScratch(time);
 
     for (int lev = 1; lev <= finest_level; lev++)
     {
@@ -369,6 +359,7 @@ void bmx::ReMakeNewLevelFromScratch (int lev,
 void bmx::InitLevelData (Real time)
 {
     if (ooo_debug) amrex::Print() << "InitLevelData" << std::endl;
+
     // Allocate the fluid data
     if (FLUID::solve)
        for (int lev = 0; lev < nlev; lev++)

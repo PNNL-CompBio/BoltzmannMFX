@@ -22,6 +22,8 @@ BMXParticleContainer::BMXParticleContainer (AmrCore* amr_core)
     this->SetVerbose(0);
 
     nlev = amr_core->maxLevel() + 1;
+
+    finest_level = amr_core->finestLevel();
 }
 
 void BMXParticleContainer::AllocData ()

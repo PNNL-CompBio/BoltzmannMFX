@@ -1,25 +1,30 @@
+# Miscellaneous parameters
+#_______________________________________________________________________
+
+# Random number seed
+bmx.seed = 21893
+
 #_______________________________________________________________________
 # Solver settings
 
-#amrex.fpe_trap_invalid = 1
+amrex.fpe_trap_invalid = 1
 
 #! Fluid solver
 #!-----------------------------------------------------------//
 
 bmx.fixed_dt = 0.005
 
-bmx.max_step = 200
+bmx.max_step = 1000
+bmx.max_step = 1
 
 dem.solve = bacteria
 bmx.particle_init_type = "AsciiFile"
 
-amr.blocking_factor = 2
-
 #_______________________________________________________________________
 # Geometry / grids / tiles
 
-# Maximum level in hierarchy (for now must be 0, i.e., one level in total)
-amr.max_level = 0
+# Maximum level in hierarchy
+amr.max_level = 1
 
 geometry.coord_sys   = 0                       # 0: Cartesian
 geometry.is_periodic = 1       1       0       # Is periodic in each direction?
@@ -27,8 +32,17 @@ geometry.prob_lo     = 0.      0.      0.      # lo corner of physical domain
 geometry.prob_hi     = 1.0     1.0     1.0     # hi corner of physical domain
 
 # Number of grid cells in each direction at the coarsest level
-amr.n_cell =  8 8 8
 amr.n_cell =  32   32   32
+
+bmx.tag_region    = true
+bmx.tag_region_lo = 0. 0. 0.4
+bmx.tag_region_hi = 1. 1. 0.6
+
+# Dont put any buffer region around the tagged cells
+amr.n_error_buf = 0
+
+# Just require grid to be coarsenable by 2
+amr.blocking_factor = 2
 
 #! Grids
 #!-----------------------------------------------------------//
@@ -53,7 +67,6 @@ fabarray.mfiter_tile_size = 1024 1024 1024
 # Particles: Maximum particle tile size
 particles.tile_size = 1024 1024 1024
 
-
 #_______________________________________________________________________
 # Particle load balancing
 #bmx.load_balance_type = "KnapSack"
@@ -75,7 +88,7 @@ amr.regrid_int         = -1
 amr.par_ascii_int  = -1
 amr.par_ascii_file ="vis"
 
-amr.plot_int       = 10
+amr.plot_int       =  1
 amr.plot_file      ="plt"
 
 amr.check_int      = -1
@@ -89,8 +102,12 @@ amr.check_file     ="chk"
 # Fluid model settings
 #
 fluid.solve = fluid
-fluid.chem_species      = A B
-fluid.chem_species_diff = 0.01 0.02
+fluid.chem_species      = A B C
+fluid.chem_species_diff = 0.01 0.0 0.01
+fluid.init_conc_species = 0.1 0.0 0.01
+fluid.surface_location = 0.75
+fluid.liquid_film_thickness = 0.05
+chem_species.max_vol = 0.001
 
 #Diffusion_type: 0 = explicit, 1 = C-N, 2 = implicit
 bmx.diffusion_type = 0

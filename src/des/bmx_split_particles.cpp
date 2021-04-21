@@ -18,9 +18,8 @@ void
 BMXParticleContainer::split_particles ()
 {
   BMXChemistry *bmxchem = BMXChemistry::instance();
-  Real PI = 4.0*atan(1.0);
 
-  for (int lev = 0; lev < nlev; lev++) {
+  for (int lev = 0; lev <= finest_level; lev++) {
 
       for (BMXParIter pti(*this, lev); pti.isValid(); ++pti)
       {
@@ -32,8 +31,6 @@ BMXParticleContainer::split_particles ()
         auto& particle_tile = this->GetParticles(lev)[std::make_pair(grid,tile)];
 
         const int np = particles.size();
-
-        Box bx = pti.tilebox ();
 
         //
         // Note: this will happen on CPU only -- we will need to add something to count how many

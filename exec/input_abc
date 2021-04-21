@@ -24,7 +24,7 @@ amr.blocking_factor = 2
 #_______________________________________________________________________
 # Geometry / grids / tiles
 
-# Maximum level in hierarchy (for now must be 0, i.e., one level in total)
+# Maximum level in hierarchy
 amr.max_level = 0
 
 geometry.coord_sys   = 0                       # 0: Cartesian
