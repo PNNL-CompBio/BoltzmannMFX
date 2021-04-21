@@ -137,28 +137,28 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
         Vector<std::string>  int_comp_names;
 
 #ifdef NEW_CHEM
-        real_comp_names.push_back("a axis");
-        real_comp_names.push_back("b axis");
-        real_comp_names.push_back("c axis");
+        real_comp_names.push_back("a_axis");
+        real_comp_names.push_back("b_axis");
+        real_comp_names.push_back("c_axis");
         real_comp_names.push_back("psi");
         real_comp_names.push_back("theta");
         real_comp_names.push_back("phi");
-        real_comp_names.push_back("cell surface area");
-        real_comp_names.push_back("cell volume");
-        real_comp_names.push_back("velocity x");
-        real_comp_names.push_back("velocity y");
-        real_comp_names.push_back("velocity z");
-        real_comp_names.push_back("angular velocity x");
-        real_comp_names.push_back("angular velocity y");
-        real_comp_names.push_back("angular velocity z");
-        real_comp_names.push_back("force x");
-        real_comp_names.push_back("force y");
-        real_comp_names.push_back("force z");
-        real_comp_names.push_back("torque x");
-        real_comp_names.push_back("torque y");
-        real_comp_names.push_back("torque z");
-        real_comp_names.push_back("cell surface area growth rate");
-        real_comp_names.push_back("cell volume growth rate");
+        real_comp_names.push_back("cell_surface_area");
+        real_comp_names.push_back("cell_volume");
+        real_comp_names.push_back("velocity_x");
+        real_comp_names.push_back("velocity_y");
+        real_comp_names.push_back("velocity_z");
+        real_comp_names.push_back("angular_velocity_x");
+        real_comp_names.push_back("angular_velocity_y");
+        real_comp_names.push_back("angular_velocity_z");
+        real_comp_names.push_back("force_x");
+        real_comp_names.push_back("force_y");
+        real_comp_names.push_back("force_z");
+        real_comp_names.push_back("torque_x");
+        real_comp_names.push_back("torque_y");
+        real_comp_names.push_back("torque_z");
+        real_comp_names.push_back("cell_surface_area_growth_rate");
+        real_comp_names.push_back("cell_volume_growth_rate");
         Vector<int> write_real_comp = Vector<int>(MAX_CHEM_REAL_VAR,1);
         int i;
         for (i=realIdx::count-1; i<MAX_CHEM_REAL_VAR; i++) {
