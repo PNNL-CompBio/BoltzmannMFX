@@ -329,7 +329,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
                           RealVect ft(0.);
 
 
-                          interaction->evaluateForce(&diff[0],&p2.rdata(0),&particle.rdata(0),&fn[0]);
+                          interaction->evaluateForce(&diff[0],&particle.rdata(0),&p2.rdata(0),&fn[0]);
 #ifdef _OPENMP
 #pragma omp critical
                           {

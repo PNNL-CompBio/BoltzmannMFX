@@ -41,7 +41,7 @@ void BMXCellInteraction::setParams(const char *file)
   p_stiffness = 10.0;
 
   p_z_bndry_width = 0.03;
-  p_z_stiffness = 10.0;
+  p_z_stiffness = 4.0;
 
   p_zwall = FLUID::surface_location;
 }
@@ -62,7 +62,7 @@ Real BMXCellInteraction::maxInteractionDistance(const Real *p1, const Real *p2)
 /**
  * Calculate the force between 2 particles. r12 is computed outside this routine
  * and periodic boundary conditions, if applicable, have already been applied
- * @param r12 position of particle 1 - position of particle 2
+ * @param r12 position of particle 2 - position of particle 1
  * @param par1 parameters describing particle 1
  * @param par2 parameters describing particle 2
  * @param frc force between particle 1 and particle 2
@@ -102,7 +102,7 @@ void BMXCellInteraction::evaluateSurfaceForce(const Real *pos, Real *par, Real *
   Real rS = par[realIdx::a_size];
   Real rA = rS + p_z_bndry_width;
   if (dz > 0.0) {
-    frc[2] = -p_z_stiffness*(dz-rA)*(dz-rA)*(dz-rS);
+    frc[2] = p_z_stiffness*(dz-rA)*(dz-rA)*(dz-rS);
   } else {
     frc[2] = 0.0;
   }
