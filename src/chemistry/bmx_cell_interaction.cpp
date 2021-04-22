@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+#include <bmx.H>
 #include <bmx_fluid_parms.H>
 #include <bmx_cell_interaction.H>
 
@@ -37,11 +38,12 @@ BMXCellInteraction::~BMXCellInteraction()
  */
 void BMXCellInteraction::setParams(const char *file)
 {
-  p_bndry_width = 0.05;
-  p_stiffness = 10.0;
+  ParmParse pp("cell_force");
 
-  p_z_bndry_width = 0.03;
-  p_z_stiffness = 4.0;
+  pp.get("boundary_width",p_bndry_width);
+  pp.get("stiffness",p_stiffness);
+  pp.get("wall_boundary_width",p_z_bndry_width);
+  pp.get("wall_stiffness",p_z_stiffness);
 
   p_zwall = FLUID::surface_location;
 }

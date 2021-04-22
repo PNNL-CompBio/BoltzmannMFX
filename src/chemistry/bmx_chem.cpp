@@ -57,13 +57,14 @@ void BMXChemistry::setIntegers(int *ipar)
  */
 void BMXChemistry::setParams(const char *file)
 {
-  k1 = 0.01;
-  kr1 = 0.01;
-  k2 = 0.005;
-  kr2 = 0.005;
-  k3 = 0.01;
-  kr3 = 0.01;
-  kg = 2000.0;
+  ParmParse pp("chem_species");
+  pp.get("k1",k1);
+  pp.get("kr1",kr1);
+  pp.get("k2",k2);
+  pp.get("kr2",kr2);
+  pp.get("k3",k3);
+  pp.get("kr3",kr3);
+  pp.get("kg",kg);
   p_overlap = 0.2;
 }
 
@@ -386,9 +387,10 @@ void BMXChemistry::setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
   Real radius = par_new[realIdx::a_size];
   Real theta = p_pi * amrex::Random();
   Real phi = 2.0 * p_pi * amrex::Random();
-  Real nx = cos(theta)*cos(phi);
-  Real ny = cos(theta)*sin(phi);
-  Real nz = sin(theta);
+  Real nx = sin(theta)*cos(phi);
+  Real ny = sin(theta)*sin(phi);
+  Real nz = cos(theta);
+  printf("theta: %12.6f phi: %12.6f nx: %12.6f ny: %12.6f nz: %12.6f\n",theta,phi,nx,ny,nz);
   Real scale = 1.0 - p_overlap;
   pos_new[0] = x + scale*0.5*nx*radius;
   pos_new[1] = y + scale*0.5*ny*radius;

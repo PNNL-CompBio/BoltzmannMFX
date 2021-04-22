@@ -100,7 +100,26 @@ fluid.chem_species_diff = 0.01 0.0 0.01
 fluid.init_conc_species = 0.1 0.0 0.01
 fluid.surface_location = 0.75
 fluid.liquid_film_thickness = 0.05
+
+#_______________________________________________________________________
+# Reaction model parameters
+#
 chem_species.max_vol = 0.001
+chem_species.k1 = 0.01
+chem_species.kr1 = 0.01
+chem_species.k2 = 0.005
+chem_species.kr2 = 0.005
+chem_species.k3 = 0.01
+chem_species.kr3 = 0.01
+chem_species.kg = 2000.0
+
+#_______________________________________________________________________
+# Cell force parameters
+#
+cell_force.boundary_width = 0.05
+cell_force.stiffness = 10.0
+cell_force.wall_boundary_width = 0.03
+cell_force.wall_stiffness = 4.0
 
 #Diffusion_type: 0 = explicit, 1 = C-N, 2 = implicit
 bmx.diffusion_type = 0

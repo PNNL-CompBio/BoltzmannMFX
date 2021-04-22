@@ -12,10 +12,10 @@ amrex.fpe_trap_invalid = 1
 #! Fluid solver
 #!-----------------------------------------------------------//
 
-bmx.fixed_dt = 0.005
+bmx.fixed_dt = 0.0025
 
-bmx.max_step = 1000
-bmx.max_step = 1
+bmx.max_step = 500
+#bmx.max_step = 1
 
 dem.solve = bacteria
 bmx.particle_init_type = "AsciiFile"
@@ -32,7 +32,7 @@ geometry.prob_lo     = 0.      0.      0.      # lo corner of physical domain
 geometry.prob_hi     = 1.0     1.0     1.0     # hi corner of physical domain
 
 # Number of grid cells in each direction at the coarsest level
-amr.n_cell =  32   32   32
+amr.n_cell =  16   16   16
 
 bmx.tag_region    = true
 bmx.tag_region_lo = 0. 0. 0.4
@@ -88,7 +88,7 @@ amr.regrid_int         = -1
 amr.par_ascii_int  = -1
 amr.par_ascii_file ="vis"
 
-amr.plot_int       =  1
+amr.plot_int       =  5
 amr.plot_file      ="plt"
 
 amr.check_int      = -1
@@ -107,10 +107,28 @@ fluid.chem_species_diff = 0.01 0.0 0.01
 fluid.init_conc_species = 0.1 0.0 0.01
 fluid.surface_location = 0.75
 fluid.liquid_film_thickness = 0.05
+#_______________________________________________________________________
+# Reaction model parameters
+#
 chem_species.max_vol = 0.001
+chem_species.k1 = 0.01
+chem_species.kr1 = 0.01
+chem_species.k2 = 0.005
+chem_species.kr2 = 0.005
+chem_species.k3 = 0.01
+chem_species.kr3 = 0.01
+chem_species.kg = 2000.0
+
+#_______________________________________________________________________
+# Cell force parameters
+#
+cell_force.boundary_width = 0.05
+cell_force.stiffness = 10.0
+cell_force.wall_boundary_width = 0.03
+cell_force.wall_stiffness = 4.0
 
 #Diffusion_type: 0 = explicit, 1 = C-N, 2 = implicit
-bmx.diffusion_type = 0
+bmx.diffusion_type = 1
 
 #Verbosity of diffusion solver
 diffusion.verbose = 2
