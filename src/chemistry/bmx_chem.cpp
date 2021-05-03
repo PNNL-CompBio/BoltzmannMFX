@@ -2,6 +2,7 @@
 #include <math.h>
 #include <bmx.H>
 #include <bmx_fluid_parms.H>
+#include <bmx_dem_parms.H>
 #include <bmx_chem.H>
 
 BMXChemistry *BMXChemistry::p_instance = NULL;
@@ -66,6 +67,13 @@ void BMXChemistry::setParams(const char *file)
   pp.get("kr3",kr3);
   pp.get("kg",kg);
   p_overlap = 0.2;
+  /* figure out cutoff for neighbor list */
+  Real vol = SPECIES::max_vol;
+  Real radius = pow((3.0*vol/(4.0*p_pi)),1.0/3.0);
+  ParmParse ppF("cell_force");
+  Real width;
+  ppF.get("boundary_width",width);
+  DEM::neighborhood = 1.1*(2.0*radius+width);
 }
 
 /**
@@ -149,7 +157,7 @@ void BMXChemistry::updateChemistry(Real *p_vals, Real *cell_par, Real dt)
   cell_par[realIdx::dvdt] = dvdt; 
   Real new_vol = volume + dt*dvdt;
   cell_par[realIdx::vol] = new_vol;
-  Real radius = pow((3.0*volume/(4*p_pi)),1.0/3.0);
+  Real radius = pow((3.0*volume/(4.0*p_pi)),1.0/3.0);
   cell_par[realIdx::area] = 4.0*p_pi*radius*radius;
   cell_par[realIdx::dadt] = 2.0*dvdt/radius;
   cell_par[realIdx::a_size] = radius;
@@ -216,7 +224,7 @@ void BMXChemistry::xferMeshToParticleAndUpdateChem(Real grid_vol,
   cell_par[realIdx::dvdt] = dvdt; 
   Real new_vol = volume + dt*dvdt;
   cell_par[realIdx::vol] = new_vol;
-  Real radius = pow((3.0*volume/(4*p_pi)),1.0/3.0);
+  Real radius = pow((3.0*volume/(4.0*p_pi)),1.0/3.0);
   cell_par[realIdx::area] = 4.0*p_pi*radius*radius;
   cell_par[realIdx::dadt] = 2.0*dvdt/radius;
   cell_par[realIdx::a_size] = radius;
@@ -334,7 +342,7 @@ void BMXChemistry::setChildParameters(Real *p_real_orig, int *p_int_orig,
 
   // fix up values that need to be modified due to splitting
   Real volume = p_real_orig[realIdx::vol]/2.0;
-  Real radius = pow((3.0*volume/(4*p_pi)),1.0/3.0);
+  Real radius = pow((3.0*volume/(4.0*p_pi)),1.0/3.0);
   Real area = 4.0*p_pi*radius*radius;
   Real dvdt = p_real_orig[realIdx::dvdt];
   Real dadt = 2.0*dvdt/radius;
@@ -382,7 +390,7 @@ void BMXChemistry::setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
 
   // Copy values from original particle and modify some values
   // as appropriate
-  setChildParameters(par_orig, ipar_orig, par_new,ipar_new);
+  setChildParameters(par_orig, ipar_orig, par_new, ipar_new);
   // Find new locations for split particles
   Real radius = par_new[realIdx::a_size];
   Real theta = p_pi * amrex::Random();
