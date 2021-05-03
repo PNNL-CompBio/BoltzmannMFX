@@ -97,6 +97,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
             fillNeighbors();
             // send in "false" for sort_neighbor_list option
 
+            printf("Call buildNeighborList\n");
             buildNeighborList(BMXCheckPair(DEM::neighborhood), false);
         } else {
             updateNeighbors();
@@ -348,14 +349,14 @@ void BMXParticleContainer::EvolveParticles (int lev,
                           }
 #endif
                           // TODO: Do we need an OPENMP pragma here?
-                          RealVect fw(0.);
-                          interaction->evaluateSurfaceForce(&pos1[0],&particle.rdata(0),&fw[0]);
-                          amrex::Gpu::Atomic::Add(&fc_ptr[i         ], fw[0]);
-                          amrex::Gpu::Atomic::Add(&fc_ptr[i + ntot  ], fw[1]);
-                          amrex::Gpu::Atomic::Add(&fc_ptr[i + 2*ntot], fw[2]);
 
                       }
                   } // end of neighbor loop
+                  RealVect fw(0.);
+                  interaction->evaluateSurfaceForce(&pos1[0],&particle.rdata(0),&fw[0]);
+                  amrex::Gpu::Atomic::Add(&fc_ptr[i         ], fw[0]);
+                  amrex::Gpu::Atomic::Add(&fc_ptr[i + ntot  ], fw[1]);
+                  amrex::Gpu::Atomic::Add(&fc_ptr[i + 2*ntot], fw[2]);
               }); // end of loop over particles
 
             amrex::Gpu::Device::synchronize();
