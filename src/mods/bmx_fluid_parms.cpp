@@ -64,6 +64,7 @@ namespace FLUID
 
     // Location of top of support layer
     pp.get("surface_location",surface_location);
+    printf("FLUID:surface_location %12.6f\n",surface_location);
 
     // Liquid film thickness on top of support layer
     pp.get("liquid_film_thickness",film_thickness);
