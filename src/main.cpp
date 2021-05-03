@@ -201,17 +201,6 @@ int main (int argc, char* argv[])
     // These are now available to bmx
     ReadParameters();
 
-    // Read in chemistry parameters. Currently hardwiring these so file
-    // name is set to arbitrary string
-#ifdef NEW_CHEM
-    SPECIES::Initialize();
-    std::cout << "Volume threshold for cell division:  " << SPECIES::max_vol << std::endl;
-    BMXChemistry *bmxchem = BMXChemistry::instance();
-    bmxchem->setParams("NullFile");
-    BMXCellInteraction *interaction = BMXCellInteraction::instance();
-    interaction->setParams("NullFile");
-#endif
-
     // Set global static pointer to bmx object. Used by fill-patch utility
     set_ptr_to_bmx(bmx);
 
@@ -223,6 +212,17 @@ int main (int argc, char* argv[])
 
     // Initialize derived internals
     bmx.Init(time);
+
+    // Read in chemistry parameters. Currently hardwiring these so file
+    // name is set to arbitrary string
+#ifdef NEW_CHEM
+    SPECIES::Initialize();
+    std::cout << "Volume threshold for cell division:  " << SPECIES::max_vol << std::endl;
+    BMXChemistry *bmxchem = BMXChemistry::instance();
+    bmxchem->setParams("NullFile");
+    BMXCellInteraction *interaction = BMXCellInteraction::instance();
+    interaction->setParams("NullFile");
+#endif
 
     // Either init from scratch or from the checkpoint file
     int restart_flag = 0;
