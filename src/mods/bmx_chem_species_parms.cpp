@@ -28,10 +28,15 @@ namespace SPECIES
   // Specified constant chem_species specific heat
   std::vector<amrex::Real> cp_k0(0);
 
+  // Maximum cell volume
+  amrex::Real max_vol;
+
 
   void Initialize ()
   {
     amrex::ParmParse pp("chem_species");
+
+    pp.get("max_vol", max_vol);
 
     if (pp.contains("solve"))
     {

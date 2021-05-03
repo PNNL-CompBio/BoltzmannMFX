@@ -16,10 +16,11 @@ void DiffusionOp::define_coeffs_on_faces ( const Vector< MultiFab const* > D_k_i
     // Number of fluid chem_species
     const int nchem_species = FLUID::nchem_species;
 
-    for(int lev = 0; lev <= finest_level; lev++)
+    for (int lev = 0; lev <= finest_level; lev++)
     {
         bool use_harmonic_averaging = true;
-        average_cellcenter_to_face( GetArrOfPtrs(chem_species_b[lev]), *D_k_in[lev], geom[lev], nchem_species,
+        average_cellcenter_to_face( GetArrOfPtrs(chem_species_b[lev]), *D_k_in[lev], 
+                                                 amrcore->Geom(lev), nchem_species,
                                                  use_harmonic_averaging );
 
         //

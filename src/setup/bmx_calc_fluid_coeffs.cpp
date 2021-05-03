@@ -3,6 +3,9 @@
 
 void calc_D_k (const Box& bx,
                const Box& domain,
+               const Real dx,
+               const Real dy,
+               const Real dz,
                FArrayBox& D_k_fab)
 {
   const int nchem_species = FLUID::nchem_species;
@@ -15,12 +18,18 @@ void calc_D_k (const Box& bx,
 
   amrex::Print() << " IN CALC_D_k " << FLUID::D_k0[0] << " " << FLUID::D_k0[1] << std::endl;
 
-  // We set the coeffs at cell centers to D_k in the lower region and 0 above zhi
-  const int zhi = domain.bigEnd()[2] / 2;
+  ParmParse pp("geometry");
+  amrex::Vector<Real> bmin, bmax;
+  pp.getarr("prob_lo",bmin);
+  pp.getarr("prob_hi",bmax);
 
-  amrex::ParallelFor(bx, nchem_species, [D_k,p_D_k0,zhi]
+  // We set the coeffs at cell centers to D_k in the lower region and 0 above zhi
+  Real zhi = FLUID::surface_location+FLUID::film_thickness-bmin[2];
+  const int ihi = int(zhi/dz+0.00000000001);
+
+  amrex::ParallelFor(bx, nchem_species, [D_k,p_D_k0,ihi]
     AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-    { if (k < zhi)
+    { if (k < ihi)
          D_k(i,j,k,n) = p_D_k0[n];
       else
          D_k(i,j,k,n) = 0.0; 

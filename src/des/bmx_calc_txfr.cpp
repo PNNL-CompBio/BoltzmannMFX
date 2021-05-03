@@ -9,16 +9,20 @@
 #include <bmx_mf_helpers.H>
 #include <bmx_dem_parms.H>
 
+#ifdef NEW_CHEM
+#include <bmx_chem.H>
+#endif
+
 /**
  * @brief this function transfers data from particles to the continuum chemical
  * species fields defined on the AMR grid
  */
 void
-bmx::bmx_calc_txfr_fluid (Real time)
+bmx::bmx_calc_txfr_fluid (Real time, Real dt)
 {
   const Real strttime = ParallelDescriptor::second();
 
-  for (int lev = 0; lev < nlev; lev++)
+  for (int lev = 0; lev <= finest_level; lev++)
     m_leveldata[lev]->X_rhs->setVal(0);
 
   if (nlev > 2)
@@ -26,9 +30,10 @@ bmx::bmx_calc_txfr_fluid (Real time)
         " BMXParticleContainer::TrilinearDepositionFluidDragForce can only"
         " handle up to 2 levels");
 
-  Vector< MultiFab* > txfr_ptr(nlev, nullptr);
+  Vector< MultiFab* > txfr_ptr(finest_level+1, nullptr);
 
-  for (int lev = 0; lev < nlev; lev++) {
+  for (int lev = 0; lev <= finest_level; lev++)
+  {
 
     bool OnSameGrids = ( (dmap[lev] == (pc->ParticleDistributionMap(lev))) &&
                          (grids[lev].CellEqual(pc->ParticleBoxArray(lev))) );
@@ -68,8 +73,9 @@ bmx::bmx_calc_txfr_fluid (Real time)
   const Geometry& gm = Geom(0);
 
   // Deposit the chem_species_rhs to the grid
-  for (int lev = 0; lev < nlev; lev++) {
-    pc->InterphaseTxfrDeposition(lev, *txfr_ptr[lev]); 
+  for (int lev = 0; lev <= finest_level; lev++)
+  {
+    pc->InterphaseTxfrDeposition(lev, *txfr_ptr[lev], dt); 
   }
 
   {
@@ -95,7 +101,7 @@ bmx::bmx_calc_txfr_fluid (Real time)
     m_leveldata[0]->X_rhs->copy(*txfr_ptr[0], 0, 0, m_leveldata[0]->X_rhs->nComp());
   }
 
-  for (int lev = 0; lev < nlev; lev++) {
+  for (int lev = 0; lev <= finest_level; lev++) {
     if (txfr_ptr[lev] != m_leveldata[lev]->X_rhs)
       delete txfr_ptr[lev];
   }
@@ -113,15 +119,19 @@ bmx::bmx_calc_txfr_fluid (Real time)
 // Interpolate fluid chem_species onto particle locations
 //
 void
-bmx::bmx_calc_txfr_particle (Real time)
+bmx::bmx_calc_txfr_particle (Real time, Real dt)
 {
   using BMXParIter = BMXParticleContainer::BMXParIter;
 
+#ifdef NEW_CHEM
+  BMXChemistry *bmxchem = BMXChemistry::instance();
+#endif
+  //
   BL_PROFILE("bmx::bmx_calc_txfr_particle()");
 
   bmx_set_chem_species_bcs(time, get_X_k(), get_D_k());
 
-  for (int lev = 0; lev < nlev; lev++)
+  for (int lev = 0; lev <= finest_level; lev++)
   {
     Box domain(geom[lev].Domain());
 
@@ -131,11 +141,19 @@ bmx::bmx_calc_txfr_particle (Real time)
     // Pointer to Multifab for interpolation
     MultiFab* interp_ptr;
 
+#ifdef NEW_CHEM
+    const int interp_ng    = 1;    // Only one layer needed for interpolation
+    const int interp_ncomp = 3;
+
+    if (m_leveldata[0]->X_k->nComp() != 3)
+      amrex::Abort("We are not interpolating the right number of components in calc_txfr_particle");
+#else
     const int interp_ng    = 1;    // Only one layer needed for interpolation
     const int interp_ncomp = 2;
 
     if (m_leveldata[0]->X_k->nComp() != 2)
       amrex::Abort("We are not interpolating the right number of components in calc_txfr_particle");
+#endif
 
     if (OnSameGrids)
     {
@@ -177,6 +195,7 @@ bmx::bmx_calc_txfr_particle (Real time)
       const amrex::RealVect dxi(dxi_array[0], dxi_array[1], dxi_array[2]);
       const amrex::RealVect plo(plo_array[0], plo_array[1], plo_array[2]);
 
+      Real grid_vol = dx[0]*dx[1]*dx[2];
 
       for (BMXParIter pti(*pc, lev); pti.isValid(); ++pti)
       {
@@ -185,12 +204,10 @@ bmx::bmx_calc_txfr_particle (Real time)
 
         const int np = particles.size();
 
-        Box bx = pti.tilebox ();
-
         const auto& interp_array = interp_ptr->array(pti);
 
         amrex::ParallelFor(np,
-            [pstruct,interp_array,plo,dxi]
+            [pstruct,interp_array,plo,dxi,bmxchem,grid_vol,dt]
             AMREX_GPU_DEVICE (int pid) noexcept
               {
               // Local array storing interpolated values
@@ -201,6 +218,18 @@ bmx::bmx_calc_txfr_particle (Real time)
               trilinear_interp(p.pos(), &interp_loc[0],
                                interp_array, plo, dxi, interp_ncomp);
 
+#ifdef NEW_CHEM
+              Real *cell_par = &p.rdata(0);
+              Real *p_vals = &p.rdata(realIdx::first_data);
+#if 0
+              bmxchem->xferMeshToParticle(grid_vol, cell_par, &interp_loc[0],
+                  p_vals, dt);
+              bmxchem->updateChemistry(p_vals, cell_par, dt);
+#else
+              bmxchem->xferMeshToParticleAndUpdateChem(grid_vol, cell_par,
+                  &interp_loc[0], p_vals, dt);
+#endif
+#else
               // Interpolate values from mesh to particles
               p.rdata(realData::fluid_A) = interp_loc[0];
               p.rdata(realData::fluid_B) = interp_loc[1];
@@ -212,6 +241,7 @@ bmx::bmx_calc_txfr_particle (Real time)
               // The particle will consume (dt * 50%) of what the mesh value is
               p.rdata(realData::consume_A) = -0.5*interp_loc[0];
               p.rdata(realData::consume_B) = -0.5*interp_loc[1];
+#endif
             });
       } // pti
     } // omp region

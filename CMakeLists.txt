@@ -43,6 +43,9 @@ if(CCACHE_FOUND)
   set( CMAKE_CUDA_COMPILER_LAUNCHER ccache )
 endif()
 
+# Turn on new chemistry module
+add_compile_definitions(NEW_CHEM)
+
 # We want to offer the user some core options, i.e. MPI, OpenMP, CUDA, HYPRE
 # and floating-point exceptions, which require related AMReX components to
 # be enabled in the installation.

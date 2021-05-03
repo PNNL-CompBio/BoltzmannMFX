@@ -2,13 +2,19 @@
 
 #include <bmx_dem_parms.H>
 #include <bmx_bc_parms.H>
+#include <bmx_pc.H>
 
 using namespace amrex;
 
 int  BMXParticleContainer::domain_bc[6] {0};
 
+#ifdef NEW_CHEM
+BMXParticleContainer::BMXParticleContainer (AmrCore* amr_core)
+    : NeighborParticleContainer<MAX_CHEM_REAL_VAR,MAX_CHEM_INT_VAR>
+#else
 BMXParticleContainer::BMXParticleContainer (AmrCore* amr_core)
     : NeighborParticleContainer<realData::count,intData::count>
+#endif
       (amr_core->GetParGDB(), 1)
 {
     ReadStaticParameters();
@@ -16,6 +22,8 @@ BMXParticleContainer::BMXParticleContainer (AmrCore* amr_core)
     this->SetVerbose(0);
 
     nlev = amr_core->maxLevel() + 1;
+
+    finest_level = amr_core->finestLevel();
 }
 
 void BMXParticleContainer::AllocData ()
@@ -56,11 +64,14 @@ void BMXParticleContainer::printParticles ()
           std::cout << "X            = " << particles[i].pos(0) << " " << std::endl;
           std::cout << "Y            = " << particles[i].pos(1) << " " << std::endl;
           std::cout << "Z            = " << particles[i].pos(2) << " " << std::endl;
-          std::cout << "state        = " << p_intarray[intData::state][i] << " " << std::endl;
+#ifdef NEW_CHEM
+          for (int j = realIdx::count-1; j < realIdx::count + particles[i].idata(intIdx::num_reals)-1; j++)
+#else
           std::cout << "phase        = " << p_intarray[intData::phase][i] << " " << std::endl;
           std::cout << "Real properties = " << std::endl;
 
           for (int j = 0; j < realData::count; j++)
+#endif
             std::cout << "property " << j << "  = " << p_realarray[j][i] << " " << std::endl;
 
           std::cout << std::endl;
@@ -76,6 +87,7 @@ void BMXParticleContainer::ReadStaticParameters ()
         initialized = true;
 }
 
+#if 0
 void BMXParticleContainer::EvolveParticles (int lev,
                                              int nstep,
                                              Real dt,
@@ -357,6 +369,46 @@ void BMXParticleContainer::EvolveParticles (int lev,
               {
                 auto& p= pstruct[i];
 
+#ifdef NEW_CHEM
+                p.rdata(realIdx::velx) += subdt * fc_ptr[i];
+                p.rdata(realIdx::vely) += subdt * fc_ptr[i+ntot];
+                p.rdata(realIdx::velz) += subdt * fc_ptr[i+2*ntot];
+
+                p.pos(0) += subdt * p.rdata(realIdx::velx);
+                p.pos(1) += subdt * p.rdata(realIdx::vely);
+                p.pos(2) += subdt * p.rdata(realIdx::velz);
+
+                if (x_lo_bc and p.pos(0) < p_lo[0])
+                {
+                  p.pos(0) = p_lo[0] + eps;
+                  p.rdata(realIdx::velx) = -p.rdata(realIdx::velx);
+                }
+                else if (x_hi_bc and p.pos(0) > p_hi[0])
+                {
+                  p.pos(0) = p_hi[0] - eps;
+                  p.rdata(realIdx::velx) = -p.rdata(realIdx::velx);
+                }
+                else if (y_lo_bc and p.pos(1) < p_lo[1])
+                {
+                  p.pos(1) = p_lo[1] + eps;
+                  p.rdata(realIdx::vely) = -p.rdata(realIdx::vely);
+                }
+                else if (y_hi_bc and p.pos(1) > p_hi[1])
+                {
+                  p.pos(1) = p_hi[1] - eps;
+                  p.rdata(realIdx::vely) = -p.rdata(realIdx::vely);
+                }
+                else if (z_lo_bc and p.pos(2) < p_lo[2])
+                {
+                  p.pos(2) = p_lo[2] + eps;
+                  p.rdata(realIdx::velz) = -p.rdata(realIdx::velz);
+                }
+                else if (z_hi_bc and p.pos(2) > p_hi[2])
+                {
+                  p.pos(2) = p_hi[2] - eps;
+                  p.rdata(realIdx::velz) = -p.rdata(realIdx::velz);
+                }
+#else
                 p.rdata(realData::velx) += subdt * fc_ptr[i];
                 p.rdata(realData::vely) += subdt * fc_ptr[i+ntot];
                 p.rdata(realData::velz) += subdt * fc_ptr[i+2*ntot];
@@ -395,6 +447,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
                   p.pos(2) = p_hi[2] - eps;
                   p.rdata(realData::velz) = -p.rdata(realData::velz);
                 }
+#endif
               });
 
             BL_PROFILE_VAR_STOP(des_time_march);
@@ -447,6 +500,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
 
     BL_PROFILE_REGION_STOP("bmx_dem::EvolveParticles()");
 }
+#endif
 
 void BMXParticleContainer::writeAllAtLevel (int lev)
 {

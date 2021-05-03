@@ -8,6 +8,10 @@
 #include <bmx_fluid_parms.H>
 #include <bmx_algorithm.H>
 
+#ifdef NEW_CHEM
+#include <bmx_chem.H>
+#endif
+
 using namespace amrex;
 
 void BMXParticleContainer::
@@ -76,8 +80,6 @@ SolidsVolumeDeposition (F WeightFunc, int lev,
       const long nrp = pti.numParticles();
       FArrayBox& fab_to_be_filled = mf_to_be_filled[pti];
 
-      const Box& bx  = pti.tilebox(); // I need a box without ghosts
-
       {
         auto volarr = fab_to_be_filled.array();
 
@@ -109,11 +111,17 @@ SolidsVolumeDeposition (F WeightFunc, int lev,
 
             GpuArray<GpuArray<GpuArray<Real,2>,2>,2> weights;
 
+#ifdef NEW_CHEM
+            WeightFunc(plo, dx, dxi, p.pos(), p_realarray[realIdx::a_size][ip], i, j, k, weights,
+                deposition_scale_factor);
+
+            amrex::Real pvol = p_realarray[realIdx::vol][ip] / reg_cell_vol;
+#else
             WeightFunc(plo, dx, dxi, p.pos(), p_realarray[realData::radius][ip], i, j, k, weights,
                 deposition_scale_factor);
 
             amrex::Real pvol = p_realarray[realData::volume][ip] / reg_cell_vol;
-
+#endif
             for (int kk = -1; kk <= 0; ++kk) {
               for (int jj = -1; jj <= 0; ++jj) {
                 for (int ii = -1; ii <= 0; ++ii) {
@@ -139,23 +147,23 @@ SolidsVolumeDeposition (F WeightFunc, int lev,
 
 void BMXParticleContainer::
 InterphaseTxfrDeposition (int lev,
-                          amrex::MultiFab & txfr_mf)
+                          amrex::MultiFab & txfr_mf, Real dt)
 {
   if (bmx::m_deposition_scheme == DepositionScheme::trilinear) {
 
-    InterphaseTxfrDeposition(TrilinearDeposition(), lev, txfr_mf);
+    InterphaseTxfrDeposition(TrilinearDeposition(), lev, txfr_mf, dt);
 
   } else if (bmx::m_deposition_scheme == DepositionScheme::square_dpvm) {
 
-    InterphaseTxfrDeposition(TrilinearDPVMSquareDeposition(), lev, txfr_mf);
+    InterphaseTxfrDeposition(TrilinearDPVMSquareDeposition(), lev, txfr_mf, dt);
 
   } else if (bmx::m_deposition_scheme == DepositionScheme::true_dpvm) {
 
-    InterphaseTxfrDeposition(TrueDPVMDeposition(), lev, txfr_mf);
+    InterphaseTxfrDeposition(TrueDPVMDeposition(), lev, txfr_mf, dt);
 
   } else if (bmx::m_deposition_scheme == DepositionScheme::centroid) {
 
-    InterphaseTxfrDeposition(CentroidDeposition(), lev, txfr_mf);
+    InterphaseTxfrDeposition(CentroidDeposition(), lev, txfr_mf, dt);
 
   } else {
 
@@ -168,7 +176,7 @@ InterphaseTxfrDeposition (int lev,
 template <typename F>
 void BMXParticleContainer::
 InterphaseTxfrDeposition (F WeightFunc, int lev,
-                          amrex::MultiFab & txfr_mf)
+                          amrex::MultiFab & txfr_mf, Real dt)
 {
   BL_PROFILE("BMXParticleContainer::InterphaseTxfrDeposition()");
 
@@ -178,7 +186,11 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
   const auto      dx  = gm.CellSizeArray();
   const auto      dxi = gm.InvCellSizeArray();
 
-  const auto      reg_cell_vol = dx[0]*dx[1]*dx[2];
+  const auto      grid_vol = dx[0]*dx[1]*dx[2];
+
+#ifdef NEW_CHEM
+  BMXChemistry *bmxchem = BMXChemistry::instance();
+#endif
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -188,14 +200,14 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
 
     for (BMXParIter pti(*this, lev); pti.isValid(); ++pti) {
 
-      const auto& particles = pti.GetArrayOfStructs();
-      const ParticleType* pstruct = particles().dataPtr();
+      //const auto& particles = pti.GetArrayOfStructs();
+      auto& particles = pti.GetArrayOfStructs();
+      //const ParticleType* pstruct = particles().dataPtr();
+      ParticleType* pstruct = particles().dataPtr();
 
       const long nrp = pti.numParticles();
 
       FArrayBox& txfr_fab = txfr_mf[pti];
-
-      const Box& box = pti.tilebox(); // I need a box without ghosts
 
       auto        txfr_arr = txfr_fab.array();
 
@@ -217,10 +229,15 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
         amrex::Print() << "DEPOSITION OF " << nrp << " particles ... " << std::endl;
 
         amrex::ParallelFor(nrp,
+#ifdef NEW_CHEM
+          [pstruct,plo,dx,dxi,deposition_scale_factor,WeightFunc,txfr_arr,bmxchem,grid_vol,dt]
+#else
           [pstruct,plo,dx,dxi,deposition_scale_factor,WeightFunc,txfr_arr]
+#endif
            AMREX_GPU_DEVICE (int ip) noexcept
           {
-            const ParticleType& p = pstruct[ip];
+            //const ParticleType& p = pstruct[ip];
+            ParticleType& p = pstruct[ip];
 
             int i;
             int j;
@@ -228,6 +245,30 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
 
             GpuArray<GpuArray<GpuArray<Real,2>,2>,2> weights;
 
+#ifdef NEW_CHEM
+            WeightFunc(plo, dx, dxi, p.pos(), p.rdata(realIdx::a_size), i, j, k, weights,
+                       deposition_scale_factor);
+
+            int nvals = p.idata(intIdx::num_reals);
+            amrex::Real *p_vals = &p.rdata(realIdx::first_data);
+            amrex::Real *chem_incr = p_vals + p.idata(intIdx::first_real_inc);
+            amrex::Real *cell_par = &p.rdata(0);
+            bmxchem->xferParticleToMesh(grid_vol, cell_par, chem_incr, p_vals, dt);
+            for (int ii = -1; ii <= 0; ++ii) {
+              for (int jj = -1; jj <= 0; ++jj) {
+                for (int kk = -1; kk <= 0; ++kk) {
+                  for (int nn = 0; nn < nvals; ++nn) {
+
+                    amrex::Real weight_vol = weights[ii+1][jj+1][kk+1];
+
+                    amrex::Gpu::Atomic::Add(&txfr_arr(i+ii,j+jj,k+kk,0), weight_vol*chem_incr[nn]);
+                  }
+
+                }
+              }
+            }
+            bmxchem->printCellConcentrations(p_vals, cell_par);
+#else
             WeightFunc(plo, dx, dxi, p.pos(), p.rdata(realData::radius), i, j, k, weights,
                        deposition_scale_factor);
 
@@ -250,6 +291,7 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
                 }
               }
             }
+#endif
           });
 
 #ifdef _OPENMP

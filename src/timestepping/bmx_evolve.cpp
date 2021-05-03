@@ -32,8 +32,6 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
     Real end_fluid = ParallelDescriptor::second() - start_fluid - drag_timing;
     ParallelDescriptor::ReduceRealMax(end_fluid, ParallelDescriptor::IOProcessorNumber());
 
-    Real new_time = time+dt;
-
     /****************************************************************************
      *                                                                          *
      * Evolve Particles (Using Particle MD)                                     *
@@ -72,6 +70,7 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
             }
         }
     }
+    pc->split_particles();
 
     BL_PROFILE_VAR_STOP(particlesSolve);
 

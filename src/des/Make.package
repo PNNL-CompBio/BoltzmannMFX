@@ -2,6 +2,9 @@ CEXE_headers += bmx_des_K.H
 CEXE_headers += bmx_pc.H
 
 CEXE_sources += bmx_pc.cpp
+CEXE_sources += bmx_pc.cpp
 CEXE_sources += bmx_pc_init.cpp
+CEXE_sources += bmx_pc_interaction.cpp
 CEXE_sources += bmx_calc_txfr.cpp
 CEXE_sources += bmx_calc_volume_fraction.cpp
+CEXE_sources += bmx_split_particles.cpp

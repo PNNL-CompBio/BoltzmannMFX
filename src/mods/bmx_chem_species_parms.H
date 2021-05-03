@@ -1,7 +1,10 @@
 #ifndef BMX_SPECIES_PARMS_H_
 #define BMX_SPECIES_PARMS_H_
 
+#include <vector>
+#include <string>
 #include <AMReX_REAL.H>
+#include <AMReX_Vector.H>
 
 namespace SPECIES
 {
@@ -32,6 +35,9 @@ namespace SPECIES
 
   // Specified chem_species constant diffusion coefficients
   extern std::vector<amrex::Real> D_k0;
+
+  // Maximum cell volume
+  extern amrex::Real max_vol;
 
   struct SPECIES_t {
     // Constructor

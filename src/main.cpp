@@ -10,6 +10,10 @@
 
 #include <bmx.H>
 #include <bmx_fluid_parms.H>
+#ifdef NEW_CHEM
+#include <bmx_chem.H>
+#include <bmx_cell_interaction.H>
+#endif
 
 int  max_step   = -1;
 int  regrid_int = -1;
@@ -144,8 +148,6 @@ void writeNow (int nstep, Real time, Real dt, bmx& bmx)
 
 int main (int argc, char* argv[])
 {
-
-
     // check to see if it contains --describe. If so, write out information on
     // the build.
     if (argc >= 2) {
@@ -210,6 +212,17 @@ int main (int argc, char* argv[])
 
     // Initialize derived internals
     bmx.Init(time);
+
+    // Read in chemistry parameters. Currently hardwiring these so file
+    // name is set to arbitrary string
+#ifdef NEW_CHEM
+    SPECIES::Initialize();
+    std::cout << "Volume threshold for cell division:  " << SPECIES::max_vol << std::endl;
+    BMXChemistry *bmxchem = BMXChemistry::instance();
+    bmxchem->setParams("NullFile");
+    BMXCellInteraction *interaction = BMXCellInteraction::instance();
+    interaction->setParams("NullFile");
+#endif
 
     // Either init from scratch or from the checkpoint file
     int restart_flag = 0;

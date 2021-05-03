@@ -15,7 +15,7 @@ bmx::bmx_set_chem_species_bcs (Real time,
 {
   BL_PROFILE("bmx::bmx_set_chem_species_bcs()");
 
-  for (int lev = 0; lev < nlev; lev++)
+  for (int lev = 0; lev <= finest_level; lev++)
   {
      Box domain(geom[lev].Domain());
 
@@ -37,9 +37,9 @@ void
 bmx::set_neumann_bcs (Real time,
                       const int lev,
                       FArrayBox& scal_fab,
-                      const GeometryData& geom)
+                      const GeometryData& geom_data)
 {
-  const Box& domain = geom.Domain();
+  const Box& domain = geom_data.Domain();
 
   IntVect dom_lo(domain.loVect());
   IntVect dom_hi(domain.hiVect());
@@ -56,13 +56,13 @@ bmx::set_neumann_bcs (Real time,
   IntVect scal_lo(scal_fab.loVect());
   IntVect scal_hi(scal_fab.hiVect());
 
-  const int nlft = geom.isPeriodic(0) ? 0 : std::max(0, dom_lo[0]-scal_lo[0]);
-  const int nbot = geom.isPeriodic(1) ? 0 : std::max(0, dom_lo[1]-scal_lo[1]);
-  const int ndwn = geom.isPeriodic(2) ? 0 : std::max(0, dom_lo[2]-scal_lo[2]);
+  const int nlft = geom_data.isPeriodic(0) ? 0 : std::max(0, dom_lo[0]-scal_lo[0]);
+  const int nbot = geom_data.isPeriodic(1) ? 0 : std::max(0, dom_lo[1]-scal_lo[1]);
+  const int ndwn = geom_data.isPeriodic(2) ? 0 : std::max(0, dom_lo[2]-scal_lo[2]);
 
-  const int nrgt = geom.isPeriodic(0) ? 0 : std::max(0, scal_hi[0]-dom_hi[0]);
-  const int ntop = geom.isPeriodic(1) ? 0 : std::max(0, scal_hi[1]-dom_hi[1]);
-  const int nup  = geom.isPeriodic(2) ? 0 : std::max(0, scal_hi[2]-dom_hi[2]);
+  const int nrgt = geom_data.isPeriodic(0) ? 0 : std::max(0, scal_hi[0]-dom_hi[0]);
+  const int ntop = geom_data.isPeriodic(1) ? 0 : std::max(0, scal_hi[1]-dom_hi[1]);
+  const int nup  = geom_data.isPeriodic(2) ? 0 : std::max(0, scal_hi[2]-dom_hi[2]);
 
   if (nlft > 0)
   {

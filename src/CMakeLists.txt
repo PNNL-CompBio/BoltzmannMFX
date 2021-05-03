@@ -43,6 +43,9 @@ add_subdirectory(mods)
 # Time evolution functions
 add_subdirectory(timestepping)
 
+# Cell chemistry functions
+add_subdirectory(chemistry)
+
 #
 # Link to imported AMReX
 #

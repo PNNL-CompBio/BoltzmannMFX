@@ -9,5 +9,8 @@
 
 // Compute fluid chem_species diffusivity
 void calc_D_k (const Box& bx, const Box& domain,
+               const Real dx,
+               const Real dy,
+               const Real dz,
                FArrayBox& D_k_fab);
 #endif

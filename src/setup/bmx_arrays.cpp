@@ -64,7 +64,6 @@ void
 bmx::RegridArrays (int lev)
 {
     if (ooo_debug) amrex::Print() << "RegridArrays" << std::endl;
-    bool need_regrid = true;
 
     // ********************************************************************************
     // Cell-based arrays

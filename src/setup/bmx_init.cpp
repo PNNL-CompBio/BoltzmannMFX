@@ -38,12 +38,9 @@ bmx::InitParams ()
       Gpu::synchronize();
   }
   bcs_X.resize(2*FLUID::nchem_species);
+  bcs_D.resize(2*FLUID::nchem_species);
 
   BC::Initialize(geom[0]);
-
-  // set n_error_buf (used in AmrMesh) to default (can overwrite later)
-  for (int i = 0; i < n_error_buf.size(); i++)
-    n_error_buf[i] = {8,8,8};
 
   {
     ParmParse pp("bmx");
@@ -61,6 +58,11 @@ bmx::InitParams ()
     pp.query("verbose", m_verbose);
 
     pp.query("ooo_debug", ooo_debug);
+
+    // Initialize random number generator
+    int seed = 77389;
+    pp.query("seed", seed);
+    amrex::ResetRandomSeed(seed+ParallelDescriptor::MyProc()+1);
 
     // The default type is "AsciiFile" but we can over-write that in the inputs
     // file with "Random"
@@ -179,13 +181,6 @@ bmx::InitParams ()
   }
 }
 
-
-void bmx::ErrorEst (int lev, TagBoxArray & tags, Real time, int ngrow)
-{
-    if (ooo_debug) amrex::Print() << "ErrorEst" << std::endl;
-}
-
-
 void bmx::Init (Real time)
 {
     if (ooo_debug) amrex::Print() << "Init" << std::endl;
@@ -216,9 +211,9 @@ void bmx::Init (Real time)
      ***************************************************************************/
 
     // Define coarse level BoxArray and DistributionMap
-    const BoxArray& ba = MakeBaseGrids();
-    DistributionMapping dm(ba, ParallelDescriptor::NProcs());
-    MakeNewLevelFromScratch(0, time, ba, dm);
+    // This is an AmrCore member function which recursively makes new levels
+    // with MakeNewLevelFromScratch.
+    InitFromScratch(time);
 
     for (int lev = 1; lev <= finest_level; lev++)
     {
@@ -364,11 +359,13 @@ void bmx::ReMakeNewLevelFromScratch (int lev,
 void bmx::InitLevelData (Real time)
 {
     if (ooo_debug) amrex::Print() << "InitLevelData" << std::endl;
+
     // Allocate the fluid data
     if (FLUID::solve)
        for (int lev = 0; lev < nlev; lev++)
           AllocateArrays(lev);
 
+    ParmParse pp("particles");
     // Allocate the particle data
     if (DEM::solve)
     {
@@ -379,7 +376,13 @@ void bmx::InitLevelData (Real time)
       if (particle_init_type == "AsciiFile")
       {
         amrex::Print() << "Reading particles from particle_input.dat ..." << std::endl;
+#ifdef NEW_CHEM
+        std::string filename;
+        pp.query("input_file",filename);
+        pc->InitParticlesAscii(filename);
+#else
         pc->InitParticlesAscii("particle_input.dat");
+#endif
 
       } else { 
 
@@ -558,7 +561,7 @@ bmx::bmx_init_fluid (int is_restarting, Real dt, Real stop_time)
           const Box& sbx = dummy[mfi].box();
 
           if ( is_restarting ) {
-            init_fluid_parameters(bx, domain, mfi, ld, advect_fluid_chem_species);
+            init_fluid_parameters(bx, domain, dx, dy, dz, mfi, ld, advect_fluid_chem_species);
           } else {
             init_fluid(sbx, bx, domain, mfi, ld, dx, dy, dz, xlen, ylen, zlen, plo,
                        advect_fluid_chem_species);

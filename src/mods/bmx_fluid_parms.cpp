@@ -26,6 +26,17 @@ namespace FLUID
   // Total number of fluid chem_species
   int nchem_species(0);
 
+#ifdef NEW_CHEM
+  // Initial fluid concentrations of species
+  std::vector<amrex::Real> init_conc;
+
+  // Location of top of support layer
+  amrex::Real surface_location;
+
+  // Liquid film thickness on top of support layer
+  amrex::Real film_thickness;
+#endif
+
   // Specified constant gas phase chem_species diffusion coefficients
   std::vector<amrex::Real> D_k0(0);
 
@@ -41,7 +52,7 @@ namespace FLUID
     pp.queryarr("solve", fluid_name);
 
     AMREX_ALWAYS_ASSERT_WITH_MESSAGE(fluid_name.size() == 1,
-       "Fluid solver not specified. fluid.sove = ? ");
+       "Fluid solver not specified. fluid.solve = ? ");
 
     // Disable the fluid solver if the fluid is defined as "None"
     if (amrex::toLower(fluid_name[0]).compare("none") == 0 or fluid_name[0] == "0" ) {
@@ -51,6 +62,13 @@ namespace FLUID
       name = fluid_name[0];
     }
 
+    // Location of top of support layer
+    pp.get("surface_location",surface_location);
+    printf("FLUID:surface_location %12.6f\n",surface_location);
+
+    // Liquid film thickness on top of support layer
+    pp.get("liquid_film_thickness",film_thickness);
+      
     if (solve)
     {
       amrex::ParmParse ppFluid(name.c_str());
@@ -77,6 +95,14 @@ namespace FLUID
            amrex::Print() << "diff coeffs for chem_species " << n << " is " << D_k0[n] << std::endl;
 
         amrex::Print() << " " << std::endl;
+
+#ifdef NEW_CHEM
+        ppFluid.getarr("init_conc_species", init_conc);
+        for (int n = 0; n < nchem_species; n++)
+           amrex::Print() << "Initial concentration for chem_species " << n << " is " << init_conc[n] << std::endl;
+
+        amrex::Print() << " " << std::endl;
+#endif
 
 
       }

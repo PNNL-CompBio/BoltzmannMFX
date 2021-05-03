@@ -7,6 +7,7 @@ include $(AMREX_HOME)/Tools/GNUMake/Make.defs
 
 #These are the directories in bmx
 Bdirs 	:= src
+Bdirs 	+= src/chemistry
 Bdirs 	+= src/deposition
 Bdirs 	+= src/des
 Bdirs 	+= src/diffusion
@@ -48,6 +49,8 @@ all: $(executable)
 CEXE_sources += AMReX_buildInfo.cpp
 CEXE_headers += $(AMREX_HOME)/Tools/C_scripts/AMReX_buildInfo.H
 INCLUDE_LOCATIONS +=  $(AMREX_HOME)/Tools/C_scripts
+
+CPPFLAGS += -DNEW_CHEM
 
 AMReX_buildInfo.cpp:
 	$(AMREX_HOME)/Tools/C_scripts/makebuildinfo_C.py \

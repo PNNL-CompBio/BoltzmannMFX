@@ -13,11 +13,16 @@
 #include <AMReX_Particles.H>
 #include <AMReX_NeighborParticles.H>
 #include <bmx_bc_list.H>
+#ifdef NEW_CHEM
+#include <bmx_chem.H>
+#endif
 
 /**
  * Note: if the enumeration starts at 0, then count will represent the total
  * number of values defined prior to the count variable.
  */
+
+#ifndef NEW_CHEM
 struct realData
 {
   enum { // Real particle data stored in p.m_data
@@ -33,7 +38,9 @@ struct realData
     count
   };
 };
+#endif
 
+#ifndef NEW_CHEM
 struct intData
 {
   enum { // Integer particle data stored in p.m_data
@@ -42,6 +49,7 @@ struct intData
     count
   };
 };
+#endif
 
 ///
 /// We add a particle to the neighbor list if its center is within 3 particle radii
@@ -67,12 +75,22 @@ struct BMXCheckPair
 };
 
 // Cannot inherit from this class?
+#ifdef NEW_CHEM
+class BMXParticleContainer final
+    : public amrex::NeighborParticleContainer<MAX_CHEM_REAL_VAR,MAX_CHEM_INT_VAR>
+#else
 class BMXParticleContainer final
     : public amrex::NeighborParticleContainer<realData::count,intData::count>
+#endif
 {
 public:
+#ifdef NEW_CHEM
+    using BMXParIter = amrex::ParIter<MAX_CHEM_REAL_VAR,MAX_CHEM_INT_VAR,0,0>;
+    using BMXParConstIter = amrex::ParConstIter<MAX_CHEM_REAL_VAR,MAX_CHEM_INT_VAR,0,0>;
+#else
     using BMXParIter = amrex::ParIter<realData::count,intData::count,0,0>;
     using BMXParConstIter = amrex::ParConstIter<realData::count,intData::count,0,0>;
+#endif
 
     // Get number of particles
     int NumberOfParticles (BMXParIter& pti)
@@ -120,15 +138,18 @@ public:
                                  amrex::MultiFab& mf);
 
     void InterphaseTxfrDeposition (int lev,
-                                   amrex::MultiFab& txfr_mf);
+                                   amrex::MultiFab& txfr_mf, amrex::Real dt);
  
     template <typename F>
     void InterphaseTxfrDeposition (F WeightFunc,
                                    int lev,
-                                   amrex::MultiFab& txfr_mf);
+                                   amrex::MultiFab& txfr_mf, amrex::Real dt);
+
+    void split_particles ();
 
   private:
     int nlev;
+    int finest_level;
 
     amrex::IntVect m_sorting_bin = amrex::IntVect::TheZeroVector();
 
