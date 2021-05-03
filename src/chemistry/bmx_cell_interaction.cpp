@@ -46,6 +46,7 @@ void BMXCellInteraction::setParams(const char *file)
   pp.get("wall_stiffness",p_z_stiffness);
 
   p_zwall = FLUID::surface_location;
+  printf("SURFACE LOCATION: %12.6f\n",p_zwall);
 }
 
 /**
@@ -103,9 +104,12 @@ void BMXCellInteraction::evaluateSurfaceForce(const Real *pos, Real *par, Real *
   Real dz = z - p_zwall; 
   Real rS = par[realIdx::a_size];
   Real rA = rS + p_z_bndry_width;
-  if (dz > 0.0) {
-    frc[2] = p_z_stiffness*(dz-rA)*(dz-rA)*(dz-rS);
+  if (dz > 0.0 && dz < rA) {
+    frc[2] = -p_z_stiffness*(dz-rA)*(dz-rA)*(dz-rS);
+  } else if (dz <= 0) {
+    frc[2] = p_z_stiffness*rA*rA*rS;
   } else {
     frc[2] = 0.0;
   }
+  //printf("dz: %12.6f fz: %12.6f\n",dz,frc[2]);
 }
