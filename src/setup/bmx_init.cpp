@@ -365,6 +365,7 @@ void bmx::InitLevelData (Real time)
        for (int lev = 0; lev < nlev; lev++)
           AllocateArrays(lev);
 
+    ParmParse pp("particles");
     // Allocate the particle data
     if (DEM::solve)
     {
@@ -376,7 +377,9 @@ void bmx::InitLevelData (Real time)
       {
         amrex::Print() << "Reading particles from particle_input.dat ..." << std::endl;
 #ifdef NEW_CHEM
-        pc->InitParticlesAscii("abc_particle_input.dat");
+        std::string filename;
+        pp.query("input_file",filename);
+        pc->InitParticlesAscii(filename);
 #else
         pc->InitParticlesAscii("particle_input.dat");
 #endif
