@@ -12,9 +12,9 @@ amrex.fpe_trap_invalid = 1
 #! Fluid solver
 #!-----------------------------------------------------------//
 
-bmx.fixed_dt = 0.0025
+bmx.fixed_dt = 0.005
 
-bmx.max_step = 500
+bmx.max_step = 100
 #bmx.max_step = 1
 
 dem.solve = bacteria
@@ -65,6 +65,7 @@ amr.max_grid_size_z = 32
 fabarray.mfiter_tile_size = 1024 1024 1024
 
 # Particles: Maximum particle tile size
+particles.input_file = "abc_particle_input.dat"
 particles.tile_size = 1024 1024 1024
 
 #_______________________________________________________________________
@@ -123,12 +124,12 @@ chem_species.kg = 2000.0
 # Cell force parameters
 #
 cell_force.boundary_width = 0.05
-cell_force.stiffness = 10.0
+cell_force.stiffness = 100.0
 cell_force.wall_boundary_width = 0.03
-cell_force.wall_stiffness = 4.0
+cell_force.wall_stiffness = 500.0
 
 #Diffusion_type: 0 = explicit, 1 = C-N, 2 = implicit
-bmx.diffusion_type = 1
+bmx.diffusion_type = 0
 
 #Verbosity of diffusion solver
 diffusion.verbose = 2

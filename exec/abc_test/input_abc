@@ -34,16 +34,16 @@ geometry.prob_hi     = 1.0     1.0     1.0     # hi corner of physical domain
 
 # Number of grid cells in each direction at the coarsest level
 amr.n_cell =  8 8 8
-amr.n_cell =  32   32   32
+amr.n_cell =  16  16  16
 
 #! Grids
 #!-----------------------------------------------------------//
 # Maximum allowable size of each fluid subdomain in the problem domain;
 
 # Fluid
-amr.max_grid_size_x = 32
-amr.max_grid_size_y = 32
-amr.max_grid_size_z = 32
+amr.max_grid_size_x = 16
+amr.max_grid_size_y = 16
+amr.max_grid_size_z = 16
 
 # Particles (not with KDTree)
 #particles.max_grid_size_x =   32
@@ -57,6 +57,7 @@ amr.max_grid_size_z = 32
 fabarray.mfiter_tile_size = 1024 1024 1024
 
 # Particles: Maximum particle tile size
+particles.input_file = "abc_particle_input.dat"
 particles.tile_size = 1024 1024 1024
 
 
@@ -117,9 +118,9 @@ chem_species.kg = 2000.0
 # Cell force parameters
 #
 cell_force.boundary_width = 0.05
-cell_force.stiffness = 10.0
+cell_force.stiffness = 100.0
 cell_force.wall_boundary_width = 0.03
-cell_force.wall_stiffness = 4.0
+cell_force.wall_stiffness = 500.0
 
 #Diffusion_type: 0 = explicit, 1 = C-N, 2 = implicit
 bmx.diffusion_type = 0
