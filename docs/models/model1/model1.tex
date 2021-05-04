@@ -3,6 +3,7 @@
 \usepackage{graphicx}
 \usepackage{appendix}
 \usepackage{verbatim}
+\usepackage{comment}
 \usepackage[margin=1.0in]{geometry}
 \DeclareGraphicsExtensions{.jpg,.jpeg,.png}
 \renewcommand{\baselinestretch}{1.0}
@@ -111,33 +112,81 @@ This model will employ a very simple set of equations to describe dynamics withi
 cell. Three chemical constituents are considered, $A$, $B$ and $C$. $A$ and $C$ exist
 both inside and outside the cell (in the agar medium) and the concentrations outside
 the cell are denoted with the subscript $out$ and those inside the cell are labeled
-with the subscript $in$. The compound $B$ is only located inside the cell. These species
-are related to each other as follows:
+with the subscript $in$. The compound $B$ is only located inside the cell.
+These species are related to each other via the following reactions:
 \begin{eqnarray*}
 A_{out} &\stackrel{k_{1},k_{-1}}{\longleftrightarrow}& A_{in} \\
 A_{in} &\stackrel{k_2,k_{-2}}{\longleftrightarrow}& B_{in} + C_{in} \\
 C_{in} &\stackrel{k_3,k_{-3}}{\longleftrightarrow}& C_{out}
 \end{eqnarray*}
+To distinguish
+between concentrations of these components and absolute amounts of component, we use
+brackets [ ]. In this notation, $[A_{out}]$ is the concentration of $A$ in a grid cell and
+$A_{out}$ is the total amount (mass) of $A$ in a grid cell.
 The intracellular concentration of these species is governed by the set of equations
 \begin{eqnarray*}
-\frac{\partial A_{out}}{\partial t} &=&-k_1 A_{out}+k_{-1} A_{in} \\
-\frac{\partial A_{in}}{\partial t} &=&k_1 A_{out}-k_{-1} A_{in} - k_2 A_{in}
- - k_{-2}B_{in}C_{in}\\
-\frac{\partial B_{in}}{\partial t} &=&k_2 A_{in} - k_{-2}B_{in}C_{in}\\
-\frac{\partial C_{in}}{\partial t} &=&k_2 A_{in} - k_{-2}B_{in}C_{in}-k_3 C_{in}
-+ k_{-3} C_{out} \\
-\frac{\partial C_{out}}{\partial t} &=&k_3 C_{in}-k_{-3} C_{out}
+\frac{d [A_{out}]}{d t} &=&-k_1 [A_{out}]+k_{-1} [A_{in}] \\
+\frac{d [A_{in}]}{d t} &=&k_1 [A_{out}]-k_{-1} [A_{in}] - k_2 [A_{in}]
+ - k_{-2}[B_{in}][C_{in}]\\
+\frac{d [B_{in}]}{d t} &=&k_2 [A_{in}] - k_{-2}[B_{in}][C_{in}]\\
+\frac{d [C_{in}]}{d t} &=&k_2 [A_{in}] - k_{-2}[B_{in}][C_{in}]-k_{-3} [C_{in}]
++ k_3 [C_{out}] \\
+\frac{d [C_{out}]}{d t} &=&k_{-3} [C_{in}]-k_3 [C_{out}]
 \end{eqnarray*}
-The cells are subject to two additional rules:
-\begin{list}{$\bullet$}{}
-\item If $\partial B_{in}/\partial t$ falls to zero, the cell dies.
-\item If $\partial B_{in}/\partial t \ge 0$ and the amount of $B_{in}$ increases to 10, the
-cell splits into two new cells.
-\end{list}
 These reactions also act as sources and sinks for $A_{out}$ and $C_{out}$, which are governed
 by diffusion in the agar growth medium.
 
-Numerically, these are currently being handled using the following scheme
+The transport equations into and out of the cell can be examined in more detail.
+To avoid confusion with the cell area $A_{cell}$, we focus on component $C$ but similar comments
+apply to component $A$. We define coefficients $k'_3$ and $k'_{-3}$ as mass-transfer
+coefficients and the fluxes of material into the cell, $f_{in}$, and out $f_{out}$ can be written
+as
+\begin{eqnarray*}
+f_{in} &=& [C_{out}]A_{cell}k'_3 \\
+f_{out} &=& [C_{in}]A_{cell}k'_{-3}
+\end{eqnarray*}
+where $A_{cell}$ is the surface area of the cell.
+In a time increment $\dt$, the mass increments $\Delta C_{in}$ going into the cell and $\Delta
+C_{out}$ going out of the cell are
+\begin{eqnarray*}
+\Delta C_{in} &=& \dt \frac{C_{out}}{V_{grid}}A_{cell}k'_3\\
+\Delta C_{out} &=& \dt \frac{C_{in}}{V_{cell}}A_{cell}k'_{-3}
+\end{eqnarray*}
+Note that $C_{in}$ and $C_{out}$ are the absolute amounts of $C$ occupying a cell volume $V_{cell}$
+and grid cell volume $V_{grid}$, respectively. We are ignoring possible changes in the biological
+and grid cell volumes during this time interval. The incremental changes in the total amount of
+material in the biological cell and the grid cells can be written as
+\begin{eqnarray*}
+C_{in}(t+\dt)-C_{in}(t) &=& \dt \frac{C_{out}}{V_{grid}}A_{cell}k'_3 - \dt\frac{C_{in}}{V_{cell}}
+A_{cell}k'_{-3} \\
+C_{out}(t+\dt)-C_{out}(t) &=& \dt \frac{C_{in}}{V_{cell}}A_{cell}k'_{-3} - \dt\frac{C_{out}}{V_{grid}}
+A_{cell}k'_3
+\end{eqnarray*}
+Dividing the first equation $\dt V_{cell}$ and the second by $\dt V_{grid}$ and taking the limit $\dt
+\rightarrow 0$ gives
+\begin{eqnarray*}
+\frac{d [C_{in}]}{dt} &=& [C_{out}]\frac{A_{cell}}{V_{cell}}k'_3 - [C_{in}]\frac{A_{cell}}{V_{cell}}
+k'_3 \\
+\frac{d[C_{out}]}{dt} &=& [C_{in}]\frac{A_{cell}}{V_{grid}}k'_{-3} - [C_{out}]\frac{A_{cell}}{V_{grid}}
+k'_3
+\end{eqnarray*}
+Using these expressions for the change in concentration due to transport across the cell membrane, the
+rate equations governing this system become
+\begin{eqnarray*}
+\frac{d [A_{out}]}{d t} &=&-k'_1\frac{A_{cell}}{V_{grid}} [A_{out}]
++k'_{-1}\frac{A_{cell}}{V_{grid}} [A_{in}] \\
+\frac{d [A_{in}]}{d t} &=&k'_1\frac{A_{cell}}{V_{cell}} [A_{out}]
+-k'_{-1}\frac{A_{cell}}{V_{cell}} [A_{in}] - k_2 [A_{in}]
+ + k_{-2}[B_{in}][C_{in}]\\
+\frac{d [B_{in}]}{d t} &=&k_2 [A_{in}] - k_{-2}[B_{in}][C_{in}]\\
+\frac{d [C_{in}]}{d t} &=&k_2 [A_{in}] - k_{-2}[B_{in}][C_{in}]
+-k'_{-3} \frac{A_{cell}}{V_{cell}}[C_{in}]
++ k'_3\frac{A_{cell}}{V_{cell}} [C_{out}] \\
+\frac{d [C_{out}]}{d t} &=&k'_{-3} \frac{A_{cell}}{V_{grid}}[C_{in}]
+-k'_3\frac{A_{cell}}{V_{grid}} [C_{out}]
+\end{eqnarray*}
+
+Numerically, the rate equations are currently being handled using the following scheme
 \begin{list}{$\bullet$}{}
 \item There is an equilibration between the fluid and the cell over a time
 increment $\dt$
@@ -148,46 +197,114 @@ concentrations are re-equilibrated with the outside fluid over a time interval
 $\dt$
 \end{list}
 The first step is implemented by calculating the amount of material that flows
-between the biological cell (occuping a volume $V_{cell}$) and the grid cell in
-which it is located (occupying a volume $V_{grid}$). The biological cell also has
-a surface area $A_{cell}$ over which material can pass. The total amount of
+between the biological cell and the grid cell in which it is located.
+The total amount of
 material that flows into or out of the cell in the interval $\dt$ is
 \begin{eqnarray*}
-\Delta A & = & \dt A_{cell}(k_1 A_{out}-k_{-1} A_{in}) \\
+\Delta A & = & \dt A_{cell}(k_1 [A_{out}]-k_{-1} [A_{in}]) \\
 \Delta B & = & 0 \\
-\Delta C & = & \dt A_{cell}(k_3 C_{out}-k_{-3} C_{in}) \\
+\Delta C & = & \dt A_{cell}(k_3 [C_{out}]-k_{-3} [C_{in}]) \\
 \end{eqnarray*}
 Based on this increment, the concentrations inside and outside the cell are
 adjusted using the equations
 \begin{eqnarray*}
-A'_{in} &=& A_{in} + \Delta A/V_{cell} \\
-B'_{in}  & = & B_{in} \\
-C'_{in} &=& C_{in} + \Delta C/V_{cell}
+[A'_{in}] &=& [A_{in}] + \Delta A/V_{cell} \\
+[B'_{in}]  &=& [B_{in}] \\
+[C'_{in}] &=& [C_{in}] + \Delta C/V_{cell}
 \end{eqnarray*}
 \begin{eqnarray*}
-A'_{out} &=& A_{out} - \Delta A/V_{grid} \\
-B'_{out}  & = & B_{out} \\
-C'_{out} &=& C_{out} - \Delta C/V_{grid}
+[A'_{out}] &=& [A_{out}] - \Delta A/V_{grid} \\
+[B'_{out}]  & = & [B_{out}] \\
+[C'_{out}] &=& [C_{out}] - \Delta C/V_{grid}
 \end{eqnarray*}
 
 The second step adjusts the concentration of reactants inside the cell based on
 internal chemical reactions. Using a simple Euler scheme, the adjusted values of
 the concentrations after the time increment $\dt$ are
 \begin{eqnarray*}
-A'_{in} &=& A_{in} + \dt(-k_2 A_{in} + k_{-2} B_{in} C_{in}) \\
-B'_{in} &=& B_{in} + \dt(k_2 A_{in} - k_{-2} B_{in} C_{in}) \\
-C'_{in} &=& C_{in} + \dt(k_2 A_{in} - k_{-2} B_{in} C_{in})
+[A'_{in}] &=& [A_{in}] + \dt(-k_2 [A_{in}] + k_{-2} [B_{in}][C_{in}]) \\
+[B'_{in}] &=& [B_{in}] + \dt(k_2 [A_{in}] - k_{-2} [B_{in}][C_{in}]) \\
+[C'_{in}] &=& [C_{in}] + \dt(k_2 [A_{in}] - k_{-2} [B_{in}][C_{in}])
 \end{eqnarray*}
 After adjusting the internal concentrations using the these equations, the
 concentrations inside and outside the cell are again adjusted using the
 equations in the first step.
 
-\section{Some additional questions}
-\begin{list}{$\bullet$}{}
-\item What are the rules governing mechanical interactions between the cells?
-\item Is their a growth rule for the cells e.g. $\partial V_{cell}/\partial t = f(A_{in},
-B_{in},C_{in})$ or possibly $\partial V_{cell}/\partial t = f(\partial A_{in}/\partial t,
-\partial B_{in}/\partial t, \partial C_{in}/\partial t)$?
-\item What are initial conditions, both inside and outside the cell?
-\end{list}
+\section{Real parameters}
+It is important to come up with semi-realistic parameters for this model that
+accurately reflect the time scales encountered in real systems. If we start with
+hypothetical yeast system with cells that are about 1 $\mu$m in diameter, the time
+to grow enough to divide once is about 40 minutes (2400 seconds). Assuming we want
+to get cells to divide in about 240 steps (this is a purely arbitrary requirement)
+then the desired time step is 10 seconds.
+
+Taking glucose as
+a model nutrient, the diffusion coefficient of glucose in water is $6\times 10^{-10}$
+cm$^2$/sec = 600 $\mu$m$^2$/sec. The mean square displacement of a glucose molecule
+in 10 seconds is
+\[
+\sqrt{ \frac{600\;\mu\mathrm{m}}{\mbox{sec}}\times \mbox{10 sec}}
+\approx\;77\;\mu\mathrm{m}
+\]
+This is probably a good number for the minimal size of grid cell.
+
+The glucose concentration can be taken as 20 mMolar. Approximately 70\% of the cell is
+water. Assuming a 0.5 $\mu$m radius for the cell, the cell volume is 5.3$\times$10$^{-13}$
+cm$^3$. If the cell density is approximately the same as water, then the non-water mass of
+the cell is 0.3$\times$10$^{-13}$g = 1.5$\times$10$^{-13}$g. This represents
+\[
+1.5\times 10^{-13}\mbox{g}\times\frac{\mbox{1 mole glucose}}{180\mbox{g glucose}} = 8\times 10^{-16}
+\mbox{mole glucose}
+\]
+Further assume that only 5\% of the glucose is converted to cell material, then approximately
+1.6$\times$10$^{-14}$moles of glucose must be consumed to produce one cell. Given that the rate of
+glucose consumption is approximately $k_2 A$, then amount of time required to consume this
+amount of glucose is
+\[
+1.6\times 10^{-14}\mbox{moles} = \Delta t V_{cell}k_2 A
+\]
+If we want cells to divide about every 40 minutes then $\Delta t$ is 2400 seconds. Filling in the
+remaining numbers for $V_{cell}$ and the concentration of $A$ gives the following value for $k_2$
+\[
+k_2 = 1.6\times 10^{-14}\mbox{moles}\times\frac{1}{2400 \mbox{sec}}
+\times\frac{1}{5.3\times 10^{-13}\mbox{cm}^3}
+\times\frac{1}{0.02 \mbox{moles/L}}\times\frac{10^3\mbox{cm}^3}{\mbox{L}}= 0.6\mbox{sec}^{-1}
+\]
+For simplicity, assume that the
+unimolecular rate coefficients $k_1$, $k_{-1}$, $k_3$ and $k_{-3}$ also have this
+value.
+
+The bimolecular coefficient $k_{-2}$ has different units that need to reflect the concentration
+of species. Assume that the concentration of $B$ inside the cell is about 10\% of the concentration
+of $A$ and the concentration of $C$ ia about 5\% of $A$. Further assume that the time scale for the
+back reaction of $A$ is the same as the forward reaction. Then set
+\[
+k_2 = k_{-2}\times 0.1\times 0.05\times A
+\]
+Solving for $k_{-2}$ and substituting known values gives
+\[
+k_{-2} = 0.6\mbox{sec}^{-1}\times\frac{1}{ 0.005\times 0.020 \mbox{moles/L}}=6\times 10^4
+\frac{\mbox{moles}}{\mbox{L sec}}
+\]
+
+We also need to calculate the coefficient $k_g$.
+Ignoring the back-reaction for $B$, the rate of change of $B$ can be approximated as
+\[
+\frac{dB}{dt} = k_2 A
+\]
+This implies that the rate of change for the volume can be approximated as
+\[
+\frac{dV}{dt} = k_g V_{cell}k_2 A
+\]
+Again, assuming an interval of 40 minutes and a change of about 5.3$\times$10$^{-13}$cm$^3$, we have
+\[
+5.3\times 10^{-13}\mbox{cm}^3 = \Delta t k_g V_{cell}k_2 A
+\]
+Note that the left hand side is essentially $V_{cell}$, so the factors of $V_{cell}$ cancel.
+Solving for $k_g$ in terms of the remaining variables and substituting the known values gives
+the expression
+\[
+k_g = \frac{1}{2400\mbox{sec}} \times\frac{1}{0.6\mbox{sec}^{-1}}\times\frac{1}{0.020\mbox{moles/L}}
+=0.035\mbox{L/moles}
+\]
 \end{document}
