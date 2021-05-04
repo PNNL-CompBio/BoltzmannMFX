@@ -1,9 +1,8 @@
 \documentclass[12pt]{article}
 \usepackage{xcolor}
 \usepackage{graphicx}
-\usepackage{appendix}
-\usepackage{verbatim}
-\usepackage{comment}
+%\usepackage{appendix}
+%\usepackage{verbatim}
 \usepackage[margin=1.0in]{geometry}
 \DeclareGraphicsExtensions{.jpg,.jpeg,.png}
 \renewcommand{\baselinestretch}{1.0}
@@ -207,25 +206,34 @@ material that flows into or out of the cell in the interval $\dt$ is
 \end{eqnarray*}
 Based on this increment, the concentrations inside and outside the cell are
 adjusted using the equations
-\begin{eqnarray*}
+\begin{eqnarray}
+\nonumber
 [A'_{in}] &=& [A_{in}] + \Delta A/V_{cell} \\
+\nonumber
 [B'_{in}]  &=& [B_{in}] \\
+\nonumber
 [C'_{in}] &=& [C_{in}] + \Delta C/V_{cell}
-\end{eqnarray*}
-\begin{eqnarray*}
+\end{eqnarray}
+\begin{eqnarray}
+\nonumber
 [A'_{out}] &=& [A_{out}] - \Delta A/V_{grid} \\
+\nonumber
 [B'_{out}]  & = & [B_{out}] \\
+\nonumber
 [C'_{out}] &=& [C_{out}] - \Delta C/V_{grid}
-\end{eqnarray*}
+\end{eqnarray}
 
 The second step adjusts the concentration of reactants inside the cell based on
 internal chemical reactions. Using a simple Euler scheme, the adjusted values of
 the concentrations after the time increment $\dt$ are
-\begin{eqnarray*}
+\begin{eqnarray}
+\nonumber
 [A'_{in}] &=& [A_{in}] + \dt(-k_2 [A_{in}] + k_{-2} [B_{in}][C_{in}]) \\
+\nonumber
 [B'_{in}] &=& [B_{in}] + \dt(k_2 [A_{in}] - k_{-2} [B_{in}][C_{in}]) \\
+\nonumber
 [C'_{in}] &=& [C_{in}] + \dt(k_2 [A_{in}] - k_{-2} [B_{in}][C_{in}])
-\end{eqnarray*}
+\end{eqnarray}
 After adjusting the internal concentrations using the these equations, the
 concentrations inside and outside the cell are again adjusted using the
 equations in the first step.
