@@ -126,7 +126,7 @@ The intracellular concentration of these species is governed by the set of equat
 \begin{eqnarray*}
 \frac{d [A_{out}]}{d t} &=&-k_1 [A_{out}]+k_{-1} [A_{in}] \\
 \frac{d [A_{in}]}{d t} &=&k_1 [A_{out}]-k_{-1} [A_{in}] - k_2 [A_{in}]
- - k_{-2}[B_{in}][C_{in}]\\
+ + k_{-2}[B_{in}][C_{in}]\\
 \frac{d [B_{in}]}{d t} &=&k_2 [A_{in}] - k_{-2}[B_{in}][C_{in}]\\
 \frac{d [C_{in}]}{d t} &=&k_2 [A_{in}] - k_{-2}[B_{in}][C_{in}]-k_{-3} [C_{in}]
 + k_3 [C_{out}] \\
@@ -184,25 +184,26 @@ rate equations governing this system become
 \frac{d [C_{out}]}{d t} &=&k'_{-3} \frac{A_{cell}}{V_{grid}}[C_{in}]
 -k'_3\frac{A_{cell}}{V_{grid}} [C_{out}]
 \end{eqnarray*}
+From here on in, we drop the primes on $k'_1$, $k'_{-1}$, $k'_3$ and $k'_{-3}$.
 
 Numerically, the rate equations are currently being handled using the following scheme
 \begin{list}{$\bullet$}{}
 \item There is an equilibration between the fluid and the cell over a time
-increment $\dt$
+increment $\dt/2$
 \item The internal cell reaction takes place over a time increment $\dt$
 using the updated internal concentrations from the previous step
 \item Using the updated internal concentrations from the reaction step, the
 concentrations are re-equilibrated with the outside fluid over a time interval
-$\dt$
+$\dt/2$
 \end{list}
 The first step is implemented by calculating the amount of material that flows
 between the biological cell and the grid cell in which it is located.
 The total amount of
-material that flows into or out of the cell in the interval $\dt$ is
+material that flows into the cell in the interval $\dt$ is
 \begin{eqnarray*}
-\Delta A & = & \dt A_{cell}(k_1 [A_{out}]-k_{-1} [A_{in}]) \\
+\Delta A & = & \frac{\dt}{2} A_{cell}(k_1 [A_{out}]-k_{-1} [A_{in}]) \\
 \Delta B & = & 0 \\
-\Delta C & = & \dt A_{cell}(k_3 [C_{out}]-k_{-3} [C_{in}]) \\
+\Delta C & = & \frac{\dt}{2} A_{cell}(k_3 [C_{out}]-k_{-3} [C_{in}]) \\
 \end{eqnarray*}
 Based on this increment, the concentrations inside and outside the cell are
 adjusted using the equations
