@@ -200,9 +200,9 @@ void BMXChemistry::xferMeshToParticleAndUpdateChem(Real grid_vol,
   cC = p_vals[2];
   // incremental changes
   Real dA, dB, dC;
-  dA = dt*cell_area*(k1*fA-kr1*cA);
+  dA = 0.5*dt*cell_area*(k1*fA-kr1*cA);
   dB = 0.0;
-  dC = dt*cell_area*(k3*fC-kr3*cC);
+  dC = 0.5*dt*cell_area*(k3*fC-kr3*cC);
   // adjusted cell values
   cA += dA/cell_vol;
   cB += dB/cell_vol;
@@ -244,9 +244,9 @@ void BMXChemistry::xferMeshToParticleAndUpdateChem(Real grid_vol,
   cell_vol = cell_par[realIdx::vol];
   cell_area = cell_par[realIdx::area];
   // incremental changes
-  dA = dt*cell_area*(k1*fA-kr1*cA);
+  dA = 0.5*dt*cell_area*(k1*fA-kr1*cA);
   dB = 0.0;
-  dC = dt*cell_area*(k3*fC-kr3*cC);
+  dC = 0.5*dt*cell_area*(k3*fC-kr3*cC);
   // save adjusted cell concentrations
   p_vals[3] = cA+dA/cell_vol;
   p_vals[4] = cB+dB/cell_vol;
