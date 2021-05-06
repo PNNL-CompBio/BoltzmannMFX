@@ -29,6 +29,9 @@ class LevelData
 
     // ChemSpecies diffusion coefficients
     amrex::MultiFab* D_k;
+
+    // Volume fraction of agar/biofilm in grid cell (= 1. - volume fraction of biological cell)
+    amrex::MultiFab* vf;
 };
 
 #endif

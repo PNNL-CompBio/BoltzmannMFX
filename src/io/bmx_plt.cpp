@@ -26,9 +26,11 @@ bmx::InitIOPltData ()
 
         pp.query("plt_X",     plt_X_k   );
         pp.query("plt_D",     plt_D_k   );
+        pp.query("plt_vf",    plt_vf    );
  
         if( plt_X_k == 1)  pltVarCount += FLUID::nchem_species;
         if( plt_D_k == 1)  pltVarCount += FLUID::nchem_species;
+        if( plt_vf  == 1)  pltVarCount += 1;
     }
 }
 
@@ -64,6 +66,10 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
         for(std::string specie: FLUID::chem_species)
           pltFldNames.push_back("D_"+specie);
 
+      // Volume fraction
+      if(plt_vf == 1)
+          pltFldNames.push_back("volfrac");
+
       for (int lev = 0; lev < nlev; ++lev)
       {
         // Multifab to hold all the variables -- there can be only one!!!!
@@ -86,7 +92,13 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
           }
           lc += FLUID::nchem_species;
         }
-      }
+
+         if(plt_vf == 1)
+         {
+             MultiFab::Copy(*mf[lev], *m_leveldata[lev]->vf, 0, lc, 1, 0);
+             lc += 1;
+        }
+      } // lev
 
       Vector<const MultiFab*> mf2(nlev);
       for (int lev = 0; lev < nlev; ++lev) {

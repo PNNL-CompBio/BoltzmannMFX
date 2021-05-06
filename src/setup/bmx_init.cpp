@@ -584,4 +584,14 @@ bmx::bmx_init_fluid (int is_restarting, Real dt, Real stop_time)
         bmx_set_chem_species_bcs(time, get_X_k_old(), get_D_k());
       }
     }
+
+    // Calculate the initial volume fraction
+    for (int lev = 0; lev < nlev; lev++)
+    {
+        // Initialize to zero
+        (m_leveldata[lev]->vf)->setVal(0.);
+
+        // Calculate the fraction of each grid cell not covered by biological cells
+        bmx_calc_volume_fraction(*m_leveldata[lev]->vf);
+    }
 }

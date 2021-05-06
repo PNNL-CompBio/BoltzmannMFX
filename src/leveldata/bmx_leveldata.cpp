@@ -11,12 +11,14 @@ LevelData::LevelData (BoxArray const& ba,
   , X_ko(nullptr)
   , X_rhs(nullptr)
   , D_k(nullptr)
+  , vf(nullptr)
 {
     amrex::Print() << "MAKING ARRAYS " << FLUID::nchem_species << std::endl;
-    X_k  = new MultiFab(ba, dmap, FLUID::nchem_species, nghost, MFInfo());
-    X_ko = new MultiFab(ba, dmap, FLUID::nchem_species, nghost, MFInfo());
+    X_k  = new MultiFab(ba, dmap, FLUID::nchem_species , nghost, MFInfo());
+    X_ko = new MultiFab(ba, dmap, FLUID::nchem_species , nghost, MFInfo());
     X_rhs = new MultiFab(ba, dmap, FLUID::nchem_species, nghost, MFInfo());
-    D_k  = new MultiFab(ba, dmap, FLUID::nchem_species, nghost, MFInfo());
+    D_k  = new MultiFab(ba, dmap, FLUID::nchem_species , nghost, MFInfo());
+     vf  = new MultiFab(ba, dmap,                    1 , nghost, MFInfo());
 }
 
 LevelData::~LevelData ()
@@ -25,4 +27,5 @@ LevelData::~LevelData ()
     delete X_ko;
     delete X_rhs;
     delete D_k;
+    delete vf;
 }

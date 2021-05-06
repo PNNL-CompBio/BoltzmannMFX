@@ -52,7 +52,8 @@ class DiffusionOp
     // Explicit tensor temperature term
     void ComputeLapX (const amrex::Vector< amrex::MultiFab* >& lapX_out,
                       const amrex::Vector< amrex::MultiFab* >& X_k_in,
-                      const amrex::Vector< amrex::MultiFab const*>& D_k);
+                      const amrex::Vector< amrex::MultiFab const*>& D_k,
+                      const amrex::Vector< amrex::MultiFab const*>& vf);
 
   private:
     // AmrCore data

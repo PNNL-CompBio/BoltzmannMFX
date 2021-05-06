@@ -179,10 +179,14 @@ class bmx : public AmrCore
                                const Vector<BCRec> & bcr);
     void FillPatchChemCoeffs (int lev, Real time, MultiFab & mf, int icomp, int ncomp,
                               const Vector<BCRec> & bcr);
+    void FillPatchVolFrac    (int lev, Real time, MultiFab & mf, int icomp, int ncomp,
+                              const Vector<BCRec> & bcr);
 
     void GetDataChemSpecies (int lev, Real time, Vector<MultiFab *> & data, int icomp,
                             Vector<Real> & datatime);
     void GetDataChemCoeffs (int lev, Real time, Vector<MultiFab *> & data, int icomp,
+                            Vector<Real> & datatime);
+    void GetDataVolFrac    (int lev, Real time, Vector<MultiFab *> & data, int icomp,
                             Vector<Real> & datatime);
 
   protected:
@@ -217,6 +221,7 @@ class bmx : public AmrCore
 
     void fillpatch_Xk (Vector< MultiFab* > const& X_k_in, Real time);
     void fillpatch_Dk (Vector< MultiFab* > const& D_k_in, Real time);
+    void fillpatch_vf (Vector< MultiFab* > const&  vf_in, Real time);
 
   public:
     void bmx_apply_predictor ( Vector< MultiFab* >& chem_species_RHS_old,
@@ -257,11 +262,12 @@ class bmx : public AmrCore
     Vector< MultiFab* > get_X_k () noexcept;
     Vector< MultiFab* > get_X_k_old () noexcept;
     Vector< MultiFab* > get_D_k () noexcept;
+    Vector< MultiFab* > get_vf () noexcept;
 
     amrex::Vector< amrex::MultiFab const* > get_X_k_const () const noexcept;
     amrex::Vector< amrex::MultiFab const* > get_X_k_old_const () const noexcept;
-
     amrex::Vector< amrex::MultiFab const* > get_D_k_const () const noexcept;
+    amrex::Vector< amrex::MultiFab const* > get_vf_const () const noexcept;
 
     amrex::Vector<int> const& get_chem_species_iconserv () const noexcept { return m_iconserv_chem_species; }
   
@@ -337,6 +343,7 @@ class bmx : public AmrCore
     // Flags for saving fluid data in plot files
     int plt_X_k    = 1;
     int plt_D_k    = 0;
+    int plt_vf     = 1;
 
     // Total number of variables to write in plot file
     int pltVarCount = 0;

@@ -69,6 +69,10 @@ bmx::EvolveFluid (int nstep,
     // Deposit sources/sink from individual particles to grid
     bmx_calc_txfr_fluid(time, dt);
 
+    // Calculate the fraction of each grid cell not occupied by biological cells
+    for (int lev = 0; lev <= finest_level; lev++)
+        bmx_calc_volume_fraction(*m_leveldata[lev]->vf);
+
     //
     // Time integration step
     //
@@ -88,8 +92,10 @@ bmx::EvolveFluid (int nstep,
     // Compute explicit diffusive terms
     // *************************************************************************************
 
+    // fillpatch_vf(get_vf(),new_time);
+
     if (m_diff_type != DiffusionType::Implicit)
-        diffusion_op->ComputeLapX(lap_X, get_X_k_old(), get_D_k_const());
+        diffusion_op->ComputeLapX(lap_X, get_X_k_old(), get_D_k_const(), get_vf_const());
     else
        for (int lev = 0; lev <= finest_level; lev++)
            lap_X[lev]->setVal(0.);

@@ -127,14 +127,12 @@ void DiffusionOp::setSolverSettings (MLMG& solver)
 
 void DiffusionOp::ComputeLapX (const Vector< MultiFab* >& lapX_out,
                                const Vector< MultiFab* >& X_k_in,
-                               const Vector< MultiFab const*>& D_k_in)
+                               const Vector< MultiFab const*>& D_k_in,
+                               const Vector< MultiFab const*>& vf_in)
 {
   BL_PROFILE("DiffusionOp::ComputeLapX");
 
   int finest_level = amrcore->finestLevel();
-
-  // Number of fluid chem_species
-  const int nchem_species = FLUID::nchem_species;
 
   // We want to return div (D_k grad)) phi
   chem_species_matrix->setScalars(0.0, -1.0);
