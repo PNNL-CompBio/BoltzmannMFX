@@ -262,33 +262,32 @@ water. Assuming a 0.5 $\mu$m radius for the cell, the cell volume is 5.3$\times$
 cm$^3$. If the cell density is approximately the same as water, then the non-water mass of
 the cell is 0.3$\times$10$^{-13}$g = 1.5$\times$10$^{-13}$g. This represents
 \[
-1.5\times 10^{-13}\mbox{g}\times\frac{\mbox{1 mole glucose}}{180\mbox{g glucose}} = 8\times 10^{-16}
+1.5\times 10^{-13}\mbox{g}\times\frac{\mbox{1 mole glucose}}{180\;\mbox{g glucose}} = 8\times 10^{-16}
 \mbox{mole glucose}
 \]
 Further assume that only 5\% of the glucose is converted to cell material, then approximately
 1.6$\times$10$^{-14}$moles of glucose must be consumed to produce one cell. Given that the rate of
-glucose consumption is approximately $k_2 A$, then amount of time required to consume this
+glucose consumption is approximately $k_2 [A_{in}]$, then amount of time required to consume this
 amount of glucose is
 \[
-1.6\times 10^{-14}\mbox{moles} = \Delta t V_{cell}k_2 A
+1.6\times 10^{-14}\mbox{moles} = \Delta t V_{cell}k_2 [A_{in}]
 \]
 If we want cells to divide about every 40 minutes then $\Delta t$ is 2400 seconds. Filling in the
-remaining numbers for $V_{cell}$ and the concentration of $A$ gives the following value for $k_2$
+remaining numbers for $V_{cell}$ and the concentration of $[A_{in}]$ gives the following value for $k_2$
 \[
-k_2 = 1.6\times 10^{-14}\mbox{moles}\times\frac{1}{2400 \mbox{sec}}
+k_2 = 1.6\times 10^{-14}\mbox{moles}\times\frac{1}{2400\;\mbox{sec}}
 \times\frac{1}{5.3\times 10^{-13}\mbox{cm}^3}
-\times\frac{1}{0.02 \mbox{moles/L}}\times\frac{10^3\mbox{cm}^3}{\mbox{L}}= 0.6\mbox{sec}^{-1}
+\times\frac{1}{0.02\;\mbox{moles/L}}\times\frac{10^3\mbox{cm}^3}{\mbox{L}}= 0.6\;\mbox{sec}^{-1}
 \]
-For simplicity, assume that the
-unimolecular rate coefficients $k_1$, $k_{-1}$, $k_3$ and $k_{-3}$ also have this
-value.
+Based on the original value of 5.3$\times$10$^{-13}$ cm$^3$ for the cell volume, a good value for the volume
+at which the cell divides is approximately twice that value, 1.0$\times$10$^{-12}$ cm$^3$.
 
 The bimolecular coefficient $k_{-2}$ has different units that need to reflect the concentration
-of species. Assume that the concentration of $B$ inside the cell is about 10\% of the concentration
-of $A$ and the concentration of $C$ ia about 5\% of $A$. Further assume that the time scale for the
-back reaction of $A$ is the same as the forward reaction. Then set
+of species. Assume that the concentration of $[B_{in}]$ inside the cell is about 10\% of the concentration
+of $[A_{in}]$ and the concentration of $C$ ia about 5\% of $[A_{in}]$. Further assume that the time scale for the
+back reaction of $[A_{in}]$ is the same as the forward reaction. Then set
 \[
-k_2 = k_{-2}\times 0.1\times 0.05\times A
+k_2 = k_{-2}\times 0.1\times 0.05\times [A_{in}]
 \]
 Solving for $k_{-2}$ and substituting known values gives
 \[
@@ -297,23 +296,72 @@ k_{-2} = 0.6\mbox{sec}^{-1}\times\frac{1}{ 0.005\times 0.020 \mbox{moles/L}}=6\t
 \]
 
 We also need to calculate the coefficient $k_g$.
-Ignoring the back-reaction for $B$, the rate of change of $B$ can be approximated as
+Ignoring the back-reaction for $B$, the rate of change of $[B_{in}]$ can be approximated as
 \[
-\frac{dB}{dt} = k_2 A
+\frac{d[B_{in}]}{dt} = k_2 [A_{in}]
 \]
 This implies that the rate of change for the volume can be approximated as
 \[
-\frac{dV}{dt} = k_g V_{cell}k_2 A
+\frac{dV}{dt} = k_g V_{cell}k_2 [A_{in}]
 \]
 Again, assuming an interval of 40 minutes and a change of about 5.3$\times$10$^{-13}$cm$^3$, we have
 \[
-5.3\times 10^{-13}\mbox{cm}^3 = \Delta t k_g V_{cell}k_2 A
+5.3\times 10^{-13}\mbox{cm}^3 = \Delta t k_g V_{cell}k_2 [A_{in}]
 \]
 Note that the left hand side is essentially $V_{cell}$, so the factors of $V_{cell}$ cancel.
 Solving for $k_g$ in terms of the remaining variables and substituting the known values gives
 the expression
 \[
-k_g = \frac{1}{2400\mbox{sec}} \times\frac{1}{0.6\mbox{sec}^{-1}}\times\frac{1}{0.020\mbox{moles/L}}
-=0.035\mbox{L/moles}
+k_g = \frac{1}{2400\;\mbox{sec}} \times\frac{1}{0.6\mbox{sec}^{-1}}\times\frac{1}{0.020\;\mbox{moles/L}}
+=0.035\;\mbox{L/moles}
 \]
+
+For simplicity, assume that material is transported into and out of the cell on the same time scale
+that component $A$ is being consumed by the cell. This implies that
+\[
+k_1\frac{A_{cell}}{V_{cell}} = k_2
+\]
+For spherical cells of radius $r$, this expression reduces to
+\[
+k_1\frac{3}{r} = k_2
+\]
+Cells are 1.0 $\mu$m in diameter, which yields the following value for $k_1$
+\[
+k_1 = k_2\frac{r}{3} = \frac{1}{3}\times 0.5\times 10^{-6}\mbox{cm}\times 0.6\;\mbox{sec}^{-1}=1.0\times
+10^{-7}\;\mbox{cm/sec} 
+\]
+This value is used for the remaining parameters $k_{-1}$, $k_3$ and $k_{-3}$.
+
+The complete set of parameters for the system are summarized in the Calculated Value column
+of the table below:
+
+\begin{tabular}{|c|l|l|l|}
+\hline
+Variable & Calculated Value & Adjusted Value & Description \\
+\hline
+$\Delta t$ & 10 sec & 10 & Time increment \\
+$\Delta x$ & 7.7$\times$10$^{-3}$ cm & 7.7$\times$10$^{-3}$ cm& Minimum grid cell dimension \\
+$V_{crit}$ & 1.0$\times$10$^{-12}$ cm$^3$ & 1.0$\times$10$^{-12}$ cm$^3$
+    &  Volume at which cell divides \\
+$[A_{out}]_0$ & 2.0$\times$10$^{-5}$ M/cm$^3$ & 2.0$\times$10$^{-5}$ M/cm$^3$
+    & Initial external concentration of $A$ \\
+$[C_{out}]_0$ & 2.0$\times$10$^{-6}$ M/cm$^3$ & 2.0$\times$10$^{-6}$ M/cm$^3$
+    & Initial external concentration of $C$ \\
+$D_A$ & 6$\times 10^{-10}$ cm$^2$/sec & 6$\times 10^{-10}$ cm$^2$/sec & Diffusion coefficient of $A$ \\
+$D_C$ & 6$\times 10^{-10}$ cm$^2$/sec & 6$\times 10^{-10}$ cm$^2$/sec & Diffusion coefficient of $C$ \\
+$k_1$ & 1.0$\times$10$^{-7}$ cm/sec &\color{red}{5.0$\times$10$^{-6}$ cm/sec} & Reaction coefficient \\
+$k_{-1}$ & 1.0$\times$10$^{-7}$ cm/sec &\color{red}{5.0$\times$10$^{-6}$ cm/sec} & Reaction coefficient \\
+$k_2$ & 0.6 sec$^{-1}$ &\color{red}{0.2 sec$^{-1}$} & Reaction coefficient \\
+$k_{-2}$ & 60 moles/(cm$^3$ sec) &\color{red}{0.06 moles/(cm$^3$ sec)} & Reaction coefficient \\
+$k_3$ & 1.0$\times$10$^{-7}$ cm/sec &\color{red}{1.0$\times$10$^{-6}$ cm/sec} & Reaction coefficient \\
+$k_{-3}$ & 1.0$\times$10$^{-7}$ cm/sec &\color{red}{1.0$\times$10$^{-6}$ cm/sec} & Reaction coefficient \\
+$k_g$ & 35 cm$^3$/moles & 35 cm$^3$/moles & Growth rate coefficient \\
+\hline
+\end{tabular}
+
+\noindent
+The adjusted values are the ones that seem to work in an actual simulation. In most cases they are close
+to the calculated values with the exception of $k_{-2}$. This value is substantially smaller than the
+original estimate.
+
 \end{document}
