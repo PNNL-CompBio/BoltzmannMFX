@@ -8,15 +8,13 @@
 #include <bmx_dem_parms.H>
 #include <bmx_diffusion_op.H>
 
-void bmx::bmx_calc_volume_fraction (MultiFab& ep_g)
+void bmx::bmx_calc_volume_fraction (MultiFab& vf)
 {
-  BL_PROFILE("bmx::bmx_calc_volume_fraction()");
+    BL_PROFILE("bmx::bmx_calc_volume_fraction()");
 
-  // Start the timers ...
-  const Real strttime = ParallelDescriptor::second();
+    // Start the timers ...
+    const Real strttime = ParallelDescriptor::second();
 
-  if (DEM::solve)
-  {
     // This re-calculates the volume fraction within the domain
     // but does not change the values outside the domain
 
@@ -24,29 +22,29 @@ void bmx::bmx_calc_volume_fraction (MultiFab& ep_g)
 
     // Deposit particle volume to the grid
     int lev = 0;
-    pc->SolidsVolumeDeposition(lev, ep_g);
+    pc->SolidsVolumeDeposition(lev, vf);
 
     // Move any volume deposited outside the domain back into the domain
     // when BC is either a pressure inlet or mass inflow.
-    bmx_deposition_bcs(0, ep_g);
+    bmx_deposition_bcs(0, vf);
 
     // Sum grid boundaries to capture any material that was deposited into
     // your grid from an adjacent grid.
-    ep_g.SumBoundary(gm.periodicity());
+    vf.SumBoundary(gm.periodicity());
+
+    // Now define this mf = (1 - particle_vol)
+    vf.mult(-1.0, vf.nGrow());
+    vf.plus( 1.0, vf.nGrow());
 
     // Fill the boundaries so we calculate the correct average
     // solids volume fraction for periodic boundaries.
-    ep_g.FillBoundary(gm.periodicity());
+    vf.FillBoundary(gm.periodicity());
 
-  } else {
-      ep_g.setVal(0.);
-  }
-
-  if (m_verbose > 1) {
-    Real stoptime = ParallelDescriptor::second() - strttime;
-
-    ParallelDescriptor::ReduceRealMax(stoptime,ParallelDescriptor::IOProcessorNumber());
-
-    amrex::Print() << "BMXParticleContainer::PICDeposition time: " << stoptime << '\n';
-  }
+    if (m_verbose > 1) {
+      Real stoptime = ParallelDescriptor::second() - strttime;
+  
+      ParallelDescriptor::ReduceRealMax(stoptime,ParallelDescriptor::IOProcessorNumber());
+  
+      amrex::Print() << "BMXParticleContainer::PICDeposition time: " << stoptime << '\n';
+    }
 }

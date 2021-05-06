@@ -73,8 +73,6 @@ SolidsVolumeDeposition (F WeightFunc, int lev,
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
   {
-    FArrayBox local_mf;
-
     for (BMXParIter pti(*this, lev); pti.isValid(); ++pti) {
 
       auto& particles = pti.GetArrayOfStructs();
