@@ -20,6 +20,14 @@ BMXParticleContainer::BMXParticleContainer (AmrCore* amr_core)
     ReadStaticParameters();
 
     this->SetVerbose(0);
+    ParmParse pp("bmx");
+    int verbose = 0; 
+    pp.query("verbose",verbose);
+    if (verbose != 0) {
+      p_verbose = true;
+    } else {
+      p_verbose = false;
+    }
 
     nlev = amr_core->maxLevel() + 1;
 

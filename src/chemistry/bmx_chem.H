@@ -213,6 +213,9 @@ class BMXChemistry
   // Fraction of overlap
   Real p_overlap;
 
+  // Flag for verbose output
+  bool p_verbose;
+
   // Value of pi
   Real p_pi;
   static BMXChemistry *p_instance;

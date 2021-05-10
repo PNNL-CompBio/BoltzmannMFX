@@ -156,5 +156,7 @@ public:
     static int domain_bc[6];
 
     static void ReadStaticParameters ();
+
+    bool p_verbose;
 };
 #endif

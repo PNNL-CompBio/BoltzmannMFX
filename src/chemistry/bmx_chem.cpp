@@ -29,6 +29,7 @@ BMXChemistry::BMXChemistry()
   p_num_ints = 0;
   p_inc_offset = p_num_species;
   p_pi = 4.0*atan(1.0);
+  p_verbose = false;
 }
 
 /**
@@ -74,6 +75,15 @@ void BMXChemistry::setParams(const char *file)
   Real width;
   ppF.get("boundary_width",width);
   DEM::neighborhood = 1.1*(2.0*radius+width);
+  ParmParse ppV("bmx");
+  int verbose = 0;
+  ppV.query("verbose",verbose);
+  if (verbose != 0) {
+    p_verbose = true;
+  } else {
+    p_verbose = false;
+  }
+
 }
 
 /**
@@ -314,14 +324,16 @@ void BMXChemistry::xferParticleToMesh(Real grid_vol, Real *cell_par,
  */
 void BMXChemistry::printCellConcentrations(Real *p_vals, Real *p_par)
 {
-  printf("\n");
-  printf("        Concentration A: %18.6f\n",p_vals[0]);
-  printf("        Concentration B: %18.6f\n",p_vals[1]);
-  printf("        Concentration C: %18.6f\n",p_vals[2]);
-  printf("        Cell volume    : %18.6f\n",p_par[realIdx::vol]);
-  printf("        X velocity     : %18.6f\n",p_par[realIdx::velx]);
-  printf("        Y velocity     : %18.6f\n",p_par[realIdx::vely]);
-  printf("        Z velocity     : %18.6f\n",p_par[realIdx::velz]);
+  if (p_verbose) {
+    printf("\n");
+    printf("        Concentration A: %18.6e\n",p_vals[0]);
+    printf("        Concentration B: %18.6e\n",p_vals[1]);
+    printf("        Concentration C: %18.6e\n",p_vals[2]);
+    printf("        Cell volume    : %18.6e\n",p_par[realIdx::vol]);
+    printf("        X velocity     : %18.6e\n",p_par[realIdx::velx]);
+    printf("        Y velocity     : %18.6e\n",p_par[realIdx::vely]);
+    printf("        Z velocity     : %18.6e\n",p_par[realIdx::velz]);
+  }
 }
 
 /**
@@ -398,7 +410,6 @@ void BMXChemistry::setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
   Real nx = sin(theta)*cos(phi);
   Real ny = sin(theta)*sin(phi);
   Real nz = cos(theta);
-  printf("theta: %12.6f phi: %12.6f nx: %12.6f ny: %12.6f nz: %12.6f\n",theta,phi,nx,ny,nz);
   Real scale = 1.0 - p_overlap;
   pos_new[0] = x + scale*0.5*nx*radius;
   pos_new[1] = y + scale*0.5*ny*radius;

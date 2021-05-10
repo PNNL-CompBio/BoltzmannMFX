@@ -97,7 +97,6 @@ void BMXParticleContainer::EvolveParticles (int lev,
             fillNeighbors();
             // send in "false" for sort_neighbor_list option
 
-            printf("Call buildNeighborList\n");
             buildNeighborList(BMXCheckPair(DEM::neighborhood), false);
         } else {
             updateNeighbors();
@@ -388,9 +387,11 @@ void BMXParticleContainer::EvolveParticles (int lev,
             int z_lo_bc = BC::domain_bc[4];
             int z_hi_bc = BC::domain_bc[5];
 
+            bool verbose = p_verbose;
             amrex::ParallelFor(nrp,
               [pstruct,subdt,fc_ptr,ntot,tow_ptr,eps,p_hi,p_lo,
-               x_lo_bc,x_hi_bc,y_lo_bc,y_hi_bc,z_lo_bc,z_hi_bc]
+               x_lo_bc,x_hi_bc,y_lo_bc,y_hi_bc,z_lo_bc,z_hi_bc,
+              verbose]
               AMREX_GPU_DEVICE (int i) noexcept
               {
                 auto& particle = pstruct[i];
@@ -413,8 +414,13 @@ void BMXParticleContainer::EvolveParticles (int lev,
                 particle.pos(0) = ppos[0];
                 particle.pos(1) = ppos[1];
                 particle.pos(2) = ppos[2];
-                printf("particle: %d position: %12.6f %12.6f %12.6f\n",i,particle.pos(0),
-                  particle.pos(1),particle.pos(2));
+
+                if (verbose) {
+                  char sbuf[128];
+                  sprintf(sbuf,"particle: %d position: %12.6f %12.6f %12.6f",i,particle.pos(0),
+                      particle.pos(1),particle.pos(2));
+                  std::cout << sbuf << std::endl;
+                }
               });
 
             BL_PROFILE_VAR_STOP(des_time_march);
