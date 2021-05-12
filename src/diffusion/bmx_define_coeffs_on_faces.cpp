@@ -42,9 +42,14 @@ void DiffusionOp::define_coeffs_on_faces ( const Vector< MultiFab const* > D_k_i
           Array4<Real> const& by_arr = chem_species_b[lev][1]->array(mfi);
           Array4<Real> const& bz_arr = chem_species_b[lev][2]->array(mfi);
 
+
           Array4<Real const> const& vf_arr = vf_in[lev]->array(mfi);
 
-          Box const& xbx = mfi.growntilebox(IntVect(1,0,0));
+          Box const& xbx = mfi.nodaltilebox(0);
+
+          amrex::Print() << "XBX " << xbx << std::endl;
+          amrex::Print() << "SIZE OF BX_ARR ON THIS GRID " << Box(chem_species_b[lev][0]->array(mfi)) << std::endl;;
+
           amrex::ParallelFor(xbx, nchem_species, [=]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
           {
@@ -55,7 +60,11 @@ void DiffusionOp::define_coeffs_on_faces ( const Vector< MultiFab const* > D_k_i
                      bx_arr(i,j,k,n) = 0.;
           });
 
-          Box const& ybx = mfi.growntilebox(IntVect(0,1,0));
+          Box const& ybx = mfi.nodaltilebox(1);
+
+          amrex::Print() << "YBX " << ybx << std::endl;
+          amrex::Print() << "SIZE OF BY_ARR ON THIS GRID " << Box(chem_species_b[lev][1]->array(mfi)) << std::endl;;
+
           amrex::ParallelFor(ybx, nchem_species, [=]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
           {
@@ -66,7 +75,11 @@ void DiffusionOp::define_coeffs_on_faces ( const Vector< MultiFab const* > D_k_i
                      by_arr(i,j,k,n) = 0.;
           });
 
-          Box const& zbx = mfi.growntilebox(IntVect(0,0,1));
+          Box const& zbx = mfi.nodaltilebox(2);
+
+          amrex::Print() << "ZBX " << zbx << std::endl;
+          amrex::Print() << "SIZE OF BZ_ARR ON THIS GRID " << Box(chem_species_b[lev][2]->array(mfi)) << std::endl;;
+
           amrex::ParallelFor(zbx, nchem_species, [=]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
           {
