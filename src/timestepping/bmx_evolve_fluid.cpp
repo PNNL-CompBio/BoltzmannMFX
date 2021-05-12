@@ -146,7 +146,7 @@ bmx::EvolveFluid (int nstep,
         bmx_set_chem_species_bcs(time, get_X_k(), get_D_k());
 
         Real omt = 1. - theta;
-        diffusion_op->diffuse_chem_species(get_X_k(), get_D_k_const(), omt, l_dt);
+        diffusion_op->diffuse_chem_species(get_X_k(), get_D_k_const(), get_vf_const(), omt, l_dt);
     }
 
     for (int lev = 0; lev <= finest_level; lev++)

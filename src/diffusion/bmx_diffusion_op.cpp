@@ -137,7 +137,7 @@ void DiffusionOp::ComputeLapX (const Vector< MultiFab* >& lapX_out,
   // We want to return div (D_k grad)) phi
   chem_species_matrix->setScalars(0.0, -1.0);
 
-  define_coeffs_on_faces(D_k_in);
+  define_coeffs_on_faces(D_k_in, vf_in);
 
   for (int lev = 0; lev <= finest_level; lev++)
   {

@@ -42,11 +42,13 @@ class DiffusionOp
     void setSolverSettings (amrex::MLMG& solver);
 
     // ChemSpecies -- define face-based diffusion coeffs from D_k at cell centers
-    void define_coeffs_on_faces (const amrex::Vector< amrex::MultiFab const*> D_k);
+    void define_coeffs_on_faces (const amrex::Vector< amrex::MultiFab const*> D_k,
+                                 const amrex::Vector< amrex::MultiFab const*> vf);
 
     // ChemSpecies mass fraction diffusion
     void diffuse_chem_species (amrex::Vector< amrex::MultiFab* > X_k,
                           const amrex::Vector< amrex::MultiFab const* > D_k,
+                          const amrex::Vector< amrex::MultiFab const* > vf,
                           amrex::Real theta, amrex::Real dt);
 
     // Explicit tensor temperature term

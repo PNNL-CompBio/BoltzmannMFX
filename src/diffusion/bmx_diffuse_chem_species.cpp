@@ -9,6 +9,7 @@ using namespace amrex;
 //
 void DiffusionOp::diffuse_chem_species (      Vector< MultiFab*      > X_k_in,
                                         const Vector< MultiFab const*> D_k_in,
+                                        const Vector< MultiFab const*>  vf_in,
                                         Real theta, Real dt)
 {
     BL_PROFILE("DiffusionOp::diffuse_chem_species");
@@ -36,7 +37,7 @@ void DiffusionOp::diffuse_chem_species (      Vector< MultiFab*      > X_k_in,
     // Number of fluid chem_species
     const int nchem_species = FLUID::nchem_species;
 
-    define_coeffs_on_faces(D_k_in);
+    define_coeffs_on_faces(D_k_in, vf_in);
 
     for(int lev = 0; lev <= finest_level; lev++)
     {
