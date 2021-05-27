@@ -1,17 +1,10 @@
 #ifndef _BMX_PC_H_
 #define _BMX_PC_H_
 
-#include <AMReX.H>
 #include <AMReX_AmrParGDB.H>
-#include <AMReX_IArrayBox.H>
 #include <AMReX_Particles.H>
 #include <AMReX_NeighborParticles.H>
 
-#include <AMReX_FabArray.H>
-#include <AMReX_FabArray.H>
-#include <AMReX_IArrayBox.H>
-#include <AMReX_Particles.H>
-#include <AMReX_NeighborParticles.H>
 #include <bmx_bc_list.H>
 #ifdef NEW_CHEM
 #include <bmx_chem.H>

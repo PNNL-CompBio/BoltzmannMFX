@@ -64,7 +64,6 @@ void BMXParticleContainer::printParticles ()
        const auto& particles = kv.second.GetArrayOfStructs();
        auto& soa = kv.second.GetStructOfArrays();
        auto p_realarray = soa.realarray();
-       auto p_intarray = soa.intarray();
 
        for (int i = 0; i < particles.numParticles(); ++i)
        {

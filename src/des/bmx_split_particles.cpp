@@ -1,15 +1,5 @@
 #include <bmx.H>
 #include <bmx_des_K.H>
-#include <bmx_interp_K.H>
-#include <bmx_filcc.H>
-
-#include <AMReX_BC_TYPES.H>
-#include <AMReX_Box.H>
-#include <AMReX_FillPatchUtil.H>
-#include <bmx_mf_helpers.H>
-#include <bmx_dem_parms.H>
-#include <bmx_fluid_parms.H>
-#include <bmx_chem.H>
 
 /**
  * @brief this function splits particles if some criterion is met

@@ -1,12 +1,6 @@
 #include <bmx.H>
 #include <bmx_des_K.H>
 #include <bmx_interp_K.H>
-#include <bmx_filcc.H>
-
-#include <AMReX_BC_TYPES.H>
-#include <AMReX_Box.H>
-#include <AMReX_FillPatchUtil.H>
-#include <bmx_mf_helpers.H>
 #include <bmx_dem_parms.H>
 
 #ifdef NEW_CHEM
@@ -98,7 +92,7 @@ bmx::bmx_calc_txfr_fluid (Real time, Real dt)
   // need any information in ghost cells so we don't copy those.
 
   if (txfr_ptr[0] != m_leveldata[0]->X_rhs) {
-    m_leveldata[0]->X_rhs->copy(*txfr_ptr[0], 0, 0, m_leveldata[0]->X_rhs->nComp());
+    m_leveldata[0]->X_rhs->ParallelCopy(*txfr_ptr[0], 0, 0, m_leveldata[0]->X_rhs->nComp());
   }
 
   for (int lev = 0; lev <= finest_level; lev++) {
@@ -161,9 +155,8 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
       interp_ptr = new MultiFab(grids[lev], dmap[lev], interp_ncomp, interp_ng, MFInfo());
 
       // Copy 
-      interp_ptr->copy(*m_leveldata[lev]->X_k, 0, 0,
-                        m_leveldata[lev]->X_k->nComp(),
-                        interp_ng, interp_ng);
+      MultiFab::Copy(*interp_ptr,*m_leveldata[lev]->X_k, 0, 0,
+                      m_leveldata[lev]->X_k->nComp(), interp_ng);
       interp_ptr->FillBoundary(geom[lev].periodicity());
 
     }
@@ -176,9 +169,9 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
       interp_ptr = new MultiFab(pba, pdm, interp_ncomp, interp_ng, MFInfo());
 
       // Copy 
-      interp_ptr->copy(*m_leveldata[lev]->X_k, 0, 0,
-                        m_leveldata[lev]->X_k->nComp(),
-                        interp_ng, interp_ng);
+      interp_ptr->ParallelCopy(*m_leveldata[lev]->X_k, 0, 0,
+                                m_leveldata[lev]->X_k->nComp(),
+                                interp_ng, interp_ng);
 
       interp_ptr->FillBoundary(geom[lev].periodicity());
     }

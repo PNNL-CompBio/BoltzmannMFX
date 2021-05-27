@@ -1,10 +1,5 @@
 #include <bmx.H>
-
-#include <AMReX_VisMF.H>
-#include <bmx_mf_helpers.H>
-#include <bmx_dem_parms.H>
 #include <bmx_fluid_parms.H>
-#include <bmx_chem_species_parms.H>
 
 void
 bmx::EvolveFluid (int nstep,
@@ -71,7 +66,11 @@ bmx::EvolveFluid (int nstep,
 
     // Calculate the fraction of each grid cell not occupied by biological cells
     for (int lev = 0; lev <= finest_level; lev++)
-        bmx_calc_volume_fraction(*m_leveldata[lev]->vf);
+        bmx_calc_volume_fraction(lev, *m_leveldata[lev]->vf);
+
+    // Average down from fine to coarse to ensure consistency
+    for (int lev = finest_level; lev > 0; lev--)
+        average_down(*m_leveldata[lev]->vf,*m_leveldata[lev-1]->vf, 0, 1, refRatio(lev-1));
 
     //
     // Time integration step

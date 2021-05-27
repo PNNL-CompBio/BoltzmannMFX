@@ -137,12 +137,8 @@ bmx::Restart (std::string& restart_file, int *nstep, Real *dt, Real *time)
                                                    nullptr,
                                                    ParallelDescriptor::IOProcessorNumber());
 
-    
                  // Copy from the mf we used to read in to the mf we will use going forward
-                 const int ng_to_copy = 0;
-     
-                 (*(chkChemSpeciesVars[i][lev])).copy(mf, 0, 0, FLUID::nchem_species,
-                     ng_to_copy, ng_to_copy);
+                 (*(chkChemSpeciesVars[i][lev])).ParallelCopy(mf, 0, 0, FLUID::nchem_species,0,0);
               }
           }
        }

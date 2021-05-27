@@ -592,6 +592,10 @@ bmx::bmx_init_fluid (int is_restarting, Real dt, Real stop_time)
         (m_leveldata[lev]->vf)->setVal(0.);
 
         // Calculate the fraction of each grid cell not covered by biological cells
-        bmx_calc_volume_fraction(*m_leveldata[lev]->vf);
+        bmx_calc_volume_fraction(lev, *m_leveldata[lev]->vf);
     }
+
+    // Average down from fine to coarse to ensure consistency
+    for (int lev = nlev-1; lev > 0; lev--)
+        average_down(*m_leveldata[lev]->vf,*m_leveldata[lev-1]->vf, 0, 1, refRatio(lev-1));
 }

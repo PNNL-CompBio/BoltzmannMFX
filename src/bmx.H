@@ -114,7 +114,7 @@ class bmx : public AmrCore
 
     static amrex::Real m_deposition_scale_factor;
 
-    void bmx_calc_volume_fraction (MultiFab& ep_g);
+    void bmx_calc_volume_fraction (int lev, MultiFab& ep_g);
 
     void bmx_deposition_bcs (int lev, amrex::MultiFab & filled_mf);
 
