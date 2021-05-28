@@ -217,7 +217,7 @@ int main (int argc, char* argv[])
     // name is set to arbitrary string
 #ifdef NEW_CHEM
     SPECIES::Initialize();
-    std::cout << "Volume threshold for cell division:  " << SPECIES::max_vol << std::endl;
+    amrex::Print() << "Volume threshold for cell division:  " << SPECIES::max_vol << std::endl;
     BMXChemistry *bmxchem = BMXChemistry::instance();
     bmxchem->setParams("NullFile");
     BMXCellInteraction *interaction = BMXCellInteraction::instance();
