@@ -28,9 +28,6 @@ namespace FLUID
 
   // Location of top of support layer
   extern amrex::Real surface_location;
-
-  // Liquid film thickness on top of support layer
-  extern amrex::Real film_thickness;
 #endif
 
   // Specified constant gas phase chem_species diffusion coefficients
