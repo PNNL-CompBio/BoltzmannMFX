@@ -99,7 +99,7 @@ SolidsVolumeDeposition (F WeightFunc, int lev,
         }
 #endif
 
-        amrex::Print() << "DEPOSITION OF " << nrp << " particles ... " << std::endl;
+       // amrex::Print() << "DEPOSITION OF " << nrp << " particles ... " << std::endl;
 
         amrex::ParallelFor(nrp,
 #ifdef NEW_CHEM
@@ -226,7 +226,7 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
         }
 #endif
 
-        amrex::Print() << "DEPOSITION OF " << nrp << " particles ... " << std::endl;
+//        amrex::Print() << "DEPOSITION OF " << nrp << " particles ... " << std::endl;
 
         amrex::ParallelFor(nrp,
 #ifdef NEW_CHEM
