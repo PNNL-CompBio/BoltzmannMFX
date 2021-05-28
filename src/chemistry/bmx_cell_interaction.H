@@ -63,13 +63,24 @@ class BMXCellInteraction
   private:
 
   Real p_bndry_width;   // cell surface interaction parameter
+#if 1
   Real p_stiffness;     // strength of cell interaction. This parameter assumes
                         // viscous drag is incorporated into force
+#else
+  Real p_r_stiffness;   // strength of repulsive cell interaction. This parameter assumes
+                        // viscous drag is incorporated into force
+  Real p_a_stiffness;   // strength of adhesive cell interaction. This parameter assumes
+                        // viscous drag is incorporated into force
+#endif
 
   Real p_zwall;         // z-location of surface
   Real p_z_bndry_width; // cell-growth surface interaction parameter
+#if 1
   Real p_z_stiffness;   // strength of cell-growth surface interaction
-
+#else
+  Real p_z_r_stiffness; // strength of repulsive cell-growth surface interaction
+  Real p_z_a_stiffness; // strength of adhesive cell-growth surface interaction
+#endif
 
   static BMXCellInteraction *p_instance;
 };

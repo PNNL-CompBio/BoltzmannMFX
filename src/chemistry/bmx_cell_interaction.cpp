@@ -41,9 +41,19 @@ void BMXCellInteraction::setParams(const char *file)
   ParmParse pp("cell_force");
 
   pp.get("boundary_width",p_bndry_width);
+#if 1
   pp.get("stiffness",p_stiffness);
+#else
+  pp.get("repulsion_stiffness",p_r_stiffness);
+  pp.get("adhesion_stiffness",p_a_stiffness);
+#endif
   pp.get("wall_boundary_width",p_z_bndry_width);
+#if 1
   pp.get("wall_stiffness",p_z_stiffness);
+#else
+  pp.get("wall_repulsion_stiffness",p_z_r_stiffness);
+  pp.get("wall_adhesion_stiffness",p_z_a_stiffness);
+#endif
 
   p_zwall = FLUID::surface_location;
   amrex::Print() << "SURFACE LOCATION: "<<p_zwall<<'\n';
@@ -83,7 +93,16 @@ void BMXCellInteraction::evaluateForce(const Real *r12, Real *par1,
   rx /= rn;
   ry /= rn;
   rz /= rn;
+#if 1
   Real F = p_stiffness*(rn-rA)*(rn-rA)*(rn-rS);
+#else
+  Real F;
+  if (rn < rS) {
+    F = p_r_stiffness*(rn-rA)*(rn-rA)*(rn-rS);
+  } else {
+    F = p_a_stiffness*(rn-rS)*(rA-rn);
+  }
+#endif
   frc[0] = F*rx;
   frc[1] = F*ry;
   frc[2] = F*rz;
@@ -104,9 +123,21 @@ void BMXCellInteraction::evaluateSurfaceForce(const Real *pos, Real *par, Real *
   Real rS = par[realIdx::a_size];
   Real rA = rS + p_z_bndry_width;
   if (dz > 0.0 && dz < rA) {
+#if 1
     frc[2] = -p_z_stiffness*(dz-rA)*(dz-rA)*(dz-rS);
+#else
+    if (dz < rS) {
+      frc[2] = -p_z_r_stiffness*(dz-rA)*(dz-rA)*(dz-rS);
+    } else {
+      frc[2] = -p_z_a_stiffness*(rA-dz)*(dz-rS);
+    }
+#endif
   } else if (dz <= 0) {
+#if 1
     frc[2] = p_z_stiffness*rA*rA*rS;
+#else
+    frc[2] = p_z_r_stiffness*rA*rA*rS;
+#endif
   } else {
     frc[2] = 0.0;
   }
