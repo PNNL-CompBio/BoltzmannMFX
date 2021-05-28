@@ -23,8 +23,18 @@ void calc_D_k (const Box& bx,
   pp.getarr("prob_lo",bmin);
   pp.getarr("prob_hi",bmax);
 
+#if 1
+  // We set the coeffs at cell centers to D_k everywhere. Diffusion is
+  // controlled when we calculate diffusion coefficients on cell faces
+  amrex::ParallelFor(bx, nchem_species, [D_k,p_D_k0]
+    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+    {
+      D_k(i,j,k,n) = p_D_k0[n];
+    });
+
+#else
   // We set the coeffs at cell centers to D_k in the lower region and 0 above zhi
-  Real zhi = FLUID::surface_location+FLUID::film_thickness-bmin[2];
+  Real zhi = FLUID::surface_location;
   const int ihi = int(zhi/dz+0.00000000001);
 
   amrex::ParallelFor(bx, nchem_species, [D_k,p_D_k0,ihi]
@@ -34,6 +44,7 @@ void calc_D_k (const Box& bx,
       else
          D_k(i,j,k,n) = 0.0; 
     });
+#endif
 
   Gpu::synchronize();
 }
