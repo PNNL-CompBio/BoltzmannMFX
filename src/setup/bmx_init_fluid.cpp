@@ -98,7 +98,7 @@ void set_ic_chem_species (const Box& sbx,
   pp.getarr("prob_hi",bmax);
 
   // We set the coeffs at cell centers to D_k in the lower region and 0 above zhi
-  Real zhi = FLUID::surface_location+FLUID::film_thickness-bmin[2];
+  Real zhi = FLUID::surface_location;
 
   ParallelFor(sbx, nchem_species, [=]
        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -130,11 +130,7 @@ void set_ic_chem_species (const Box& sbx,
          if (z > zhi)
             X_k(i,j,k,n) = 0.0;
          else
-#ifdef NEW_CHEM
             X_k(i,j,k,n) = chem[n];
-#else
-            X_k(i,j,k,n) = 1.0;
-#endif
 #endif
       }); 
 }
