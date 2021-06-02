@@ -34,8 +34,8 @@ bmx::bmx_set_chem_species_bcs (Real time,
 }
 
 void 
-bmx::set_neumann_bcs (Real time,
-                      const int lev,
+bmx::set_neumann_bcs (Real /*time*/,
+                      const int /*lev*/,
                       FArrayBox& scal_fab,
                       const GeometryData& geom_data)
 {

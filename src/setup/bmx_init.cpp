@@ -320,7 +320,7 @@ void bmx::ChopGrids (const Box& domain, BoxArray& ba, int target_size) const
 }
 
 
-void bmx::MakeNewLevelFromScratch (int lev, Real time,
+void bmx::MakeNewLevelFromScratch (int lev, Real /*time*/,
                                     const BoxArray& new_grids,
                                     const DistributionMapping& new_dmap)
 {
@@ -356,7 +356,7 @@ void bmx::ReMakeNewLevelFromScratch (int lev,
     bmx_set_bc_type(lev);
 }
 
-void bmx::InitLevelData (Real time)
+void bmx::InitLevelData (Real /*time*/)
 {
     if (ooo_debug) amrex::Print() << "InitLevelData" << std::endl;
 
@@ -433,7 +433,7 @@ void bmx::InitLevelData (Real time)
 }
 
 void
-bmx::PostInit (Real& dt, Real time, int restart_flag, Real stop_time)
+bmx::PostInit (Real& dt, Real /*time*/, int restart_flag, Real stop_time)
 {
     if (ooo_debug) amrex::Print() << "PostInit" << std::endl;
 
@@ -532,7 +532,7 @@ bmx::MakeBCArrays ()
 }
 
 void
-bmx::bmx_init_fluid (int is_restarting, Real dt, Real stop_time)
+bmx::bmx_init_fluid (int is_restarting, Real /*dt*/, Real /*stop_time*/)
 {
     if (ooo_debug) amrex::Print() << "bmx_init_fluid" << std::endl;
 

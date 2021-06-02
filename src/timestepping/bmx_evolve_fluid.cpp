@@ -4,10 +4,10 @@
 void
 bmx::EvolveFluid (int nstep,
                    Real& dt,
-                   Real& prev_dt,
+                   Real& /*prev_dt*/,
                    Real& time,
-                   Real stop_time,
-                   Real& coupling_timing)
+                   Real /*stop_time*/,
+                   Real& /*coupling_timing*/)
 {
     BL_PROFILE_REGION_START("bmx::EvolveFluid");
     BL_PROFILE("bmx::EvolveFluid");
