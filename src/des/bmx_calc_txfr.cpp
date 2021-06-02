@@ -12,14 +12,14 @@
  * species fields defined on the AMR grid
  */
 void
-bmx::bmx_calc_txfr_fluid (Real time, Real dt)
+bmx::bmx_calc_txfr_fluid (Real /*time*/, Real dt)
 {
   const Real strttime = ParallelDescriptor::second();
 
   for (int lev = 0; lev <= finest_level; lev++)
     m_leveldata[lev]->X_rhs->setVal(0);
 
-  if (nlev > 2)
+  if (finestLevel() > 1)
     amrex::Abort("For right now"
         " BMXParticleContainer::TrilinearDepositionFluidDragForce can only"
         " handle up to 2 levels");

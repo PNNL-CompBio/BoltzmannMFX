@@ -2,10 +2,10 @@
 #include <bmx_fluid_parms.H>
 
 void calc_D_k (const Box& bx,
-               const Box& domain,
-               const Real dx,
-               const Real dy,
-               const Real dz,
+               const Box& /*domain*/,
+               const Real /*dx*/,
+               const Real /*dy*/,
+               const Real /*dz*/,
                FArrayBox& D_k_fab)
 {
   const int nchem_species = FLUID::nchem_species;

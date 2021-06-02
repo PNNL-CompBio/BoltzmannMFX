@@ -36,12 +36,12 @@ void
 bmx::ResetIOChkData ()
 {
   chkScalarVars.clear();
-  chkScalarVars.resize(chkscaVarsName.size(), Vector< MultiFab*>(nlev));
+  chkScalarVars.resize(chkscaVarsName.size(), Vector< MultiFab*>(finestLevel()+1));
 
   chkChemSpeciesVars.clear();
-  chkChemSpeciesVars.resize(chkChemSpeciesVarsName.size(), Vector< MultiFab*>(nlev));
+  chkChemSpeciesVars.resize(chkChemSpeciesVarsName.size(), Vector< MultiFab*>(finestLevel()+1));
 
-  for (int lev(0); lev < nlev; ++lev) {
+  for (int lev(0); lev <= finestLevel(); ++lev) {
     if (advect_fluid_chem_species) {
       chkChemSpeciesVars[0][lev] = m_leveldata[lev]->X_k;
       //chkChemSpeciesVars[2][lev] = m_leveldata[lev]->D_k;

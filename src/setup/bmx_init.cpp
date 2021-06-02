@@ -187,9 +187,6 @@ void bmx::Init (Real time)
     InitIOChkData();
     InitIOPltData();
 
-    // Note that finest_level = last level
-    finest_level = nlev-1;
-
     /****************************************************************************
      *                                                                          *
      * Generate levels using ErrorEst tagging.                                  *
@@ -215,7 +212,7 @@ void bmx::Init (Real time)
     // with MakeNewLevelFromScratch.
     InitFromScratch(time);
 
-    for (int lev = 1; lev <= finest_level; lev++)
+    for (int lev = 1; lev <= finestLevel(); lev++)
     {
        if (m_verbose > 0)
             std::cout << "Setting refined region at level " << lev
@@ -244,7 +241,7 @@ void bmx::Init (Real time)
     // We only do these at level 0
     // ******************************************************
 
-    for (int lev = 0; lev < nlev; lev++)
+    for (int lev = 0; lev <= finestLevel(); lev++)
         bmx_set_bc_type(lev);
 }
 
@@ -362,7 +359,7 @@ void bmx::InitLevelData (Real /*time*/)
 
     // Allocate the fluid data
     if (FLUID::solve)
-       for (int lev = 0; lev < nlev; lev++)
+       for (int lev = 0; lev <= finestLevel(); lev++)
           AllocateArrays(lev);
 
     ParmParse pp("particles");
@@ -404,9 +401,9 @@ void bmx::InitLevelData (Real /*time*/)
           delete particle_cost[lev];
 
       particle_cost.clear();
-      particle_cost.resize(nlev, nullptr);
+      particle_cost.resize(finestLevel()+1, nullptr);
 
-      for (int lev = 0; lev < nlev; lev++)
+      for (int lev = 0; lev <= finestLevel(); lev++)
       {
         particle_cost[lev] = new MultiFab(pc->ParticleBoxArray(lev),
                                           pc->ParticleDistributionMap(lev), 1, 0);
@@ -422,9 +419,9 @@ void bmx::InitLevelData (Real /*time*/)
           delete fluid_cost[lev];
 
       fluid_cost.clear();
-      fluid_cost.resize(nlev, nullptr);
+      fluid_cost.resize(finestLevel()+1, nullptr);
 
-      for (int lev = 0; lev < nlev; lev++)
+      for (int lev = 0; lev <= finestLevel(); lev++)
       {
         fluid_cost[lev] = new MultiFab(grids[lev], dmap[lev], 1, 0);
         fluid_cost[lev]->setVal(0.0);
@@ -452,7 +449,7 @@ bmx::PostInit (Real& dt, Real /*time*/, int restart_flag, Real stop_time)
                                          particle_max_grid_size_y,
                                          particle_max_grid_size_z);
 
-          for (int lev = 0; lev < nlev; lev++)
+          for (int lev = 0; lev <= finestLevel(); lev++)
           {
             BoxArray particle_ba(geom[lev].Domain());
             particle_ba.maxSize(particle_max_grid_size);
@@ -492,14 +489,14 @@ bmx::MakeBCArrays ()
     }
 
     if (ooo_debug) amrex::Print() << "MakeBCArrays" << std::endl;
-    bc_ilo.clear(); bc_ilo.resize(nlev, nullptr);
-    bc_ihi.clear(); bc_ihi.resize(nlev, nullptr);
-    bc_jlo.clear(); bc_jlo.resize(nlev, nullptr);
-    bc_jhi.clear(); bc_jhi.resize(nlev, nullptr);
-    bc_klo.clear(); bc_klo.resize(nlev, nullptr);
-    bc_khi.clear(); bc_khi.resize(nlev, nullptr);
+    bc_ilo.clear(); bc_ilo.resize(finestLevel()+1, nullptr);
+    bc_ihi.clear(); bc_ihi.resize(finestLevel()+1, nullptr);
+    bc_jlo.clear(); bc_jlo.resize(finestLevel()+1, nullptr);
+    bc_jhi.clear(); bc_jhi.resize(finestLevel()+1, nullptr);
+    bc_klo.clear(); bc_klo.resize(finestLevel()+1, nullptr);
+    bc_khi.clear(); bc_khi.resize(finestLevel()+1, nullptr);
 
-    for (int lev = 0; lev < nlev; lev++)
+    for (int lev = 0; lev <= finestLevel(); lev++)
     {
        // Define and allocate the integer MultiFab that is the outside adjacent
        // cells of the problem domain.
@@ -540,7 +537,7 @@ bmx::bmx_init_fluid (int is_restarting, Real /*dt*/, Real /*stop_time*/)
     Real ylen = geom[0].ProbHi(1) - geom[0].ProbLo(1);
     Real zlen = geom[0].ProbHi(2) - geom[0].ProbLo(2);
 
-    for (int lev = 0; lev < nlev; lev++)
+    for (int lev = 0; lev <= finestLevel(); lev++)
     {
        Box domain(geom[lev].Domain());
 
@@ -586,7 +583,7 @@ bmx::bmx_init_fluid (int is_restarting, Real /*dt*/, Real /*stop_time*/)
     }
 
     // Calculate the initial volume fraction
-    for (int lev = 0; lev < nlev; lev++)
+    for (int lev = 0; lev <= finestLevel(); lev++)
     {
         // Initialize to zero
         (m_leveldata[lev]->vf)->setVal(0.);
@@ -596,6 +593,6 @@ bmx::bmx_init_fluid (int is_restarting, Real /*dt*/, Real /*stop_time*/)
     }
 
     // Average down from fine to coarse to ensure consistency
-    for (int lev = nlev-1; lev > 0; lev--)
+    for (int lev = finestLevel(); lev > 0; lev--)
         average_down(*m_leveldata[lev]->vf,*m_leveldata[lev-1]->vf, 0, 1, refRatio(lev-1));
 }

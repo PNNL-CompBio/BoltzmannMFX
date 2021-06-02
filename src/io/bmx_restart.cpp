@@ -54,7 +54,6 @@ bmx::Restart (std::string& restart_file, int *nstep, Real *dt, Real *time)
 
       is >> nlevs;
       GotoNextLine(is);
-      // finest_level = nlevs-1;
 
       // Time stepping controls
       is >> int_tmp;
@@ -119,7 +118,6 @@ bmx::Restart (std::string& restart_file, int *nstep, Real *dt, Real *time)
        // Load the field data
        for (int lev = 0, nlevs=finestLevel()+1; lev < nlevs; ++lev)
        {
-
            // Read scalar variables
            ResetIOChkData();
 
@@ -179,7 +177,7 @@ bmx::Restart (std::string& restart_file, int *nstep, Real *dt, Real *time)
             delete particle_cost[lev];
 
         particle_cost.clear();
-        particle_cost.resize(nlev, nullptr);
+        particle_cost.resize(finestLevel()+1, nullptr);
 
         for (int lev = 0; lev <= finestLevel(); lev++)
         {
@@ -194,7 +192,7 @@ bmx::Restart (std::string& restart_file, int *nstep, Real *dt, Real *time)
             delete fluid_cost[lev];
 
         fluid_cost.clear();
-        fluid_cost.resize(nlev, nullptr);
+        fluid_cost.resize(finestLevel()+1, nullptr);
 
         for (int lev = 0; lev <= finestLevel(); lev++)
         {

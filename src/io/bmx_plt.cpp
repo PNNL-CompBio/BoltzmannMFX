@@ -54,7 +54,7 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
       const int ngrow = 0;
 
       Vector<std::string> pltFldNames;
-      Vector< std::unique_ptr<MultiFab> > mf(nlev);
+      Vector< std::unique_ptr<MultiFab> > mf(finestLevel()+1);
 
       // Fluid chem_species mass fractions
       if(FLUID::solve_chem_species and plt_X_k == 1)
@@ -70,7 +70,7 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
       if(plt_vf == 1)
           pltFldNames.push_back("volfrac");
 
-      for (int lev = 0; lev < nlev; ++lev)
+      for (int lev = 0; lev <= finestLevel(); ++lev)
       {
         // Multifab to hold all the variables -- there can be only one!!!!
         const int ncomp = pltVarCount;
@@ -100,14 +100,14 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
         }
       } // lev
 
-      Vector<const MultiFab*> mf2(nlev);
-      for (int lev = 0; lev < nlev; ++lev) {
+      Vector<const MultiFab*> mf2(finestLevel()+1);
+      for (int lev = 0; lev <= finestLevel(); ++lev) {
         mf2[lev] = mf[lev].get();
       }
 
       Vector<int> istep;
-      istep.resize(nlev,nstep);
-      amrex::WriteMultiLevelPlotfile(plotfilename, nlev, mf2, pltFldNames,
+      istep.resize(finestLevel()+1,nstep);
+      amrex::WriteMultiLevelPlotfile(plotfilename, finestLevel()+1, mf2, pltFldNames,
                                      Geom(), time, istep, refRatio());
 
       // no fluid
@@ -135,7 +135,7 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
 
       // Write only the Headers corresponding to the "empty" mf/mf2 MultiFabs
       Vector<int> istep;
-      istep.resize(nlev,nstep);
+      istep.resize(finestLevel()+1,nstep);
       amrex::WriteMultiLevelPlotfileHeaders(plotfilename, finest_level+1, mf2, names,
                                             Geom(), time, istep, refRatio());
 

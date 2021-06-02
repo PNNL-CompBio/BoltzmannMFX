@@ -244,8 +244,6 @@ class bmx : public AmrCore
 
     void ChopGrids (const Box& domain, BoxArray& ba, int target_size) const;
 
-    static int nlev;
-
     // Particle container
     BMXParticleContainer* pc;
 

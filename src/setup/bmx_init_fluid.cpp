@@ -26,9 +26,9 @@ void init_fluid (const Box& sbx,
                  const Real dx,
                  const Real dy,
                  const Real dz,
-                 const Real xlength,
-                 const Real ylength,
-                 const Real zlength,
+                 const Real /*xlength*/,
+                 const Real /*ylength*/,
+                 const Real /*zlength*/,
                  const GpuArray<Real, 3>& plo,
                  const int advect_fluid_chem_species)
 {
@@ -70,10 +70,10 @@ void init_fluid_parameters (const Box& bx,
 //!^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 void set_ic_chem_species (const Box& sbx,
                        const Box& domain,
-                       const Real dx,
-                       const Real dy,
-                       const Real dz,
-                       const GpuArray<Real, 3>& plo,
+                       const Real /*dx*/,
+                       const Real /*dy*/,
+                       const Real   dz  ,
+                       const GpuArray<Real, 3>& /*plo*/,
                        FArrayBox& X_k_fab)
 {
   const IntVect slo(sbx.loVect());
@@ -103,8 +103,8 @@ void set_ic_chem_species (const Box& sbx,
   ParallelFor(sbx, nchem_species, [=]
        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
       { 
-          Real x   = (i+.5)*dx+bmin[0];
-          Real y   = (j+.5)*dy+bmin[1];
+          // Real x   = (i+.5)*dx+bmin[0];
+          // Real y   = (j+.5)*dy+bmin[1];
           Real z   = (k+.5)*dz+bmin[2];
 
 #if 0

@@ -14,8 +14,6 @@ int              bmx::knapsack_nmax        = 128;
 DepositionScheme bmx::m_deposition_scheme;
 amrex::Real      bmx::m_deposition_scale_factor = 1.0;
 
-int bmx::nlev  = 1;
-
 int  bmx::plot_int        = -1;
 Real bmx::plot_per_approx = -1.;
 Real bmx::plot_per_exact  = -1.;
@@ -26,7 +24,7 @@ bmx::~bmx ()
   if (DEM::solve)
     delete pc;
 
-  for (int lev(0); lev < nlev; ++lev)
+  for (int lev(0); lev <= finest_level; ++lev)
   {
     // Face-based coefficients b in MAC projection and implicit diffusion solve
     delete bcoeff[lev][0];
@@ -59,21 +57,12 @@ bmx::bmx ()
 
     /****************************************************************************
      *                                                                          *
-     * Set max number of levels (nlev)                                         *
-     *                                                                          *
-     ***************************************************************************/
-
-    nlev = maxLevel() + 1;
-    amrex::Print() << "Number of levels: " << nlev << std::endl;
-
-    /****************************************************************************
-     *                                                                          *
      * Initialize time steps                                                    *
      *                                                                          *
      ***************************************************************************/
 
-    t_old.resize(nlev,-1.e100);
-    t_new.resize(nlev,0.0);
+    t_old.resize(max_level+1,-1.e100);
+    t_new.resize(max_level+1,0.0);
 
 
     /****************************************************************************

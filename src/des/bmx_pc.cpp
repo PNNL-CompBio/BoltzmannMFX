@@ -29,8 +29,7 @@ BMXParticleContainer::BMXParticleContainer (AmrCore* amr_core)
       p_verbose = false;
     }
 
-    nlev = amr_core->maxLevel() + 1;
-
+    nlev         = amr_core->finestLevel()+1;
     finest_level = amr_core->finestLevel();
 }
 
