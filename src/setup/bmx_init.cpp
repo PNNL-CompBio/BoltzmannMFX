@@ -490,7 +490,7 @@ bmx::MakeBCArrays ()
       if (bc_khi[lev] != nullptr) delete bc_khi[lev];
     }
 
-    if (ooo_debug) amrex::Print() << "MakeBCArrays with finest level " << finest_level() << std::endl;
+    if (ooo_debug) amrex::Print() << "MakeBCArrays with finest level " << finestLevel() << std::endl;
     bc_ilo.clear(); bc_ilo.resize(finestLevel()+1, nullptr);
     bc_ihi.clear(); bc_ihi.resize(finestLevel()+1, nullptr);
     bc_jlo.clear(); bc_jlo.resize(finestLevel()+1, nullptr);
