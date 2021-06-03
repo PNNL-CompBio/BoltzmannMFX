@@ -56,7 +56,7 @@ SolidsVolumeDeposition (F WeightFunc, int lev,
   BL_PROFILE("BMXParticleContainer::VolFracDeposition()");
 
   // We always use the coarse dx
-  const Geometry& gm  = Geom(0);
+  const Geometry& gm  = Geom(lev);
   const auto      plo = gm.ProbLoArray();
   const auto      dx  = gm.CellSizeArray();
   const auto      dxi = gm.InvCellSizeArray();

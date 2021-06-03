@@ -221,6 +221,8 @@ void bmx::Init (Real time)
        MakeNewLevelFromScratch(lev, time, grids[lev], dmap[lev]);
     }
 
+    MakeBCArrays();
+
     /****************************************************************************
      *                                                                          *
      * Create particle container using bmx::ParGDB                             *
@@ -340,8 +342,8 @@ void bmx::MakeNewLevelFromScratch (int lev, Real /*time*/,
 
 
 void bmx::ReMakeNewLevelFromScratch (int lev,
-                                      const BoxArray & new_grids,
-                                      const DistributionMapping & new_dmap)
+                                     const BoxArray & new_grids,
+                                     const DistributionMapping & new_dmap)
 {
     if (ooo_debug) amrex::Print() << "ReMakeNewLevelFromScratch" << std::endl;
     SetBoxArray(lev, new_grids);
@@ -488,7 +490,7 @@ bmx::MakeBCArrays ()
       if (bc_khi[lev] != nullptr) delete bc_khi[lev];
     }
 
-    if (ooo_debug) amrex::Print() << "MakeBCArrays" << std::endl;
+    if (ooo_debug) amrex::Print() << "MakeBCArrays with finest level " << finest_level() << std::endl;
     bc_ilo.clear(); bc_ilo.resize(finestLevel()+1, nullptr);
     bc_ihi.clear(); bc_ihi.resize(finestLevel()+1, nullptr);
     bc_jlo.clear(); bc_jlo.resize(finestLevel()+1, nullptr);
