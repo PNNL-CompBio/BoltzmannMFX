@@ -12,7 +12,7 @@ amrex.fpe_trap_invalid = 1
 #! Fluid solver
 #!-----------------------------------------------------------//
 
-bmx.fixed_dt = 2.5
+bmx.fixed_dt = 5
 
 bmx.max_step = 25000
 #bmx.max_step = 1
