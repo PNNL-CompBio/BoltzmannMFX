@@ -144,13 +144,13 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
     const int interp_ng    = 1;    // Only one layer needed for interpolation
     const int interp_ncomp = 3;
 
-    if (m_leveldata[0]->X_k->nComp() != 3)
+    if (m_leveldata[lev]->X_k->nComp() != 3)
       amrex::Abort("We are not interpolating the right number of components in calc_txfr_particle");
 #else
     const int interp_ng    = 1;    // Only one layer needed for interpolation
     const int interp_ncomp = 2;
 
-    if (m_leveldata[0]->X_k->nComp() != 2)
+    if (m_leveldata[lev]->X_k->nComp() != 2)
       amrex::Abort("We are not interpolating the right number of components in calc_txfr_particle");
 #endif
 
