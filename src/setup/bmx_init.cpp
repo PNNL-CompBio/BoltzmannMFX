@@ -5,6 +5,7 @@
 #include <bmx_bc_parms.H>
 #include <bmx_dem_parms.H>
 #include <bmx_fluid_parms.H>
+#include <bmx_calc_fluid_coeffs.H>
 #include <bmx_chem_species_parms.H>
 
 using BMXParIter = BMXParticleContainer::BMXParIter;
@@ -539,6 +540,13 @@ bmx::bmx_init_fluid (int is_restarting, Real /*dt*/, Real /*stop_time*/)
     Real ylen = geom[0].ProbHi(1) - geom[0].ProbLo(1);
     Real zlen = geom[0].ProbHi(2) - geom[0].ProbLo(2);
 
+    // Set to bogus value just to make sure everything gets filled later 
+    for (int lev = 0; lev <= finestLevel(); lev++)
+    {
+         m_leveldata[lev]->X_k->setVal(1.e234);
+         m_leveldata[lev]->D_k->setVal(1.e234);
+    }
+
     for (int lev = 0; lev <= finestLevel(); lev++)
     {
        Box domain(geom[lev].Domain());
@@ -547,7 +555,8 @@ bmx::bmx_init_fluid (int is_restarting, Real /*dt*/, Real /*stop_time*/)
        Real dy = geom[lev].CellSize(1);
        Real dz = geom[lev].CellSize(2);
 
-       const GpuArray<Real, 3> plo = geom[lev].ProbLoArray();
+       const GpuArray<Real, 3> p_lo = geom[lev].ProbLoArray();
+       const GpuArray<Real, 3> p_hi = geom[lev].ProbHiArray();
 
        LevelData& ld = *m_leveldata[lev];
 
@@ -559,11 +568,16 @@ bmx::bmx_init_fluid (int is_restarting, Real /*dt*/, Real /*stop_time*/)
           const Box& bx = mfi.validbox();
           const Box& sbx = dummy[mfi].box();
 
-          if ( is_restarting ) {
-            init_fluid_parameters(bx, domain, dx, dy, dz, mfi, ld, advect_fluid_chem_species);
-          } else {
-            init_fluid(sbx, bx, domain, mfi, ld, dx, dy, dz, xlen, ylen, zlen, plo,
-                       advect_fluid_chem_species);
+          Array4<Real> const& X_k_arr = ld.X_k->array(mfi);
+          Array4<Real> const& D_k_arr = ld.D_k->array(mfi);
+
+          // Set the initial fluid chem_species mass fractions
+          if (advect_fluid_chem_species) 
+          {
+              if (!is_restarting) 
+                  set_ic_chem_species(sbx, domain, dx, dy, dz, p_lo, p_hi, X_k_arr);
+
+             calc_D_k(bx, domain, dx, dy, dz, D_k_arr);
           }
        }
 

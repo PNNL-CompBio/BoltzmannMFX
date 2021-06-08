@@ -8,26 +8,9 @@
 #include <AMReX_SPACE.H>
 #include <AMReX_GpuContainers.H>
 
-void init_fluid (const amrex::Box& sbx,
-                 const amrex::Box& bx,
-                 const amrex::Box& domain,
-                 const amrex::MFIter& mfi,
-                 LevelData& ld,
-                 const amrex::Real dx,
-                 const amrex::Real dy,
-                 const amrex::Real dz,
-                 const amrex::Real xlength,
-                 const amrex::Real ylength,
-                 const amrex::Real zlength,
-                 const amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>& plo,
-                 const int advect_fluid_chem_species);
-
-void init_fluid_parameters (const amrex::Box& bx,
-                            const amrex::Box& domain,
-			    const amrex::Real dx,
-			    const amrex::Real dy,
-			    const amrex::Real dz,
-                            const amrex::MFIter& mfi,
-                            LevelData& ld,
-                            const int advect_fluid_chem_species);
+void set_ic_chem_species (const amrex::Box& sbx, const amrex::Box& domain,
+                          const amrex::Real dx, const amrex::Real dy, const amrex::Real dz,
+                          const amrex::GpuArray<amrex::Real, 3>& p_lo,
+                          const amrex::GpuArray<amrex::Real, 3>& p_hi,
+                          const amrex::Array4<amrex::Real> X_k_arr);
 #endif

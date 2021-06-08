@@ -76,8 +76,9 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
       ifs >> host_particles[i].rdata(realIdx::tauz);
       ifs >> host_particles[i].rdata(realIdx::dadt);
       ifs >> host_particles[i].rdata(realIdx::dvdt);
-      for (int c=0; c<FLUID::nchem_species; c++) {
-        host_particles[i].rdata(realIdx::first_data+i) = FLUID::init_conc[i];
+      for (int c=0; c<FLUID::nchem_species; c++) 
+      {
+        host_particles[i].rdata(realIdx::first_data+c) = FLUID::init_conc[c];
       }
       bmxchem->setIntegers(&host_particles[i].idata(0));
       
