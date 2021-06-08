@@ -536,10 +536,6 @@ bmx::bmx_init_fluid (int is_restarting, Real /*dt*/, Real /*stop_time*/)
 {
     if (ooo_debug) amrex::Print() << "bmx_init_fluid" << std::endl;
 
-    Real xlen = geom[0].ProbHi(0) - geom[0].ProbLo(0);
-    Real ylen = geom[0].ProbHi(1) - geom[0].ProbLo(1);
-    Real zlen = geom[0].ProbHi(2) - geom[0].ProbLo(2);
-
     // Set to bogus value just to make sure everything gets filled later 
     for (int lev = 0; lev <= finestLevel(); lev++)
     {

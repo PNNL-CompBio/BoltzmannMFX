@@ -70,17 +70,10 @@ bmx::bmx_calc_txfr_fluid (Real /*time*/, Real dt)
   long nparticles = 0;
   for (int lev = 0; lev <= finest_level; lev++)
   {
-    nparticles += pc->NumberOfParticlesAtLevel(lev);
+    int n_at_lev = pc->NumberOfParticlesAtLevel(lev); 
+    nparticles += n_at_lev;
     pc->InterphaseTxfrDeposition(lev, *txfr_ptr[lev], dt); 
-  }
-  if (ParallelDescriptor::MyProc()==0) {
-    std::cout << "DEPOSITION OF " << nparticles << " particles ... " << std::endl;
-  }
-
-  {
-    // The deposition occurred on level 0, thus the next few operations
-    // only need to be carried out on level 0.
-    int lev(0);
+    amrex::Print() << "DEPOSITION OF " << n_at_lev << " particles at level  " << lev << std::endl;
 
     // Move any volume deposited outside the domain back into the domain
     // when BC is either a pressure inlet or mass inflow.
@@ -90,20 +83,18 @@ bmx::bmx_calc_txfr_fluid (Real /*time*/, Real dt)
     // your grid from an adjacent grid.
     txfr_ptr[lev]->SumBoundary(gm.periodicity());
     txfr_ptr[lev]->setBndry(0.0);
+
+    // If mf_to_be_filled is not defined on the particle_box_array, then we need
+    // to copy here from txfr_ptr into mf_to_be_filled. I believe that we don't
+    // need any information in ghost cells so we don't copy those.
+
+    if (txfr_ptr[lev] != m_leveldata[lev]->X_rhs) 
+    {
+        m_leveldata[lev]->X_rhs->ParallelCopy(*txfr_ptr[lev], 0, 0, m_leveldata[lev]->X_rhs->nComp());
+        delete txfr_ptr[lev];
+    }
   }
 
-  // If mf_to_be_filled is not defined on the particle_box_array, then we need
-  // to copy here from txfr_ptr into mf_to_be_filled. I believe that we don't
-  // need any information in ghost cells so we don't copy those.
-
-  if (txfr_ptr[0] != m_leveldata[0]->X_rhs) {
-    m_leveldata[0]->X_rhs->ParallelCopy(*txfr_ptr[0], 0, 0, m_leveldata[0]->X_rhs->nComp());
-  }
-
-  for (int lev = 0; lev <= finest_level; lev++) {
-    if (txfr_ptr[lev] != m_leveldata[lev]->X_rhs)
-      delete txfr_ptr[lev];
-  }
 
   if (m_verbose > 1) {
     Real stoptime = ParallelDescriptor::second() - strttime;

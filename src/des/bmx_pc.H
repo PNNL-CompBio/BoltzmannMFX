@@ -103,11 +103,8 @@ public:
 
     void PrintParticleCounts ();
 
-    void EvolveParticles (int lev,
-                          int nstep,
-                          amrex::Real dt,
-                          amrex::Real time,
-                          amrex::MultiFab * cost,
+    void EvolveParticles (amrex::Real dt,
+                          const amrex::Vector<amrex::MultiFab *> cost,
                           std::string & knapsack_weight_type,
                           int & nsubsteps);
 
