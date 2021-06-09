@@ -94,6 +94,7 @@ bmx::bmx_calc_txfr_fluid (Real /*time*/, Real dt)
         delete txfr_ptr[lev];
     }
   }
+  amrex::Print() << "TOTAL PARTICLES " << nparticles << std::endl;
 
 
   if (m_verbose > 1) {
