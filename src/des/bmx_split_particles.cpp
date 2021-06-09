@@ -54,4 +54,7 @@ BMXParticleContainer::split_particles ()
             } // pid
       } // pti
   } // lev
+
+  // Redistribute the particles so the new particles end up on the right processor
+  Redistribute();
 }
