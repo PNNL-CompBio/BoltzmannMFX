@@ -75,6 +75,7 @@ class BMXCellInteraction
 
   Real p_zwall;         // z-location of surface
   Real p_z_bndry_width; // cell-growth surface interaction parameter
+  Real p_z_gravity;     // factor for gravity
 #if 1
   Real p_z_stiffness;   // strength of cell-growth surface interaction
 #else

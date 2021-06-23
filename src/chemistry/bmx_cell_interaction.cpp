@@ -41,6 +41,8 @@ void BMXCellInteraction::setParams(const char *file)
   ParmParse pp("cell_force");
 
   pp.get("boundary_width",p_bndry_width);
+  p_z_gravity = 0.0;
+  pp.query("gravity",p_z_gravity);
 #if 1
   pp.get("stiffness",p_stiffness);
 #else
@@ -94,14 +96,22 @@ void BMXCellInteraction::evaluateForce(const Real *r12, Real *par1,
   ry /= rn;
   rz /= rn;
 #if 1
-  Real F = p_stiffness*(rn-rA)*(rn-rA)*(rn-rS);
+  Real F;
+  if (rn < rA) {
+    F= p_stiffness*(rn-rA)*(rn-rA)*(rn-rS);
+  } else {
+    F = 0.0;
+  }
 #else
   Real F;
   if (rn < rS) {
     F = p_r_stiffness*(rn-rA)*(rn-rA)*(rn-rS);
+  } else if (rn < rA) {
+    F = p_a_stiffness*(rn-rA)*(rn-rA)*(rn-rS);
   } else {
-    F = p_a_stiffness*(rn-rS)*(rA-rn);
+    F = 0.0;
   }
+//  printf("Force: %f\n",F);
 #endif
   frc[0] = F*rx;
   frc[1] = F*ry;
@@ -128,8 +138,10 @@ void BMXCellInteraction::evaluateSurfaceForce(const Real *pos, Real *par, Real *
 #else
     if (dz < rS) {
       frc[2] = -p_z_r_stiffness*(dz-rA)*(dz-rA)*(dz-rS);
+    } else if (dz < rA) {
+      frc[2] = -p_z_a_stiffness*(dz-rA)*(dz-rA)*(dz-rS);
     } else {
-      frc[2] = -p_z_a_stiffness*(rA-dz)*(dz-rS);
+      frc[2] = 0.0;
     }
 #endif
   } else if (dz <= 0) {
@@ -141,4 +153,9 @@ void BMXCellInteraction::evaluateSurfaceForce(const Real *pos, Real *par, Real *
   } else {
     frc[2] = 0.0;
   }
+#if 1
+  frc[2] -= p_z_gravity*p_z_stiffness*rA*rA*rS;
+#else
+  frc[2] -= p_z_gravity*p_z_r_stiffness*rA*rA*rS;
+#endif
 }
