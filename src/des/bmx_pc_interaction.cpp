@@ -21,7 +21,7 @@ void BMXParticleContainer::EvolveParticles (Real dt,
     int n_at_lev = this->NumberOfParticlesAtLevel(lev);
     amrex::Print() << "In Evolve Particles with " << n_at_lev << " particles at level " << lev << std::endl;
 
-    if (n_at_lev == 0) return;
+    if (n_at_lev == 0) continue;
 
     amrex::Print() << "Evolving particles on level: " << lev
                    << " ... with fluid dt " << dt << std::endl;
@@ -402,7 +402,7 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 
                 if (verbose) {
                   char sbuf[128];
-                  sprintf(sbuf,"particle: %d position: %12.6f %12.6f %12.6f",i,particle.pos(0),
+                  sprintf(sbuf,"particle: %d position: %14.8f %14.8f %14.8f",i,particle.pos(0),
                       particle.pos(1),particle.pos(2));
                   std::cout << sbuf << std::endl;
                 }
