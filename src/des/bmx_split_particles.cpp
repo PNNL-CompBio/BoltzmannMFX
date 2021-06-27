@@ -29,7 +29,7 @@ BMXParticleContainer::split_particles ()
         //
         for (int pid = 0; pid < np; ++pid)     
         {
-              BMXParticleContainer::ParticleType& p_orig = pstruct[pid];
+              BMXParticleContainer::ParticleType& p_orig = particles[pid];
 
               // Check to see if particle satisfies some criteria for splitting
               // into two new  particles
