@@ -1,0 +1,120 @@
+#include <bmx.H>
+#include <bmx_des_K.H>
+
+/**
+ * @brief this function splits particles if some criterion is met
+ */
+void 
+BMXParticleContainer::split_particles ()
+{
+  BMXChemistry *bmxchem = BMXChemistry::instance();
+
+  for (int lev = 0; lev <= finest_level; lev++) {
+
+      for (BMXParIter pti(*this, lev); pti.isValid(); ++pti)
+      {
+        auto& particles = pti.GetArrayOfStructs();
+        BMXParticleContainer::ParticleType* pstruct = particles().dataPtr();
+
+        const int grid = pti.index();
+        const int tile = pti.LocalTileIndex(); 
+        auto& particle_tile = this->GetParticles(lev)[std::make_pair(grid,tile)];
+
+        const int np = particles.size();
+
+        //
+        // Note: this will happen on CPU only -- we will need to add something to count how many
+        //       new particles, resize the particle_tile appropriately, then fill the data for the 
+        //       new particles on the GPU
+        //
+        for (int pid = 0; pid < np; ++pid)     
+        {
+              BMXParticleContainer::ParticleType& p_orig = pstruct[pid];
+
+              // Check to see if particle satisfies some criteria for splitting
+              // into two new  particles
+              Real* p_par =  &p_orig.rdata(0);
+              std::cout << "TESTING PARTICLE WITH VOL = " << p_orig.id() << " " << p_par[realIdx::vol] << 
+                " " << p_orig.rdata(realIdx::vol) << std::endl;
+              if (bmxchem->checkSplit(&p_orig.rdata(0), &p_orig.rdata(realIdx::first_data)))
+              {
+                   std::cout << "MAKING NEW PARTICLE FROM VOL = " << p_par[realIdx::vol] << std::endl;
+                   ParticleType p;
+                   p.id()  = ParticleType::NextID();
+                   p.cpu() = amrex::ParallelDescriptor::MyProc();
+
+                   Real *pos_orig = &p_orig.pos(0);
+                   Real *pos_new  = &p.pos(0);
+
+                   Real *par_orig = &p_orig.rdata(0);
+                   Real *par_new  = &p.rdata(0);
+
+                   int *ipar_orig = &p_orig.idata(0);
+                   int *ipar_new  = &p.idata(0);
+
+                   // Set parameters on new particle base on values from
+                   // original particle
+                   bmxchem->setNewCell(pos_orig, pos_new, par_orig,
+                       par_new, ipar_orig, ipar_new);
+
+                   std::cout << "OLD VOLUME OUT " << par_orig[realIdx::vol] << std::endl;
+                   std::cout << "NEW VOLUME OUT " <<  par_new[realIdx::vol] << std::endl;
+
+                   particle_tile.push_back(p);
+
+              } // if test
+        } // pid
+      } // pti
+  } // lev
+
+  // HACK HACK -- THIS LOOP IS JUST FOR DEBUGGING!
+  for (int lev = 0; lev <= finest_level; lev++) {
+
+      for (BMXParIter pti(*this, lev); pti.isValid(); ++pti)
+      {
+        auto& particles = pti.GetArrayOfStructs();
+        BMXParticleContainer::ParticleType* pstruct = particles().dataPtr();
+
+        const int grid = pti.index();
+        const int tile = pti.LocalTileIndex(); 
+        auto& particle_tile = this->GetParticles(lev)[std::make_pair(grid,tile)];
+
+        const int np = particles.size();
+
+        for (int pid = 0; pid < np; ++pid)     
+        {
+              BMXParticleContainer::ParticleType& p_orig = pstruct[pid];
+
+              Real* p_par =  &p_orig.rdata(0);
+              std::cout << "PRE_REDIST:TESTING PARTICLE WITH VOL = " << p_orig.id() << " " << p_par[realIdx::vol] <<  std::endl;
+        } // pid
+      } // pti
+  } // lev
+
+  // Redistribute the particles so the new particles end up on the right processor
+  Redistribute();
+
+  // HACK HACK -- THIS LOOP IS JUST FOR DEBUGGING!
+  for (int lev = 0; lev <= finest_level; lev++) {
+
+      for (BMXParIter pti(*this, lev); pti.isValid(); ++pti)
+      {
+        auto& particles = pti.GetArrayOfStructs();
+        BMXParticleContainer::ParticleType* pstruct = particles().dataPtr();
+
+        const int grid = pti.index();
+        const int tile = pti.LocalTileIndex(); 
+        auto& particle_tile = this->GetParticles(lev)[std::make_pair(grid,tile)];
+
+        const int np = particles.size();
+
+        for (int pid = 0; pid < np; ++pid)     
+        {
+              BMXParticleContainer::ParticleType& p_orig = pstruct[pid];
+
+              Real* p_par =  &p_orig.rdata(0);
+              std::cout << "POST_REDIST:TESTING PARTICLE WITH VOL = " << p_orig.id() << " " << p_par[realIdx::vol] <<  std::endl;
+        } // pid
+      } // pti
+  } // lev
+}
