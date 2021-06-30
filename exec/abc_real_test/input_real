@@ -14,12 +14,12 @@ bmx.seed = 21893
 
 bmx.fixed_dt = 1.0
 
-bmx.max_step = 25000
+bmx.max_step = 1000
 
 dem.solve = bacteria
 bmx.particle_init_type = "AsciiFile"
 
-bmx.verbose = 0
+bmx.verbose = 1
 
 amr.blocking_factor = 2
 
