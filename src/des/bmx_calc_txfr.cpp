@@ -32,13 +32,13 @@ bmx::bmx_calc_txfr_fluid (Real /*time*/, Real dt)
     bool OnSameGrids = ( (dmap[lev] == (pc->ParticleDistributionMap(lev))) &&
                          (grids[lev].CellEqual(pc->ParticleBoxArray(lev))) );
 
-    if (lev == 0 and OnSameGrids) {
+    if (OnSameGrids) {
 
       // If we are already working with the internal mf defined on the
       // particle_box_array, then we just work with this.
       txfr_ptr[lev] = m_leveldata[lev]->X_rhs;
 
-    } else if (lev == 0 and (not OnSameGrids)) {
+    } else {
 
       // If beta_mf is not defined on the particle_box_array, then we need
       // to make a temporary here and copy into beta_mf at the end.
@@ -47,11 +47,6 @@ bmx::bmx_calc_txfr_fluid (Real /*time*/, Real dt)
                                               m_leveldata[lev]->X_rhs->nComp(),
                                               m_leveldata[lev]->X_rhs->nGrow());
 
-    } else {
-      // If lev > 0 we make a temporary at the coarse resolution
-      BoxArray ba_crse(amrex::coarsen(pc->ParticleBoxArray(lev),this->m_gdb->refRatio(0)));
-      txfr_ptr[lev] = new MultiFab(ba_crse, pc->ParticleDistributionMap(lev),
-                                   m_leveldata[lev]->X_rhs->nComp(), 1);
     }
 
     // We must have ghost cells for each FAB so that a particle in one grid can spread
