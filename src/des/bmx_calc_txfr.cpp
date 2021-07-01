@@ -59,12 +59,12 @@ bmx::bmx_calc_txfr_fluid (Real /*time*/, Real dt)
     txfr_ptr[lev]->setVal(0.0, 0, m_leveldata[lev]->X_rhs->nComp(), txfr_ptr[lev]->nGrow());
   }
 
-  const Geometry& gm = Geom(0);
-
   // Deposit the chem_species_rhs to the grid
   long nparticles = 0;
   for (int lev = 0; lev <= finest_level; lev++)
   {
+    const Geometry& gm = Geom(lev);
+
     int n_at_lev = pc->NumberOfParticlesAtLevel(lev); 
     nparticles += n_at_lev;
     pc->InterphaseTxfrDeposition(lev, *txfr_ptr[lev], dt); 
