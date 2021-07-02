@@ -34,8 +34,8 @@ bmx::bmx_set_chem_species_bcs (Real time,
 }
 
 void 
-bmx::set_neumann_bcs (Real time,
-                      const int lev,
+bmx::set_neumann_bcs (Real /*time*/,
+                      const int /*lev*/,
                       FArrayBox& scal_fab,
                       const GeometryData& geom_data)
 {
@@ -50,8 +50,6 @@ bmx::set_neumann_bcs (Real time,
 
   Gpu::DeviceVector< Real > D_k0_d(nchem_species);
   Gpu::copyAsync(Gpu::hostToDevice, FLUID::D_k0.begin(), FLUID::D_k0.end(), D_k0_d.begin());
-
-  Real* p_D_k0 = D_k0_d.data();
 
   IntVect scal_lo(scal_fab.loVect());
   IntVect scal_hi(scal_fab.hiVect());

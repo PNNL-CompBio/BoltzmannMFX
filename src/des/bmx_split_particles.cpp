@@ -1,15 +1,5 @@
 #include <bmx.H>
 #include <bmx_des_K.H>
-#include <bmx_interp_K.H>
-#include <bmx_filcc.H>
-
-#include <AMReX_BC_TYPES.H>
-#include <AMReX_Box.H>
-#include <AMReX_FillPatchUtil.H>
-#include <bmx_mf_helpers.H>
-#include <bmx_dem_parms.H>
-#include <bmx_fluid_parms.H>
-#include <bmx_chem.H>
 
 /**
  * @brief this function splits particles if some criterion is met
@@ -39,7 +29,7 @@ BMXParticleContainer::split_particles ()
         //
         for (int pid = 0; pid < np; ++pid)     
         {
-              BMXParticleContainer::ParticleType& p_orig = pstruct[pid];
+              BMXParticleContainer::ParticleType& p_orig = particles[pid];
 
               // Check to see if particle satisfies some criteria for splitting
               // into two new  particles
@@ -64,4 +54,7 @@ BMXParticleContainer::split_particles ()
             } // pid
       } // pti
   } // lev
+
+  // Redistribute the particles so the new particles end up on the right processor
+  Redistribute();
 }

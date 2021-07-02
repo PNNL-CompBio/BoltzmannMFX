@@ -9,16 +9,8 @@ using namespace BC;
 void
 bmx::bmx_set_bc_type (int lev)
 {
-
-    Real dx = geom[lev].CellSize(0);
-    Real dy = geom[lev].CellSize(1);
-    Real dz = geom[lev].CellSize(2);
-
-    const GpuArray<Real, 3> plo = geom[lev].ProbLoArray();
-
     const int und_  = bc_list.get_undefined();
     const int ig_   = bc_list.get_ig();
-    const int minf_ = bc_list.get_minf();
 
     const int l_chem_species = FLUID::nchem_species;
 
@@ -206,7 +198,7 @@ bmx::bmx_set_bc_type (int lev)
 }
 
 
-void bmx::set_bcrec_lo(const int lev, const int dir, const int l_type)
+void bmx::set_bcrec_lo(const int lev, const int dir, const int /*l_type*/)
 {
   // Scalar BC Recs
   if (geom[lev].isPeriodic(dir)) {
@@ -220,7 +212,7 @@ void bmx::set_bcrec_lo(const int lev, const int dir, const int l_type)
   }
 }
 
-void bmx::set_bcrec_hi(const int lev, const int dir, const int l_type)
+void bmx::set_bcrec_hi(const int lev, const int dir, const int /*l_type*/)
 {
   // Scalar BC Recs
   if (geom[lev].isPeriodic(dir)) {

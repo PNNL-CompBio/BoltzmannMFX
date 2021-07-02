@@ -1,12 +1,10 @@
 #include <bmx.H>
 
-#include <AMReX_BC_TYPES.H>
-#include <AMReX_Box.H>
-#include <AMReX_FillPatchUtil.H>
-
 void bmx::bmx_deposition_bcs (int lev, amrex::MultiFab& filled_mf)
 {
   BL_PROFILE("bmx::bmx_deposition_bcs_scalar()");
+
+  amrex::Print() << "BCS ON LEV " << lev << std::endl;
 
   Box domain(Geom(lev).Domain());
 
@@ -82,6 +80,7 @@ void bmx::bmx_deposition_bcs (int lev, amrex::MultiFab& filled_mf)
           if(sbx_lo[0] < dom_lo.x) {
             int i = dom_lo.x;
 
+            // amrex::Print() << "DOING I J K " << IntVect(i,j,k) << std::endl;
             const int bct_ilo = bc_ilo_type(i-1,j,k,0);
             if(bct_ilo == minf)
             {

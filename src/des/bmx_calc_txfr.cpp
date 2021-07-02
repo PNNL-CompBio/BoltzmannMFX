@@ -1,12 +1,6 @@
 #include <bmx.H>
 #include <bmx_des_K.H>
 #include <bmx_interp_K.H>
-#include <bmx_filcc.H>
-
-#include <AMReX_BC_TYPES.H>
-#include <AMReX_Box.H>
-#include <AMReX_FillPatchUtil.H>
-#include <bmx_mf_helpers.H>
 #include <bmx_dem_parms.H>
 
 #ifdef NEW_CHEM
@@ -18,14 +12,14 @@
  * species fields defined on the AMR grid
  */
 void
-bmx::bmx_calc_txfr_fluid (Real time, Real dt)
+bmx::bmx_calc_txfr_fluid (Real /*time*/, Real dt)
 {
   const Real strttime = ParallelDescriptor::second();
 
   for (int lev = 0; lev <= finest_level; lev++)
     m_leveldata[lev]->X_rhs->setVal(0);
 
-  if (nlev > 2)
+  if (finestLevel() > 1)
     amrex::Abort("For right now"
         " BMXParticleContainer::TrilinearDepositionFluidDragForce can only"
         " handle up to 2 levels");
@@ -38,13 +32,13 @@ bmx::bmx_calc_txfr_fluid (Real time, Real dt)
     bool OnSameGrids = ( (dmap[lev] == (pc->ParticleDistributionMap(lev))) &&
                          (grids[lev].CellEqual(pc->ParticleBoxArray(lev))) );
 
-    if (lev == 0 and OnSameGrids) {
+    if (OnSameGrids) {
 
       // If we are already working with the internal mf defined on the
       // particle_box_array, then we just work with this.
       txfr_ptr[lev] = m_leveldata[lev]->X_rhs;
 
-    } else if (lev == 0 and (not OnSameGrids)) {
+    } else {
 
       // If beta_mf is not defined on the particle_box_array, then we need
       // to make a temporary here and copy into beta_mf at the end.
@@ -53,11 +47,6 @@ bmx::bmx_calc_txfr_fluid (Real time, Real dt)
                                               m_leveldata[lev]->X_rhs->nComp(),
                                               m_leveldata[lev]->X_rhs->nGrow());
 
-    } else {
-      // If lev > 0 we make a temporary at the coarse resolution
-      BoxArray ba_crse(amrex::coarsen(pc->ParticleBoxArray(lev),this->m_gdb->refRatio(0)));
-      txfr_ptr[lev] = new MultiFab(ba_crse, pc->ParticleDistributionMap(lev),
-                                   m_leveldata[lev]->X_rhs->nComp(), 1);
     }
 
     // We must have ghost cells for each FAB so that a particle in one grid can spread
@@ -70,18 +59,16 @@ bmx::bmx_calc_txfr_fluid (Real time, Real dt)
     txfr_ptr[lev]->setVal(0.0, 0, m_leveldata[lev]->X_rhs->nComp(), txfr_ptr[lev]->nGrow());
   }
 
-  const Geometry& gm = Geom(0);
-
   // Deposit the chem_species_rhs to the grid
+  long nparticles = 0;
   for (int lev = 0; lev <= finest_level; lev++)
   {
-    pc->InterphaseTxfrDeposition(lev, *txfr_ptr[lev], dt); 
-  }
+    const Geometry& gm = Geom(lev);
 
-  {
-    // The deposition occurred on level 0, thus the next few operations
-    // only need to be carried out on level 0.
-    int lev(0);
+    int n_at_lev = pc->NumberOfParticlesAtLevel(lev); 
+    nparticles += n_at_lev;
+    pc->InterphaseTxfrDeposition(lev, *txfr_ptr[lev], dt); 
+    amrex::Print() << "DEPOSITION OF " << n_at_lev << " particles at level  " << lev << std::endl;
 
     // Move any volume deposited outside the domain back into the domain
     // when BC is either a pressure inlet or mass inflow.
@@ -91,20 +78,19 @@ bmx::bmx_calc_txfr_fluid (Real time, Real dt)
     // your grid from an adjacent grid.
     txfr_ptr[lev]->SumBoundary(gm.periodicity());
     txfr_ptr[lev]->setBndry(0.0);
-  }
 
-  // If mf_to_be_filled is not defined on the particle_box_array, then we need
-  // to copy here from txfr_ptr into mf_to_be_filled. I believe that we don't
-  // need any information in ghost cells so we don't copy those.
+    // If mf_to_be_filled is not defined on the particle_box_array, then we need
+    // to copy here from txfr_ptr into mf_to_be_filled. I believe that we don't
+    // need any information in ghost cells so we don't copy those.
 
-  if (txfr_ptr[0] != m_leveldata[0]->X_rhs) {
-    m_leveldata[0]->X_rhs->copy(*txfr_ptr[0], 0, 0, m_leveldata[0]->X_rhs->nComp());
+    if (txfr_ptr[lev] != m_leveldata[lev]->X_rhs) 
+    {
+        m_leveldata[lev]->X_rhs->ParallelCopy(*txfr_ptr[lev], 0, 0, m_leveldata[lev]->X_rhs->nComp());
+        delete txfr_ptr[lev];
+    }
   }
+  amrex::Print() << "TOTAL PARTICLES " << nparticles << std::endl;
 
-  for (int lev = 0; lev <= finest_level; lev++) {
-    if (txfr_ptr[lev] != m_leveldata[lev]->X_rhs)
-      delete txfr_ptr[lev];
-  }
 
   if (m_verbose > 1) {
     Real stoptime = ParallelDescriptor::second() - strttime;
@@ -145,13 +131,13 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
     const int interp_ng    = 1;    // Only one layer needed for interpolation
     const int interp_ncomp = 3;
 
-    if (m_leveldata[0]->X_k->nComp() != 3)
+    if (m_leveldata[lev]->X_k->nComp() != 3)
       amrex::Abort("We are not interpolating the right number of components in calc_txfr_particle");
 #else
     const int interp_ng    = 1;    // Only one layer needed for interpolation
     const int interp_ncomp = 2;
 
-    if (m_leveldata[0]->X_k->nComp() != 2)
+    if (m_leveldata[lev]->X_k->nComp() != 2)
       amrex::Abort("We are not interpolating the right number of components in calc_txfr_particle");
 #endif
 
@@ -161,9 +147,8 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
       interp_ptr = new MultiFab(grids[lev], dmap[lev], interp_ncomp, interp_ng, MFInfo());
 
       // Copy 
-      interp_ptr->copy(*m_leveldata[lev]->X_k, 0, 0,
-                        m_leveldata[lev]->X_k->nComp(),
-                        interp_ng, interp_ng);
+      MultiFab::Copy(*interp_ptr,*m_leveldata[lev]->X_k, 0, 0,
+                      m_leveldata[lev]->X_k->nComp(), interp_ng);
       interp_ptr->FillBoundary(geom[lev].periodicity());
 
     }
@@ -176,9 +161,9 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
       interp_ptr = new MultiFab(pba, pdm, interp_ncomp, interp_ng, MFInfo());
 
       // Copy 
-      interp_ptr->copy(*m_leveldata[lev]->X_k, 0, 0,
-                        m_leveldata[lev]->X_k->nComp(),
-                        interp_ng, interp_ng);
+      interp_ptr->ParallelCopy(*m_leveldata[lev]->X_k, 0, 0,
+                                m_leveldata[lev]->X_k->nComp(),
+                                interp_ng, interp_ng);
 
       interp_ptr->FillBoundary(geom[lev].periodicity());
     }

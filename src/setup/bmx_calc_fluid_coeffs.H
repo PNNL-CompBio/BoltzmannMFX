@@ -12,5 +12,5 @@ void calc_D_k (const Box& bx, const Box& domain,
                const Real dx,
                const Real dy,
                const Real dz,
-               FArrayBox& D_k_fab);
+               const amrex::Array4<amrex::Real> D_k_arr);
 #endif

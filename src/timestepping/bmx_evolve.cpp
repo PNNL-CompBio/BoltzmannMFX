@@ -19,13 +19,10 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
      ***************************************************************************/
     Real start_fluid = ParallelDescriptor::second();
     BL_PROFILE_VAR("FLUID SOLVE",fluidSolve);
-    for (int lev = 0; lev <= finest_level; lev++)
+    if (FLUID::solve)
     {
-       if (FLUID::solve)
-       {
-          EvolveFluid(nstep,dt,prev_dt,time,stop_time, drag_timing);
-          prev_dt = dt;
-       }
+       EvolveFluid(nstep,dt,prev_dt,time,stop_time,drag_timing);
+       prev_dt = dt;
     }
     BL_PROFILE_VAR_STOP(fluidSolve);
 
@@ -46,31 +43,9 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
 
     if (DEM::solve)
     {
-        // pc is a BMXParticleContainer defined in bmx.H
-        if (finest_level == 0)
-        {
-            //___________________________________________________________________
-            // Single level case: the refined level-set is stored on level 1,
-            // everything else lives on level 0
-            int ilev = 0;
-
-            pc->EvolveParticles(ilev, nstep, dt, time, particle_cost[ilev],
-                                knapsack_weight_type, nsubsteps);
-        }
-        else
-        {
-            //___________________________________________________________________
-            // Multi-level case: each level is treated separately
-
-            for (int lev = 0; lev <= finest_level; lev ++ )
-            {
-
-                pc->EvolveParticles(lev, nstep, dt, time, particle_cost[lev],
-                                    knapsack_weight_type, nsubsteps);
-            }
-        }
+        pc->EvolveParticles(dt, particle_cost, knapsack_weight_type, nsubsteps);
+        pc->split_particles();
     }
-    pc->split_particles();
 
     BL_PROFILE_VAR_STOP(particlesSolve);
 

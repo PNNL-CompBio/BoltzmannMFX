@@ -364,7 +364,7 @@ bmx::fillpatch_Xk ( Vector< MultiFab* > const& X_k_in,
 
   const int l_nchem_species = FLUID::nchem_species;
 
-  for (int lev = 0; lev <= finest_level; lev++) {
+  for (int lev = 0; lev <= finestLevel(); lev++) {
 
     int state_comp, num_comp;
 
@@ -386,7 +386,7 @@ bmx::fillpatch_Dk ( Vector< MultiFab* > const& D_k_in,
 
   const int l_nchem_species = FLUID::nchem_species;
 
-  for (int lev = 0; lev <= finest_level; lev++) {
+  for (int lev = 0; lev <= finestLevel(); lev++) {
 
     int state_comp, num_comp;
 
@@ -405,7 +405,7 @@ void
 bmx::fillpatch_vf ( Vector< MultiFab* > const& vf_in,
                     Real time)
 {
-  for (int lev = 0; lev <= finest_level; lev++) {
+  for (int lev = 0; lev <= finestLevel(); lev++) {
 
     int state_comp, num_comp;
 

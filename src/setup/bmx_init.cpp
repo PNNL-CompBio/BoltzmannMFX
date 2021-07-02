@@ -5,6 +5,7 @@
 #include <bmx_bc_parms.H>
 #include <bmx_dem_parms.H>
 #include <bmx_fluid_parms.H>
+#include <bmx_calc_fluid_coeffs.H>
 #include <bmx_chem_species_parms.H>
 
 using BMXParIter = BMXParticleContainer::BMXParIter;
@@ -187,9 +188,6 @@ void bmx::Init (Real time)
     InitIOChkData();
     InitIOPltData();
 
-    // Note that finest_level = last level
-    finest_level = nlev-1;
-
     /****************************************************************************
      *                                                                          *
      * Generate levels using ErrorEst tagging.                                  *
@@ -215,7 +213,7 @@ void bmx::Init (Real time)
     // with MakeNewLevelFromScratch.
     InitFromScratch(time);
 
-    for (int lev = 1; lev <= finest_level; lev++)
+    for (int lev = 1; lev <= finestLevel(); lev++)
     {
        if (m_verbose > 0)
             std::cout << "Setting refined region at level " << lev
@@ -223,6 +221,8 @@ void bmx::Init (Real time)
 
        MakeNewLevelFromScratch(lev, time, grids[lev], dmap[lev]);
     }
+
+    MakeBCArrays();
 
     /****************************************************************************
      *                                                                          *
@@ -244,7 +244,7 @@ void bmx::Init (Real time)
     // We only do these at level 0
     // ******************************************************
 
-    for (int lev = 0; lev < nlev; lev++)
+    for (int lev = 0; lev <= finestLevel(); lev++)
         bmx_set_bc_type(lev);
 }
 
@@ -320,7 +320,7 @@ void bmx::ChopGrids (const Box& domain, BoxArray& ba, int target_size) const
 }
 
 
-void bmx::MakeNewLevelFromScratch (int lev, Real time,
+void bmx::MakeNewLevelFromScratch (int lev, Real /*time*/,
                                     const BoxArray& new_grids,
                                     const DistributionMapping& new_dmap)
 {
@@ -343,8 +343,8 @@ void bmx::MakeNewLevelFromScratch (int lev, Real time,
 
 
 void bmx::ReMakeNewLevelFromScratch (int lev,
-                                      const BoxArray & new_grids,
-                                      const DistributionMapping & new_dmap)
+                                     const BoxArray & new_grids,
+                                     const DistributionMapping & new_dmap)
 {
     if (ooo_debug) amrex::Print() << "ReMakeNewLevelFromScratch" << std::endl;
     SetBoxArray(lev, new_grids);
@@ -356,13 +356,13 @@ void bmx::ReMakeNewLevelFromScratch (int lev,
     bmx_set_bc_type(lev);
 }
 
-void bmx::InitLevelData (Real time)
+void bmx::InitLevelData (Real /*time*/)
 {
     if (ooo_debug) amrex::Print() << "InitLevelData" << std::endl;
 
     // Allocate the fluid data
     if (FLUID::solve)
-       for (int lev = 0; lev < nlev; lev++)
+       for (int lev = 0; lev <= finestLevel(); lev++)
           AllocateArrays(lev);
 
     ParmParse pp("particles");
@@ -404,9 +404,9 @@ void bmx::InitLevelData (Real time)
           delete particle_cost[lev];
 
       particle_cost.clear();
-      particle_cost.resize(nlev, nullptr);
+      particle_cost.resize(finestLevel()+1, nullptr);
 
-      for (int lev = 0; lev < nlev; lev++)
+      for (int lev = 0; lev <= finestLevel(); lev++)
       {
         particle_cost[lev] = new MultiFab(pc->ParticleBoxArray(lev),
                                           pc->ParticleDistributionMap(lev), 1, 0);
@@ -422,9 +422,9 @@ void bmx::InitLevelData (Real time)
           delete fluid_cost[lev];
 
       fluid_cost.clear();
-      fluid_cost.resize(nlev, nullptr);
+      fluid_cost.resize(finestLevel()+1, nullptr);
 
-      for (int lev = 0; lev < nlev; lev++)
+      for (int lev = 0; lev <= finestLevel(); lev++)
       {
         fluid_cost[lev] = new MultiFab(grids[lev], dmap[lev], 1, 0);
         fluid_cost[lev]->setVal(0.0);
@@ -433,7 +433,7 @@ void bmx::InitLevelData (Real time)
 }
 
 void
-bmx::PostInit (Real& dt, Real time, int restart_flag, Real stop_time)
+bmx::PostInit (Real& dt, Real /*time*/, int restart_flag, Real stop_time)
 {
     if (ooo_debug) amrex::Print() << "PostInit" << std::endl;
 
@@ -452,7 +452,7 @@ bmx::PostInit (Real& dt, Real time, int restart_flag, Real stop_time)
                                          particle_max_grid_size_y,
                                          particle_max_grid_size_z);
 
-          for (int lev = 0; lev < nlev; lev++)
+          for (int lev = 0; lev <= finestLevel(); lev++)
           {
             BoxArray particle_ba(geom[lev].Domain());
             particle_ba.maxSize(particle_max_grid_size);
@@ -491,15 +491,15 @@ bmx::MakeBCArrays ()
       if (bc_khi[lev] != nullptr) delete bc_khi[lev];
     }
 
-    if (ooo_debug) amrex::Print() << "MakeBCArrays" << std::endl;
-    bc_ilo.clear(); bc_ilo.resize(nlev, nullptr);
-    bc_ihi.clear(); bc_ihi.resize(nlev, nullptr);
-    bc_jlo.clear(); bc_jlo.resize(nlev, nullptr);
-    bc_jhi.clear(); bc_jhi.resize(nlev, nullptr);
-    bc_klo.clear(); bc_klo.resize(nlev, nullptr);
-    bc_khi.clear(); bc_khi.resize(nlev, nullptr);
+    if (ooo_debug) amrex::Print() << "MakeBCArrays with finest level " << finestLevel() << std::endl;
+    bc_ilo.clear(); bc_ilo.resize(finestLevel()+1, nullptr);
+    bc_ihi.clear(); bc_ihi.resize(finestLevel()+1, nullptr);
+    bc_jlo.clear(); bc_jlo.resize(finestLevel()+1, nullptr);
+    bc_jhi.clear(); bc_jhi.resize(finestLevel()+1, nullptr);
+    bc_klo.clear(); bc_klo.resize(finestLevel()+1, nullptr);
+    bc_khi.clear(); bc_khi.resize(finestLevel()+1, nullptr);
 
-    for (int lev = 0; lev < nlev; lev++)
+    for (int lev = 0; lev <= finestLevel(); lev++)
     {
        // Define and allocate the integer MultiFab that is the outside adjacent
        // cells of the problem domain.
@@ -532,15 +532,18 @@ bmx::MakeBCArrays ()
 }
 
 void
-bmx::bmx_init_fluid (int is_restarting, Real dt, Real stop_time)
+bmx::bmx_init_fluid (int is_restarting, Real /*dt*/, Real /*stop_time*/)
 {
     if (ooo_debug) amrex::Print() << "bmx_init_fluid" << std::endl;
 
-    Real xlen = geom[0].ProbHi(0) - geom[0].ProbLo(0);
-    Real ylen = geom[0].ProbHi(1) - geom[0].ProbLo(1);
-    Real zlen = geom[0].ProbHi(2) - geom[0].ProbLo(2);
+    // Set to bogus value just to make sure everything gets filled later 
+    for (int lev = 0; lev <= finestLevel(); lev++)
+    {
+         m_leveldata[lev]->X_k->setVal(1.e234);
+         m_leveldata[lev]->D_k->setVal(1.e234);
+    }
 
-    for (int lev = 0; lev < nlev; lev++)
+    for (int lev = 0; lev <= finestLevel(); lev++)
     {
        Box domain(geom[lev].Domain());
 
@@ -548,7 +551,8 @@ bmx::bmx_init_fluid (int is_restarting, Real dt, Real stop_time)
        Real dy = geom[lev].CellSize(1);
        Real dz = geom[lev].CellSize(2);
 
-       const GpuArray<Real, 3> plo = geom[lev].ProbLoArray();
+       const GpuArray<Real, 3> p_lo = geom[lev].ProbLoArray();
+       const GpuArray<Real, 3> p_hi = geom[lev].ProbHiArray();
 
        LevelData& ld = *m_leveldata[lev];
 
@@ -560,11 +564,16 @@ bmx::bmx_init_fluid (int is_restarting, Real dt, Real stop_time)
           const Box& bx = mfi.validbox();
           const Box& sbx = dummy[mfi].box();
 
-          if ( is_restarting ) {
-            init_fluid_parameters(bx, domain, dx, dy, dz, mfi, ld, advect_fluid_chem_species);
-          } else {
-            init_fluid(sbx, bx, domain, mfi, ld, dx, dy, dz, xlen, ylen, zlen, plo,
-                       advect_fluid_chem_species);
+          Array4<Real> const& X_k_arr = ld.X_k->array(mfi);
+          Array4<Real> const& D_k_arr = ld.D_k->array(mfi);
+
+          // Set the initial fluid chem_species mass fractions
+          if (advect_fluid_chem_species) 
+          {
+              if (!is_restarting) 
+                  set_ic_chem_species(sbx, domain, dx, dy, dz, p_lo, p_hi, X_k_arr);
+
+             calc_D_k(bx, domain, dx, dy, dz, D_k_arr);
           }
        }
 
@@ -586,12 +595,16 @@ bmx::bmx_init_fluid (int is_restarting, Real dt, Real stop_time)
     }
 
     // Calculate the initial volume fraction
-    for (int lev = 0; lev < nlev; lev++)
+    for (int lev = 0; lev <= finestLevel(); lev++)
     {
         // Initialize to zero
         (m_leveldata[lev]->vf)->setVal(0.);
 
         // Calculate the fraction of each grid cell not covered by biological cells
-        bmx_calc_volume_fraction(*m_leveldata[lev]->vf);
+        bmx_calc_volume_fraction(lev, *m_leveldata[lev]->vf);
     }
+
+    // Average down from fine to coarse to ensure consistency
+    for (int lev = finestLevel(); lev > 0; lev--)
+        average_down(*m_leveldata[lev]->vf,*m_leveldata[lev-1]->vf, 0, 1, refRatio(lev-1));
 }

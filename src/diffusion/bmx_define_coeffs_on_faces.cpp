@@ -17,10 +17,44 @@ void DiffusionOp::define_coeffs_on_faces ( const Vector< MultiFab const* > D_k_i
     // Number of fluid chem_species
     const int nchem_species = FLUID::nchem_species;
 
+    // Make a copy of diffusion coefficients
+    Vector<MultiFab> D_k_adj(D_k_in.size());
+
+    for (int lev = 0; lev <= finest_level; lev++) 
+    {
+      const BoxArray &ba = D_k_in[lev]->boxArray();
+      const DistributionMapping &dm = D_k_in[lev]->DistributionMap();
+      int ncomp = D_k_in[lev]->nComp();
+      int ngrow = D_k_in[lev]->nGrow();
+      D_k_adj[lev].define(ba, dm, ncomp, ngrow);
+    //  D_k_adj[lev] = *D_k_in[lev];
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+      for (MFIter mfi(*D_k_in[lev],TilingIfNotGPU());
+          mfi.isValid(); ++mfi)
+      {
+        Array4<Real const> const&   d0_arr = D_k_in[lev]->array(mfi);
+        Array4<Real      > const& dadj_arr = D_k_adj[lev].array(mfi);
+        Array4<Real const> const&   vf_arr = vf_in[lev]->array(mfi);
+
+        Box const& bx = mfi.growntilebox(1);
+
+        // These formulas assume that volume fraction = fraction of fluid in grid cell.
+        amrex::ParallelFor(bx, nchem_species, [=]
+          AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+          {
+             dadj_arr(i,j,k,n) = vf_arr(i,j,k) * d0_arr(i,j,k,n) / (1.0-0.45*log(vf_arr(i,j,k)));
+          });
+
+      } // MFIter
+    } // lev
+
     for (int lev = 0; lev <= finest_level; lev++)
     {
         bool use_harmonic_averaging = true;
-        average_cellcenter_to_face( GetArrOfPtrs(chem_species_b[lev]), *D_k_in[lev], 
+        average_cellcenter_to_face( GetArrOfPtrs(chem_species_b[lev]), D_k_adj[lev], 
                                                  amrcore->Geom(lev), nchem_species,
                                                  use_harmonic_averaging );
 
@@ -36,7 +70,7 @@ void DiffusionOp::define_coeffs_on_faces ( const Vector< MultiFab const* > D_k_i
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-        for (MFIter mfi(*D_k_in[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        for (MFIter mfi(D_k_adj[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
           Array4<Real> const& bx_arr = chem_species_b[lev][0]->array(mfi);
           Array4<Real> const& by_arr = chem_species_b[lev][1]->array(mfi);
@@ -47,13 +81,10 @@ void DiffusionOp::define_coeffs_on_faces ( const Vector< MultiFab const* > D_k_i
 
           Box const& xbx = mfi.nodaltilebox(0);
 
-          amrex::Print() << "XBX " << xbx << std::endl;
-          amrex::Print() << "SIZE OF BX_ARR ON THIS GRID " << Box(chem_species_b[lev][0]->array(mfi)) << std::endl;;
-
           amrex::ParallelFor(xbx, nchem_species, [=]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
           {
-              Real z = (k+.5) * dz; 
+              Real z = (static_cast<double>(k)+.5) * dz; 
 
               if (z > zhi)
                  if (vf_arr(i,j,k) == 1. || vf_arr(i-1,j,k) == 1.)
@@ -62,13 +93,10 @@ void DiffusionOp::define_coeffs_on_faces ( const Vector< MultiFab const* > D_k_i
 
           Box const& ybx = mfi.nodaltilebox(1);
 
-          amrex::Print() << "YBX " << ybx << std::endl;
-          amrex::Print() << "SIZE OF BY_ARR ON THIS GRID " << Box(chem_species_b[lev][1]->array(mfi)) << std::endl;;
-
           amrex::ParallelFor(ybx, nchem_species, [=]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
           {
-              Real z = (k+.5) * dz; 
+              Real z = (static_cast<double>(k)+.5) * dz; 
 
               if (z > zhi)
                  if (vf_arr(i,j,k) == 1. || vf_arr(i,j-1,k) == 1.)
@@ -77,14 +105,11 @@ void DiffusionOp::define_coeffs_on_faces ( const Vector< MultiFab const* > D_k_i
 
           Box const& zbx = mfi.nodaltilebox(2);
 
-          amrex::Print() << "ZBX " << zbx << std::endl;
-          amrex::Print() << "SIZE OF BZ_ARR ON THIS GRID " << Box(chem_species_b[lev][2]->array(mfi)) << std::endl;;
-
           amrex::ParallelFor(zbx, nchem_species, [=]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
           {
-              Real zk   = (k+.5) * dz; 
-              Real zkm1 = (k-.5) * dz; 
+              Real zk   = (static_cast<double>(k)+.5) * dz; 
+              Real zkm1 = (static_cast<double>(k)-.5) * dz; 
 
               if ( (zk   > zhi && vf_arr(i,j,k  ) == 1.) || 
                    (zkm1 > zhi && vf_arr(i,j,k-1) == 1.) )

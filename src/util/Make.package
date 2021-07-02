@@ -1,14 +1,8 @@
 CEXE_sources += bmx_set_chem_species_bcs.cpp
-
 CEXE_sources += bmx_fillpatch.cpp
-
 CEXE_sources += bmx_regrid.cpp
+CEXE_sources += bmx_filcc.cpp
 
 CEXE_headers += bmx_filcc.H
-CEXE_sources += bmx_filcc.cpp
-CEXE_headers += bmx_mf_helpers.H
-CEXE_sources += bmx_mf_helpers.cpp
-
 CEXE_headers += bmx_fillpatch_bc.H
-
 CEXE_headers += bmx_algorithm.H

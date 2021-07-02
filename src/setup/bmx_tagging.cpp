@@ -2,7 +2,7 @@
 
 #include <bmx.H>
 
-void bmx::ErrorEst (int lev, TagBoxArray & tags, Real time, int ngrow)
+void bmx::ErrorEst (int lev, TagBoxArray & tags, Real /*time*/, int /*ngrow*/)
 {
     if (ooo_debug) amrex::Print() << "ErrorEst" << std::endl;
 

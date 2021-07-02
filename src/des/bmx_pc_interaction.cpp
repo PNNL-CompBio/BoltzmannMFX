@@ -5,11 +5,8 @@
 
 using namespace amrex;
 
-void BMXParticleContainer::EvolveParticles (int lev,
-                                            int nstep,
-                                            Real dt,
-                                            Real time,
-                                            amrex::MultiFab* cost,
+void BMXParticleContainer::EvolveParticles (Real dt,
+                                            const Vector<MultiFab*> cost,
                                             std::string& knapsack_weight_type,
                                             int& nsubsteps)
 {
@@ -17,6 +14,14 @@ void BMXParticleContainer::EvolveParticles (int lev,
     BL_PROFILE("bmx_dem::EvolveParticles()");
 
     Real eps = std::numeric_limits<Real>::epsilon();
+
+    for (int lev = 0; lev <= finest_level; lev++)
+    {
+
+    int n_at_lev = this->NumberOfParticlesAtLevel(lev);
+    amrex::Print() << "In Evolve Particles with " << n_at_lev << " particles at level " << lev << std::endl;
+
+    if (n_at_lev == 0) continue;
 
     amrex::Print() << "Evolving particles on level: " << lev
                    << " ... with fluid dt " << dt << std::endl;
@@ -36,12 +41,6 @@ void BMXParticleContainer::EvolveParticles (int lev,
     const int debug_level = 0;
 
     /****************************************************************************
-     * Geometry                                                                 *
-     ***************************************************************************/
-
-    const Real* dx = Geom(lev).CellSize();
-
-    /****************************************************************************
      * Init substeps                                                            *
      ***************************************************************************/
 
@@ -51,7 +50,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
     // des_init_time_loop(&dt, &nsubsteps, &subdt);
     if ( dt >= DEM::dtsolid )
     {
-       nsubsteps = amrex::Math::ceil (  dt / DEM::dtsolid );
+       nsubsteps = static_cast<int>(amrex::Math::ceil (  dt / DEM::dtsolid ));
        subdt     =  dt / nsubsteps;
     } else {
        nsubsteps = 1;
@@ -63,17 +62,13 @@ void BMXParticleContainer::EvolveParticles (int lev,
      *   -> particle-particle, and particle-wall forces                         *
      *   -> particle-particle, and particle-wall torques                        *
      ***************************************************************************/
-    std::map<PairIndex, amrex::Gpu::DeviceVector<Real>> tow; // particle-wall torque?
     std::map<PairIndex, amrex::Gpu::DeviceVector<Real>> fc, pfor, wfor; // total force=particle+wall, particle force, wall force?
 
     std::map<PairIndex, bool> tile_has_walls;
 
-    int count = 0;
     for (BMXParIter pti(*this, lev); pti.isValid(); ++pti)
     {
-        const Box& bx = pti.tilebox();
         PairIndex index(pti.index(), pti.LocalTileIndex());
-        tow[index]  = amrex::Gpu::DeviceVector<Real>();
         fc[index]   = amrex::Gpu::DeviceVector<Real>();
         pfor[index] = amrex::Gpu::DeviceVector<Real>();
         wfor[index] = amrex::Gpu::DeviceVector<Real>();
@@ -88,6 +83,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
 
     while (n < nsubsteps)
     {
+        amrex::Print() << "0HERE " << n << std::endl;  
         // Redistribute particles ever so often BUT always update the neighbour
         // list (Note that this fills the neighbour list after every
         // redistribute operation)
@@ -101,6 +97,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
         } else {
             updateNeighbors();
         }
+        amrex::Print() << "1HERE " << n << std::endl;  
 
         /********************************************************************
          * Compute number of Particle-Particle collisions
@@ -173,7 +170,6 @@ void BMXParticleContainer::EvolveParticles (int lev,
 #ifdef _OPENMP
 #pragma omp parallel reduction(+:ncoll) if (amrex::Gpu::notInLaunchRegion())
 #endif
-            count = 0;
             for (BMXParIter pti(*this, lev); pti.isValid(); ++pti)
             {
               PairIndex index(pti.index(), pti.LocalTileIndex());
@@ -206,7 +202,6 @@ void BMXParticleContainer::EvolveParticles (int lev,
                   /**********************************************************
                    * Use interaction cutoff radius, not particle radius
                    **********************************************************/
-                  Real rad2 = p2.rdata(realIdx::a_size);
                   Real r_lm = interaction->maxInteractionDistance(&p1.rdata(0),&p2.rdata(0));
 
                   if (r2 <= (r_lm-small_number)*(r_lm-small_number))
@@ -246,13 +241,10 @@ void BMXParticleContainer::EvolveParticles (int lev,
             // Particle-particle (and particle-wall) forces and torques. We need
             // these to be zero every time we start a new batch (i.e tile and
             // substep) of particles.
-            tow[index].clear();
             fc[index].clear();
-            tow[index].resize(3*ntot, 0.0);
             fc[index].resize(3*ntot, 0.0);
 
             Real* fc_ptr = fc[index].dataPtr();
-            Real* tow_ptr = tow[index].dataPtr();
 
             // For debugging: keep track of particle-particle (pfor) and
             // particle-wall (wfor) forces
@@ -273,7 +265,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
 
             // now we loop over the neighbor list and compute the forces
             amrex::ParallelFor(nrp,
-                [nrp,pstruct,fc_ptr,tow_ptr,nbor_data,
+                [nrp,pstruct,fc_ptr,nbor_data,
 #if defined(AMREX_DEBUG) || defined(AMREX_USE_ASSERTION)
                  eps,
 #endif
@@ -320,14 +312,8 @@ void BMXParticleContainer::EvolveParticles (int lev,
                           normal[1] = dist_y * dist_mag_inv;
                           normal[2] = dist_z * dist_mag_inv;
 
-                          Real overlap_n = r_lm - dist_mag;
-                          Real vrel_trans_norm;
-                          RealVect vrel_t(0.);
-
-
                           RealVect fn(0.);
                           RealVect ft(0.);
-
 
                           interaction->evaluateForce(&diff[0],&particle.rdata(0),&p2.rdata(0),&fn[0]);
 #ifdef _OPENMP
@@ -389,7 +375,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
 
             bool verbose = p_verbose;
             amrex::ParallelFor(nrp,
-              [pstruct,subdt,fc_ptr,ntot,tow_ptr,eps,p_hi,p_lo,
+              [pstruct,subdt,fc_ptr,ntot,eps,p_hi,p_lo,
                x_lo_bc,x_hi_bc,y_lo_bc,y_hi_bc,z_lo_bc,z_hi_bc,
               verbose]
               AMREX_GPU_DEVICE (int i) noexcept
@@ -397,7 +383,6 @@ void BMXParticleContainer::EvolveParticles (int lev,
                 auto& particle = pstruct[i];
 
                 RealVect ppos(particle.pos());
-
 
                 particle.rdata(realIdx::velx) = fc_ptr[i];
                 particle.rdata(realIdx::vely) = fc_ptr[i+ntot];
@@ -417,7 +402,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
 
                 if (verbose) {
                   char sbuf[128];
-                  sprintf(sbuf,"particle: %d position: %12.6f %12.6f %12.6f",i,particle.pos(0),
+                  sprintf(sbuf,"particle: %d position: %14.8f %14.8f %14.8f",i,particle.pos(0),
                       particle.pos(1),particle.pos(2));
                   std::cout << sbuf << std::endl;
                 }
@@ -432,7 +417,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
              * Update runtime cost (used in load-balancing)                     *
              *******************************************************************/
 
-            if (cost)
+            if (cost[lev])
             {
                 // Runtime cost is either (weighted by tile box size):
                 //   * time spent
@@ -446,7 +431,7 @@ void BMXParticleContainer::EvolveParticles (int lev,
                 {
                     wt = nrp / tbx.d_numPts();
                 }
-                (*cost)[pti].plus<RunOn::Device>(wt, tbx);
+                (*cost[lev])[pti].plus<RunOn::Device>(wt, tbx);
             }
         }
 
@@ -483,6 +468,8 @@ void BMXParticleContainer::EvolveParticles (int lev,
         amrex::Print() << "Number of collisions: " << ncoll_total << " in "
                        << nsubsteps << " substeps " << std::endl;
     }
+
+    } // lev
 
 #ifdef _OPENMP
 #pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
