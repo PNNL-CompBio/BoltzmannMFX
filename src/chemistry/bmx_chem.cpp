@@ -203,7 +203,7 @@ void BMXChemistry::xferMeshToParticleAndUpdateChem(Real grid_vol,
   fA = mesh_vals[0];
   fB = mesh_vals[1];
   fC = mesh_vals[2];
-  printf("Mesh Concentration A(in): %18.6e\n",fA);
+  //printf("Mesh Concentration A(in): %18.6e\n",fA);
   // cell concentrations
   Real cA, cB, cC;
   cA = p_vals[0];
@@ -315,7 +315,7 @@ void BMXChemistry::xferParticleToMesh(Real grid_vol, Real *cell_par,
   mesh_vals[0] = p_vals[6];
   mesh_vals[1] = p_vals[7];
   mesh_vals[2] = p_vals[8];
-  printf("Mesh Concentration A(out): %18.6e\n",mesh_vals[0]);
+  //printf("Mesh Concentration A(out): %18.6e\n",mesh_vals[0]);
 #endif
 }
 
