@@ -14,13 +14,13 @@ amrex.fpe_trap_invalid = 1
 
 bmx.fixed_dt = 1
 
-bmx.max_step = 1000
+bmx.max_step = 40000
 #bmx.max_step = 1
 
 dem.solve = bacteria
 bmx.particle_init_type = "AsciiFile"
 
-bmx.verbose = 1
+bmx.verbose = 0
 
 #_______________________________________________________________________
 # Geometry / grids / tiles
@@ -39,6 +39,8 @@ amr.n_cell =  16   16   16
 bmx.tag_region    = true
 bmx.tag_region_lo = 0. 0. 0.001694
 bmx.tag_region_hi = 0.002464 0.002464 0.002002
+#bmx.tag_region_lo = 0. 0. 0.0
+#bmx.tag_region_hi = 0.002464 0.002464 0.002464
 
 # Dont put any buffer region around the tagged cells
 amr.n_error_buf = 0
@@ -116,8 +118,8 @@ chem_species.max_vol = 1.0e-12
 chem_species.k1 = 2.0e-5
 chem_species.kr1 = 2.0e-5
 chem_species.k2 = 0.4
-chem_species.kr2 = 0.006
-chem_species.k3 = 1.0e-5
+chem_species.kr2 = 0.06
+chem_species.k3 = 2.0e-5
 chem_species.kr3 = 2.0e-5
 chem_species.kg = 35.0
 
