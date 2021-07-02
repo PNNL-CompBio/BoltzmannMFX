@@ -8,6 +8,18 @@
 \renewcommand{\baselinestretch}{1.0}
 \begin{document}
 \newcommand{\dt}{\Delta t}
+\newcommand{\Fvec}{\overline{F}}
+\newcommand{\rvec}{\overline{r}}
+\newcommand{\xvec}{\overline{x}}
+\newcommand{\Xvec}{\overline{X}}
+\newcommand{\yvec}{\overline{y}}
+\newcommand{\Gvec}{\overline{G}}
+\newcommand{\svec}{\overline{s}}
+\newcommand{\Dmat}{\overline{\overline{D}}}
+\newcommand{\Rmat}{\overline{\overline{R}}}
+\newcommand{\Imat}{\overline{\overline{I}}}
+\newcommand{\Hmat}{\overline{\overline{H}}}
+\newcommand{\Lag}{\mathcal{L}}
 \title{Simple Model of Cell Growth on a Stationary Nutrient Medium}
 \author{Written by a cast of thousands}
 \maketitle
@@ -105,6 +117,34 @@ on the face seperating the two grid cells. Note that for dimensions greater than
 derivation has ignored a factor of the face area that appears in the formulas for the
 fluxes. However, this factor is the same for the fluxes into and out of grid cells
 sharing a face and cancels out.
+
+If the cells are assumed to occupy a finite amount of space and to represent an obstacle
+to diffusion, then the value of the diffusion coefficient inside each grid cell needs to
+be modified accordingly. We will use the results of Khirevich {\em et al.}~\cite{Khirevich}
+on diffusion in beds of random packed spheres to develop a model for the extracellular
+diffusion coefficient. The effective diffusion coefficient in a bed random packed spheres
+can be modeled by an equation of the form
+\[
+D_{eff} = \frac{\phi}{tau}D_0
+\]
+where $\phi$ is the volume fraction of fluid (the volume fraction of spheres is $1-\phi$),
+$\tau$ is the tortuosity and $D_0$ is the diffusion coefficent in the unoccupied fluid. The
+tortuosity is supposed to account for the fact that diffusing particles may need to take a
+more winding path in order to spread.
+
+Based on earlier work by Weissberg~\cite{Weissberg}, Khirevich
+{\em et al.} tried mapping their results for diffusion in packed beds of spheres using the
+following form for the tortuosity
+\[
+\tau = 1 - p\ln \phi
+\]
+where $p$ is an adjustable parameter. Weissberg originally proposed a value of 0.5 for $p$.
+Depending on the details of the packing algorithm used to create the packed bed of spheres,
+Khirevich {\em et al.} found values of $p$ that varied from 0.43 to 0.5. They also found
+fairly high values of $R^2$ for their fits. From this they concluded that this form of the
+tortuosity was insufficient for their purposes (modeling chromatography columns). However,
+given the uncertainties in modeling biological systems, we feel that this form is accurate
+enought to model extracellular diffusion. We will use a value of 0.45 for $p$.
 
 \section{Biological Cell Dynamics}
 This model will employ a very simple set of equations to describe dynamics within the
@@ -239,6 +279,60 @@ After adjusting the internal concentrations using the these equations, the
 concentrations inside and outside the cell are again adjusted using the
 equations in the first step.
 
+\section{Cell forces}
+The cell forces are calculated using a cubic interaction as described in Mathias
+{\em et al}~\cite{Mathias}. The interactions are pairwise
+additive, with the force between two particles $i$ and $j$ described by a function of the form
+\[
+\Fvec_{ij} = F_{ij}(r_{ij})\frac{\rvec_{ij}}{r_{ij}}
+\]
+where $F_{ij}(r_{ij})$ is a spherically symmetric function of the separation distance between the
+centers of the two particles. For this model, the function $F(r)$ has the generic form
+\begin{eqnarray*}
+F(r) &=& -\mu(r-R_A)^2(r-R_S)\;\;\;\mbox{if}\;\;\;r<R_A \\
+& = & 0\;\;\; \mbox{otherwise}
+\end{eqnarray*}
+The parameter $\mu$ is the stiffness and controls the magnitude of the repulsive and attractive
+interactions. $R_S$ is the equilibrium separation value at which the net force on the particles is zero
+and $R_A$ is the distance at which all pair interactions vanish. For $r<R_S$, the particles repel each
+other while for $R_S<r<R_A$, the particles are attracted to each other. For this model, the values of
+$R_S$ and $R_A$ are functions of the individual particle radii. If particle $i$ has radius $R_i$ and
+particle $j$ has radius $R_j$ then the parameter $R_S$ is chosen as
+\[
+R_S = R_i+R_j
+\]
+The width of the attractive region, $R_A-R_S$, is chosen to have a fixed value $W_A$ for all particle
+interactions. The value of $R_A$ is then
+\[
+R_A = R_i+R_j +W_A
+\]
+Note that the particle radii can increase over time, so even if two particles are in mechanical
+equilibrium at some time $t$, they may start pushing against each other at a later time $t'$ as they
+grow.
+
+Particle also interact with the surface of the growth medium using a similar potential. In this
+the contribution to the force is only in the $z$-direction and is a function $H(z)$ of the height $z$ above
+the growth medium surface. The force has the form
+\begin{eqnarray*}
+H(z) & = & -\xi (z-Z_A)^2(z-Z_S)\;\;\;\mbox{if}\;\;\;0<z<Z_A \\
+& = & \xi Z_A^2Z_S\;\;\;\mbox{if}\;\;\;z<0 \\
+& = & 0\;\;\;\mbox{otherwise}
+\end{eqnarray*}
+The parameter $\xi$ is the stiffness of the interaction, $Z_S$ is the equilibrium distance above the surface
+and $Z_A$ is the point at which all interaction with the surface ends. Between $Z_S<z<Z_A$, particles are
+attracted to the surface, while below $Z_S$ particles are repelled from the surface. Below the surface,
+particles experience a constant upward force. This force is designed primarily to prevent particles from
+getting accidently pushed down into the growth medium. Similar to the pair interaction, for particle $i$,
+the parameter $Z_S$ is given by
+\[
+Z_S = R_i
+\]
+and the parameter $Z_A$ is given by
+\[
+Z_S = R_i + W_Z
+\]
+where $W_Z$ is the width of the attractive region and is assumed to be independent of the particle's size.
+
 \section{Real parameters}
 It is important to come up with semi-realistic parameters for this model that
 accurately reflect the time scales encountered in real systems. If we start with
@@ -364,4 +458,150 @@ The adjusted values are the ones that seem to work in an actual simulation. In m
 to the calculated values with the exception of $k_{-2}$. This value is substantially smaller than the
 original estimate.
 
+\section{Ellipsoidal interactions}
+An ellipsoid that is centered at the origin and whose axes are aligned with the standard coordinate axes
+can be written as
+\[
+\left(\frac{x}{a}\right)^2+\left(\frac{y}{b}\right)^2+\left(\frac{z}{c}\right)^2=1
+\]
+An alternative way of writing this equation is
+\[
+\xvec^T\cdot\Dmat\cdot\xvec=1
+\]
+where the matrix $\Dmat$ is diagonal
+\[
+\Dmat = \left[\begin{array}{ccc}
+a^{-2} & 0 & 0 \\
+0 & b^{-2} & 0 \\
+0 & 0 & c^{-2}
+\end{array}\right]
+\]
+If the ellipsoid is rotated by some rotation $\Rmat$ so that the axes of the ellipsoid no longer coincide
+with the coordinate axes, the equation for the ellipsoid becomes
+\[
+\xvec^T\cdot\Rmat^{T}\cdot\Dmat\cdot\Rmat\cdot\xvec = 1
+\]
+Finally, if the ellipsoid is shifted from the origin and is centered at $\xvec_{0}$, the equation is
+\[
+(\xvec-\xvec_0)^T\cdot\Rmat^{T}\cdot\Dmat\cdot\Rmat\cdot(\xvec-\xvec_0) = 1
+\]
+
+Imagine two non-overlapping ellipsoids described by the vectors $\xvec$ and $\yvec$. We want to find the
+values $\xvec'$ and $\yvec'$ that minimize the separation distance between the ellipsoid surfaces. This
+is equivalent to minimizing the objective function
+\[
+\chi = (\xvec-\yvec)^T\cdot(\xvec-\yvec)
+\]
+subject to the constraints
+\begin{eqnarray*}
+(\xvec-\xvec_0)^T\cdot\Rmat_x^{T}\cdot\Dmat_x\cdot\Rmat_x\cdot(\xvec-\xvec_0)-1 & = & 0 \\
+(\yvec-\yvec_0)^T\cdot\Rmat_y^{T}\cdot\Dmat_y\cdot\Rmat_y\cdot(\yvec-\yvec_0)-1 & = & 0
+\end{eqnarray*}
+
+To solve this system of equations, we use a method proposed by Powell. Writing the constraints as
+\begin{eqnarray*}
+g_x(\xvec) &=& 0\\
+g_y(\yvec) &=& 0
+\end{eqnarray*}
+we can construct a function
+\[
+\Phi(\xvec,\yvec) = \chi(\xvec,\yvec) + \sigma_x\left[g_x(\xvec)+\theta_x\right]^2
++\sigma_y\left[g_y(\yvec)+\theta_y\right]^2
+\]
+Performing an unconstrained minimization of $\Phi$ leads to an estimate of the optimal values of $\xvec'$ and
+$\yvec'$. Refer to these values as $\xvec^{\ast}$ and $\yvec^{\ast}$. The functions $g_x(\xvec^{\ast})$ and
+$g_y(\yvec^{\ast})$ will likely have values that differ from 0 so an improved value for the location of the
+minimum can be obtained by updating the values of $\theta_x$ and $\theta_y$ using the equations
+\begin{eqnarray*}
+\theta_x + g_x(\xvec^{\ast}) &\longmapsto& \theta'_x \\
+\theta_y + g_y(\yvec^{\ast}) &\longmapsto& \theta'_y
+\end{eqnarray*}
+If $\Phi$ doesn't converge or converges too slowly, the values of $\sigma_x$ and $\sigma_y$ can be increased
+to accelerate convergence. This process of modifying $\theta_x$ and $\theta_y$ and increasing $\sigma_x$ and
+$\sigma_y$ is continued until the values $g_x(\xvec^{\ast})$ and $g_y(\yvec^{\ast})$ are sufficiently close
+to zero. At this point $\xvec^{\ast}$ and $\yvec^{\ast}$ represent the values that minimize $\chi$ subject
+to the constraints $g_x=0$ and $g_y=0$.
+
+To actually minimize $\Phi$ for a given set of $\sigma_x$, $\sigma_y$, $\theta_x$, $\theta_y$, we use a
+simple Newton-Raphson scheme. This requires the first and second derivatives of $\chi$ with respect to
+$\xvec$ and $\yvec$. The first derivatives of $\Phi$ have the form
+\begin{eqnarray*}
+\nabla_{\xvec}\Phi &=& 2(\xvec-\yvec) + 2\sigma_x\left[g_x(\xvec)+\theta_x\right]\Rmat_x^T\cdot\Dmat_x
+\cdot\Rmat_x\cdot(\xvec-\xvec_0) \\
+\nabla_{\xvec}\Phi &=& 2(\yvec-\xvec) + 2\sigma_y\left[g_y(\yvec)+\theta_y\right]\Rmat_y^T\cdot\Dmat_y
+\cdot\Rmat_y\cdot(\yvec-\yvec_0)
+\end{eqnarray*}
+Similarly, the second derivatives are of the form
+\begin{eqnarray*}
+\nabla_{\xvec}\nabla_{\xvec} \Phi & = & 2\Imat+4\sigma_x\left[(\xvec-\xvec_0)^T\cdot\Rmat_x^T\cdot\Dmat_x
+\cdot\Rmat_x\right]\left[\Rmat_x^T\cdot\Dmat_x\cdot\Rmat_x\cdot(\xvec-\xvec_0)\right] \\
+& + & 2\sigma_x\left[g_x(\xvec)+\theta_x\right]\Rmat_x^T\cdot\Dmat_x\cdot\Rmat_x \\
+\nabla_{\yvec}\nabla_{\yvec} \Phi & = & 2\Imat+4\sigma_y\left[(\yvec-\yvec_0)^T\cdot\Rmat_y^T\cdot\Dmat_y
+\cdot\Rmat_y\right]\left[\Rmat_y^T\cdot\Dmat_y\cdot\Rmat_y\cdot(\yvec-\yvec_0)\right] \\
+& + & 2\sigma_y\left[g_y(\yvec)+\theta_x\right]\Rmat_y^T\cdot\Dmat_y\cdot\Rmat_x \\
+\nabla_{\xvec}\nabla_{\yvec} \Phi & = & -\Imat
+\end{eqnarray*}
+
+Defining the vectors
+\[
+\Xvec = \left[\begin{array}{c}\xvec\\ \\ \yvec\end{array}\right]
+\]
+\[
+\Gvec = \left[\begin{array}{c}\nabla_{\xvec}\Phi\\ \\ \nabla_{\yvec}\Phi\end{array}\right]
+\]
+and the matrix
+\[
+\Hmat = \left[\begin{array}{cc}\nabla_{\xvec}\nabla_{\xvec}\Phi &
+\nabla_{\xvec}\nabla_{\yvec}\Phi \\ & \\
+\nabla_{\yvec}\nabla_{\xvec}\Phi & \nabla_{\yvec}\nabla_{\yvec}\Phi \end{array}\right]
+\]
+the function $\Phi$ can be expanded about the point $\Xvec_0$ as
+\[
+\Phi(\Xvec) = \Phi(Xvec_0)+(\Xvec-Xvec_0)\cdot\Gvec+\frac{1}{2}(\Xvec-\Xvec_0)^T\cdot\Hmat\cdot(\Xvec-\Xvec_0)
+\]
+where $\Gvec$ and $\Hmat$ are evaluated at $\Xvec_0$. The extremum of this function is easily found by
+calculating the gradient and setting it to zero
+\[
+\Gvec+\Hmat\cdot(\Xvec-\Xvec_0) = 0
+\]
+These are the standard normal equations for the Newton-Raphson procedure. Solving for $\Xvec$ gives
+\[
+\Xvec = \Xvec_0 - \Hmat^{-1}\cdot\Gvec
+\]
+Assuming an initial guess $\Xvec_0$ for the minimum of $\Phi$, an improved estimate of the minimum can be
+obtained using this equation. This can then be iterated on until the minimum no longer improves to within
+some tolerance.
+
+A suitable guess for the initial value of $\xvec$ and $\yvec$ can be obtained by finding the intersection of
+the line joining $\xvec_0$ and $\yvec_0$ with the two ellipsoids. Define the separation vector
+\[
+\svec = \yvec_0-\xvec_0
+\]
+A point $\xvec$ along the separation vector can be written as
+\[
+\xvec = \xvec_0 + \tau\svec
+\]
+for $\tau\in[0,1]$. Substituting this expression into $g_x(\xvec)=0$ gives
+\[
+\tau^2\svec^T\cdot\Rmat_x^T\Dmat_x\cdot\Rmat_x\cdot\svec = 1
+\]
+which is easily solved for $\tau$. A similar analysis can be done to find the intersection with the ellipsoid
+defined by $g_y(\yvec)=0$.
+
+%Expressing the constraints by the functions $g_x(\xvec)=0$ and $g_y(\yvec)=0$, this problem can be written
+%in a standard form
+%\[
+%\Lag = \chi(\xvec,\yvec) + \lambda_x g_x(\xvec) + \lambda_y g_y(\yvec)
+%\]
+%where $\Lag$ is the Lagrangian and $\lambda_x$ and $\lambda_y$ are the Lagrange multipliers for the
+%constraints. The gradients of $\Lag$ are given by the equations
+%\begin{eqnarray*}
+%\nabla_{\xvec}\Lag & = & 2(\xvec-\yvec)+2\lambda_x\Rmat_x^T\cdot\Dmat_x\cdot(\xvec-\xvec_0) \\
+%\nabla_{\yvec}\Lag & = & 2(\yvec-\xvec)+2\lambda_y\Rmat_y^T\cdot\Dmat_y\cdot(\yvec-\yvec_0) \\
+%\nabla_{\lambda_x}\Lag & = & (\xvec-\xvec_0)^T\cdot\Rmat_x^{T}\cdot\Dmat_x\cdot\Rmat_x\cdot(\xvec-\xvec_0)-1 \\
+%\nabla_{\lambda_y}\Lag & = & (\yvec-\yvec_0)^T\cdot\Rmat_y^{T}\cdot\Dmat_y\cdot\Rmat_y\cdot(\yvec-\yvec_0)-1
+%\end{eqnarray*}
+
+\bibliographystyle{unsrt}
+\bibliography{bmx}
 \end{document}
