@@ -148,6 +148,7 @@ class BMXChemistry
    * @param p_vals values of concentrations in particles
    * @param dt time step interval
    */
+  AMREX_GPU_HOST_DEVICE AMREX_INLINE
   void xferParticleToMesh(Real grid_vol, Real *cell_par, Real *mesh_vals,
       Real *p_vals, Real dt);
 
