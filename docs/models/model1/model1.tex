@@ -13,6 +13,7 @@
 \newcommand{\xvec}{\overline{x}}
 \newcommand{\Xvec}{\overline{X}}
 \newcommand{\yvec}{\overline{y}}
+\newcommand{\Yvec}{\overline{Y}}
 \newcommand{\Gvec}{\overline{G}}
 \newcommand{\svec}{\overline{s}}
 \newcommand{\Dmat}{\overline{\overline{D}}}
@@ -443,12 +444,12 @@ $[C_{out}]_0$ & 2.0$\times$10$^{-6}$ M/cm$^3$ & 2.0$\times$10$^{-6}$ M/cm$^3$
     & Initial external concentration of $C$ \\
 $D_A$ & 6$\times 10^{-10}$ cm$^2$/sec & 6$\times 10^{-10}$ cm$^2$/sec & Diffusion coefficient of $A$ \\
 $D_C$ & 6$\times 10^{-10}$ cm$^2$/sec & 6$\times 10^{-10}$ cm$^2$/sec & Diffusion coefficient of $C$ \\
-$k_1$ & 1.0$\times$10$^{-7}$ cm/sec &\color{red}{5.0$\times$10$^{-6}$ cm/sec} & Reaction coefficient \\
-$k_{-1}$ & 1.0$\times$10$^{-7}$ cm/sec &\color{red}{5.0$\times$10$^{-6}$ cm/sec} & Reaction coefficient \\
-$k_2$ & 0.6 sec$^{-1}$ &\color{red}{0.2 sec$^{-1}$} & Reaction coefficient \\
+$k_1$ & 1.0$\times$10$^{-7}$ cm/sec &\color{red}{2.0$\times$10$^{-5}$ cm/sec} & Reaction coefficient \\
+$k_{-1}$ & 1.0$\times$10$^{-7}$ cm/sec &\color{red}{2.0$\times$10$^{-5}$ cm/sec} & Reaction coefficient \\
+$k_2$ & 0.6 sec$^{-1}$ &\color{red}{0.4 sec$^{-1}$} & Reaction coefficient \\
 $k_{-2}$ & 60 moles/(cm$^3$ sec) &\color{red}{0.06 moles/(cm$^3$ sec)} & Reaction coefficient \\
-$k_3$ & 1.0$\times$10$^{-7}$ cm/sec &\color{red}{1.0$\times$10$^{-6}$ cm/sec} & Reaction coefficient \\
-$k_{-3}$ & 1.0$\times$10$^{-7}$ cm/sec &\color{red}{1.0$\times$10$^{-6}$ cm/sec} & Reaction coefficient \\
+$k_3$ & 1.0$\times$10$^{-7}$ cm/sec &\color{red}{2.0$\times$10$^{-5}$ cm/sec} & Reaction coefficient \\
+$k_{-3}$ & 1.0$\times$10$^{-7}$ cm/sec &\color{red}{2.0$\times$10$^{-5}$ cm/sec} & Reaction coefficient \\
 $k_g$ & 35 cm$^3$/moles & 35 cm$^3$/moles & Growth rate coefficient \\
 \hline
 \end{tabular}
@@ -498,7 +499,7 @@ subject to the constraints
 (\yvec-\yvec_0)^T\cdot\Rmat_y^{T}\cdot\Dmat_y\cdot\Rmat_y\cdot(\yvec-\yvec_0)-1 & = & 0
 \end{eqnarray*}
 
-To solve this system of equations, we use a method proposed by Powell. Writing the constraints as
+To solve this system of equations, we use a method proposed by Powell~\cite{Powell}. Writing the constraints as
 \begin{eqnarray*}
 g_x(\xvec) &=& 0\\
 g_y(\yvec) &=& 0
@@ -557,7 +558,7 @@ and the matrix
 \]
 the function $\Phi$ can be expanded about the point $\Xvec_0$ as
 \[
-\Phi(\Xvec) = \Phi(Xvec_0)+(\Xvec-Xvec_0)\cdot\Gvec+\frac{1}{2}(\Xvec-\Xvec_0)^T\cdot\Hmat\cdot(\Xvec-\Xvec_0)
+\Phi(\Xvec) = \Phi(\Xvec_0)+(\Xvec-\Xvec_0)\cdot\Gvec+\frac{1}{2}(\Xvec-\Xvec_0)^T\cdot\Hmat\cdot(\Xvec-\Xvec_0)
 \]
 where $\Gvec$ and $\Hmat$ are evaluated at $\Xvec_0$. The extremum of this function is easily found by
 calculating the gradient and setting it to zero
@@ -567,6 +568,14 @@ calculating the gradient and setting it to zero
 These are the standard normal equations for the Newton-Raphson procedure. Solving for $\Xvec$ gives
 \[
 \Xvec = \Xvec_0 - \Hmat^{-1}\cdot\Gvec
+\]
+Instead of inverting the matrix $\Hmat$, it is possible to solve the linear equation
+\[
+\Hmat\cdot\Yvec = \Gvec
+\]
+for $\Yvec$ and then calculate $\Xvec$ as
+\[
+\Xvec = \Xvec_0 - \Yvec
 \]
 Assuming an initial guess $\Xvec_0$ for the minimum of $\Phi$, an improved estimate of the minimum can be
 obtained using this equation. This can then be iterated on until the minimum no longer improves to within
