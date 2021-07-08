@@ -65,8 +65,7 @@ bmx::EvolveFluid (int nstep,
     bmx_calc_txfr_fluid(time, dt);
 
     // Calculate the fraction of each grid cell not occupied by biological cells
-    for (int lev = 0; lev <= finest_level; lev++)
-        bmx_calc_volume_fraction(lev, *m_leveldata[lev]->vf);
+    bmx_calc_volume_fraction();
 
     // Average down from fine to coarse to ensure consistency
     for (int lev = finest_level; lev > 0; lev--)
