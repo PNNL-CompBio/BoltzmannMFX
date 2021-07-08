@@ -78,12 +78,15 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
   bmx_set_chem_species_bcs(time, get_X_k(), get_D_k());
 
+  long nparticles = 0;
   for (int lev = 0; lev <= finest_level; lev++)
   {
     Box domain(geom[lev].Domain());
 
     bool OnSameGrids = ( (dmap[lev] == (pc->ParticleDistributionMap(lev))) &&
                          (grids[lev].CellEqual(pc->ParticleBoxArray(lev))) );
+
+    nparticles += pc->NumberOfParticlesAtLevel(lev);
 
     // Pointer to Multifab for interpolation
     MultiFab* interp_ptr;
@@ -171,4 +174,5 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
     delete interp_ptr;
 
   } // lev
+  amrex::Print() << "TOTAL PARTICLES "<<nparticles<<std::endl;
 }
