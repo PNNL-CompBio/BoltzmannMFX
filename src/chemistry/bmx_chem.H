@@ -138,20 +138,6 @@ class BMXChemistry
       Real *mesh_vals, Real *p_vals, Real dt);
 
   /**
-   * Calculate transfer increments based on current concentrations in biological
-   * cell and in grid cell
-   * @param grid_vol volume of grid cell that contains biological cell
-   * @param cell_par pointer to cell parameter values
-   * @param cell_vol volume of biological cell
-   * @param cell_area surface area of biological cell
-   * @param mesh_inc values of rate of transfer of concentrations to mesh
-   * @param p_vals values of concentrations in particles
-   * @param dt time step interval
-   */
-  void xferParticleToMesh(Real grid_vol, Real *cell_par, Real *mesh_vals,
-      Real *p_vals, Real dt);
-
-  /**
    * Print concentrations of chemical species in cell
    * @param p_vals values of concentrations in particles
    * @param p_par values of particle parameters

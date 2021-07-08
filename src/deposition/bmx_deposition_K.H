@@ -58,56 +58,63 @@ amrex::Real fcorner (const amrex::Real& ahat,
 
 struct TrilinearDeposition
 {
-  AMREX_GPU_HOST_DEVICE AMREX_INLINE
-  void operator() (amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& plo,
-                   amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& /*dx*/,
-                   amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& dxi,
-                   const amrex::RealVect& pos,
-                   const amrex::Real /*radius*/,
-                   int& i,
-                   int& j,
-                   int& k,
-                   amrex::GpuArray<amrex::GpuArray<amrex::GpuArray<amrex::Real,2>,2>,2>& weights,
-                   const amrex::Real) const
+  int start_part_comp;
+  int start_mesh_comp;
+  int   num_comp;
+
+  AMREX_GPU_DEVICE
+  void operator()
+                  (const BMXParticleContainer::ParticleType& p,
+                   amrex::Array4<amrex::Real> const& rho,
+                   amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& plo,
+                   amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& dxi) const noexcept
   {
-    amrex::Real x = (pos[0] - plo[0]) * dxi[0] + 0.5;
-    amrex::Real y = (pos[1] - plo[1]) * dxi[1] + 0.5;
-    amrex::Real z = (pos[2] - plo[2]) * dxi[2] + 0.5;
+      amrex::Real lx = (p.pos(0) - plo[0]) * dxi[0] + 0.5;
+      amrex::Real ly = (p.pos(1) - plo[1]) * dxi[1] + 0.5;
+      amrex::Real lz = (p.pos(2) - plo[2]) * dxi[2] + 0.5;
 
-    i = static_cast<int>(amrex::Math::floor(x));
-    j = static_cast<int>(amrex::Math::floor(y));
-    k = static_cast<int>(amrex::Math::floor(z));
+      int i = static_cast<int>(amrex::Math::floor(lx));
+      int j = static_cast<int>(amrex::Math::floor(ly));
+      int k = static_cast<int>(amrex::Math::floor(lz));
 
-    amrex::GpuArray<amrex::Real,2> wx;
-    amrex::GpuArray<amrex::Real,2> wy;
-    amrex::GpuArray<amrex::Real,2> wz;
+      amrex::Real xint = lx - i;
+      amrex::Real yint = ly - j;
+      amrex::Real zint = lz - k;
 
-    wx[1] = x - i;
-    wy[1] = y - j;
-    wz[1] = z - k;
+      amrex::Real wx[] = {1.-xint, xint};
+      amrex::Real wy[] = {1.-yint, yint};
+      amrex::Real wz[] = {1.-zint, zint};
 
-    wx[0] = 1.0 - wx[1];
-    wy[0] = 1.0 - wy[1];
-    wz[0] = 1.0 - wz[1];
+      GpuArray<GpuArray<GpuArray<Real,2>,2>,2> weights;
+      amrex::Real total_weight = 0.0;
 
-    amrex::Real total_weight = 0.0;
-
-    for (int ii = 0; ii <= 1; ++ii)
-      for (int jj = 0; jj <= 1; ++jj)
-        for (int kk = 0; kk <= 1; ++kk){
-          {
-            weights[ii][jj][kk] = wx[ii]*wy[jj]*wz[kk];
-            total_weight += weights[ii][jj][kk];
+      for (int ii = 0; ii <= 1; ++ii)
+        for (int jj = 0; jj <= 1; ++jj)
+          for (int kk = 0; kk <= 1; ++kk){
+            {
+              weights[ii][jj][kk] = wx[ii]*wy[jj]*wz[kk];
+              total_weight += weights[ii][jj][kk];
+            }
           }
-        }
 
-    for (int ii = 0; ii <= 1; ++ii)
-      for (int jj = 0; jj <= 1; ++jj)
-        for (int kk = 0; kk <= 1; ++kk)
-          weights[ii][jj][kk] /= total_weight;
+      for (int ii = 0; ii <= 1; ++ii)
+        for (int jj = 0; jj <= 1; ++jj)
+          for (int kk = 0; kk <= 1; ++kk)
+            weights[ii][jj][kk] /= total_weight;
+
+      for (int kk = 0; kk <= 1; ++kk) {
+          for (int jj = 0; jj <= 1; ++jj) {
+              for (int ii = 0; ii <= 1; ++ii) {
+                  for (int icomp = 0; icomp < num_comp; icomp++)
+                  {
+                      amrex::Gpu::Atomic::AddNoRet(&rho(i+ii-1, j+jj-1, k+kk-1, start_mesh_comp+icomp),
+                                                   weights[ii][jj][kk]*p.rdata(start_part_comp+icomp));
+                  }
+              }
+          }
+      }
   }
 };
-
 
 struct TrilinearDPVMSquareDeposition
 {

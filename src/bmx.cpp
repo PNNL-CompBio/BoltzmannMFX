@@ -154,6 +154,16 @@ Vector< MultiFab* > bmx::get_vf () noexcept
   return r;
 }
 
+Vector< MultiFab* > bmx::get_X_rhs () noexcept
+{
+  Vector<MultiFab*> r;
+  r.reserve(m_leveldata.size());
+  for (int lev = 0; lev < m_leveldata.size(); ++lev) {
+    r.push_back(m_leveldata[lev]->X_rhs);
+  }
+  return r;
+}
+
 Vector< MultiFab const*> bmx::get_X_k_const () const noexcept
 {
   Vector<MultiFab const*> r;

@@ -1,7 +1,12 @@
 #include <bmx.H>
 #include <bmx_des_K.H>
+#include <bmx_deposition_K.H>
 #include <bmx_interp_K.H>
 #include <bmx_dem_parms.H>
+#include <bmx_chem_species_parms.H>
+#include <bmx_fluid_parms.H>
+#include <bmx_algorithm.H>
+#include <AMReX_AmrParticles.H>
 
 #ifdef NEW_CHEM
 #include <bmx_chem.H>
@@ -14,96 +19,52 @@
 void
 bmx::bmx_calc_txfr_fluid (Real /*time*/, Real dt)
 {
-  const Real strttime = ParallelDescriptor::second();
+  amrex::Print() << "Entering calc_txfr " << std::endl;
+  int start_part_comp = realIdx::first_data + intIdx::first_real_inc + 2;
+  int start_mesh_comp = 0;
+  int        num_comp = FLUID::nchem_species;
 
-  for (int lev = 0; lev <= finest_level; lev++)
-    m_leveldata[lev]->X_rhs->setVal(0);
+  amrex::Print() << "TXFR: START PART COMP " << start_part_comp << std::endl;
+  amrex::Print() << "TXFR: START MESH COMP " << start_mesh_comp << std::endl;
+  amrex::Print() << "TXFR:  NUM  COMP " << num_comp << std::endl;
 
-  if (finestLevel() > 1)
-    amrex::Abort("For right now"
-        " BMXParticleContainer::TrilinearDepositionFluidDragForce can only"
-        " handle up to 2 levels");
+  // Initialize to zero because the deposition routine will only change values
+  // where there are particles (note this is the default)
+  bool zero_out_input = true;
 
-  Vector< MultiFab* > txfr_ptr(finest_level+1, nullptr);
+  // Here we don't divide the quantity on the mesh after deposition
+  // (note the default is true)
+  bool vol_weight     = false;
 
-  for (int lev = 0; lev <= finest_level; lev++)
-  {
+  if (bmx::m_deposition_scheme == DepositionScheme::trilinear) {
 
-    bool OnSameGrids = ( (dmap[lev] == (pc->ParticleDistributionMap(lev))) &&
-                         (grids[lev].CellEqual(pc->ParticleBoxArray(lev))) );
+     ParticleToMesh(*pc,get_X_rhs(),0,finest_level,
+                    TrilinearDeposition{start_part_comp,start_mesh_comp,num_comp},
+                    zero_out_input, vol_weight);
 
-    if (OnSameGrids) {
+#if 0
+  } else if (bmx::m_deposition_scheme == DepositionScheme::square_dpvm) {
 
-      // If we are already working with the internal mf defined on the
-      // particle_box_array, then we just work with this.
-      txfr_ptr[lev] = m_leveldata[lev]->X_rhs;
+    ParticleToMesh(*pc,get_X_rhsvf(),0,finest_level,DPVMSquareDeposition());
 
-    } else {
+  } else if (bmx::m_deposition_scheme == DepositionScheme::true_dpvm) {
 
-      // If beta_mf is not defined on the particle_box_array, then we need
-      // to make a temporary here and copy into beta_mf at the end.
-      txfr_ptr[lev] = new MultiFab(pc->ParticleBoxArray(lev),
-                                              pc->ParticleDistributionMap(lev),
-                                              m_leveldata[lev]->X_rhs->nComp(),
-                                              m_leveldata[lev]->X_rhs->nGrow());
+    ParticleToMesh(*pc,get_X_rhsvf(),0,finest_level,TrueDPVMDeposition());
 
-    }
+  } else if (bmx::m_deposition_scheme == DepositionScheme::centroid) {
 
-    // We must have ghost cells for each FAB so that a particle in one grid can spread
-    // its effect to an adjacent grid by first putting the value into ghost cells of its
-    // own grid.  The mf->sumBoundary call then adds the value from one grid's ghost cell
-    // to another grid's valid region.
-    if (txfr_ptr[lev]->nGrow() < 1)
-      amrex::Error("Must have at least one ghost cell when in CalcVolumeFraction");
+    ParticleToMesh(*pc,get_X_rhsvf(),0,finest_level,CentroidDeposition());
+#endif
 
-    txfr_ptr[lev]->setVal(0.0, 0, m_leveldata[lev]->X_rhs->nComp(), txfr_ptr[lev]->nGrow());
+  } else {
+    amrex::Abort("Don't know this deposition_scheme!");
   }
-
-  // Deposit the chem_species_rhs to the grid
-  long nparticles = 0;
-  for (int lev = 0; lev <= finest_level; lev++)
-  {
-    const Geometry& gm = Geom(lev);
-
-    int n_at_lev = pc->NumberOfParticlesAtLevel(lev); 
-    nparticles += n_at_lev;
-    pc->InterphaseTxfrDeposition(lev, *txfr_ptr[lev], dt); 
-    amrex::Print() << "DEPOSITION OF " << n_at_lev << " particles at level  " << lev << std::endl;
-
-    // Move any volume deposited outside the domain back into the domain
-    // when BC is either a pressure inlet or mass inflow.
-    bmx_deposition_bcs(lev, *txfr_ptr[lev]);
-
-    // Sum grid boundaries to capture any material that was deposited into
-    // your grid from an adjacent grid.
-    txfr_ptr[lev]->SumBoundary(gm.periodicity());
-    txfr_ptr[lev]->setBndry(0.0);
-
-    // If mf_to_be_filled is not defined on the particle_box_array, then we need
-    // to copy here from txfr_ptr into mf_to_be_filled. I believe that we don't
-    // need any information in ghost cells so we don't copy those.
-
-    if (txfr_ptr[lev] != m_leveldata[lev]->X_rhs) 
-    {
-        m_leveldata[lev]->X_rhs->ParallelCopy(*txfr_ptr[lev], 0, 0, m_leveldata[lev]->X_rhs->nComp());
-        delete txfr_ptr[lev];
-    }
-  }
-  amrex::Print() << "TOTAL PARTICLES " << nparticles << std::endl;
-
-
-  if (m_verbose > 1) {
-    Real stoptime = ParallelDescriptor::second() - strttime;
-
-    ParallelDescriptor::ReduceRealMax(stoptime,ParallelDescriptor::IOProcessorNumber());
-
-    amrex::Print() << "BMXParticleContainer::TrilinearDepositionFluidDragForce time: " << stoptime << '\n';
-  }
+  amrex::Print() << "Leaving calc_txfr " << std::endl;
 }
 
-//
-// Interpolate fluid chem_species onto particle locations
-//
+/**
+ * @brief this function interpolates fluid chem_species onto particle locations
+ */
 void
 bmx::bmx_calc_txfr_particle (Real time, Real dt)
 {
@@ -132,12 +93,6 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
     const int interp_ncomp = 3;
 
     if (m_leveldata[lev]->X_k->nComp() != 3)
-      amrex::Abort("We are not interpolating the right number of components in calc_txfr_particle");
-#else
-    const int interp_ng    = 1;    // Only one layer needed for interpolation
-    const int interp_ncomp = 2;
-
-    if (m_leveldata[lev]->X_k->nComp() != 2)
       amrex::Abort("We are not interpolating the right number of components in calc_txfr_particle");
 #endif
 
@@ -206,26 +161,8 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 #ifdef NEW_CHEM
               Real *cell_par = &p.rdata(0);
               Real *p_vals = &p.rdata(realIdx::first_data);
-#if 0
-              bmxchem->xferMeshToParticle(grid_vol, cell_par, &interp_loc[0],
-                  p_vals, dt);
-              bmxchem->updateChemistry(p_vals, cell_par, dt);
-#else
               bmxchem->xferMeshToParticleAndUpdateChem(grid_vol, cell_par,
-                  &interp_loc[0], p_vals, dt);
-#endif
-#else
-              // Interpolate values from mesh to particles
-              p.rdata(realData::fluid_A) = interp_loc[0];
-              p.rdata(realData::fluid_B) = interp_loc[1];
-
-              amrex::Print() << "VALUE OF X ON PARTICLE " << 
-                  p.rdata(realData::fluid_A) << " " << 
-                  p.rdata(realData::fluid_B) << std::endl;;
-
-              // The particle will consume (dt * 50%) of what the mesh value is
-              p.rdata(realData::consume_A) = -0.5*interp_loc[0];
-              p.rdata(realData::consume_B) = -0.5*interp_loc[1];
+                                                       &interp_loc[0], p_vals, dt);
 #endif
             });
       } // pti

@@ -595,14 +595,7 @@ bmx::bmx_init_fluid (int is_restarting, Real /*dt*/, Real /*stop_time*/)
     }
 
     // Calculate the initial volume fraction
-    for (int lev = 0; lev <= finestLevel(); lev++)
-    {
-        // Initialize to zero
-        (m_leveldata[lev]->vf)->setVal(0.);
-
-        // Calculate the fraction of each grid cell not covered by biological cells
-        bmx_calc_volume_fraction(lev, *m_leveldata[lev]->vf);
-    }
+    bmx_calc_volume_fraction();
 
     // Average down from fine to coarse to ensure consistency
     for (int lev = finestLevel(); lev > 0; lev--)

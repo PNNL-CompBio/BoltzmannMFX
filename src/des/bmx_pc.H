@@ -119,22 +119,6 @@ public:
     ///
     void writeAllAtLevel (int lev = 0);
 
-    void SolidsVolumeDeposition (int lev,
-                                 amrex::MultiFab& mf);
-
-    template <typename FB>
-    void SolidsVolumeDeposition (FB WeightFunc,
-                                 int lev,
-                                 amrex::MultiFab& mf);
-
-    void InterphaseTxfrDeposition (int lev,
-                                   amrex::MultiFab& txfr_mf, amrex::Real dt);
- 
-    template <typename F>
-    void InterphaseTxfrDeposition (F WeightFunc,
-                                   int lev,
-                                   amrex::MultiFab& txfr_mf, amrex::Real dt);
-
     void split_particles ();
 
   private:
