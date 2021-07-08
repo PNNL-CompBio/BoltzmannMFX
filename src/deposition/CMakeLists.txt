@@ -6,5 +6,4 @@ target_sources( bmxcore
    PRIVATE
    bmx_deposition_K.H
    bmx_deposition_bcs.cpp
-   bmx_pc_deposition.cpp
    )
