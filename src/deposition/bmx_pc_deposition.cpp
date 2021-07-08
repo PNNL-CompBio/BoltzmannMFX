@@ -99,7 +99,7 @@ SolidsVolumeDeposition (F WeightFunc, int lev,
         }
 #endif
 
-       // amrex::Print() << "DEPOSITION OF " << nrp << " particles ... " << std::endl;
+        // amrex::Print() << "DEPOSITION OF " << nrp << " particles ... " << std::endl;
 
         amrex::ParallelFor(nrp,
 #ifdef NEW_CHEM
@@ -126,7 +126,7 @@ SolidsVolumeDeposition (F WeightFunc, int lev,
                 for (int kk = -1; kk <= 0; ++kk) {
 
                     amrex::Real weight_vol = weights[ii+1][jj+1][kk+1];
-                    amrex::Gpu::Atomic::Add(&vf_arr(i+ii,j+jj,k+kk,0), weight_vol * p.rdata(realIdx::vol));
+                    amrex::Gpu::Atomic::Add(&vf_arr(i+ii,j+jj,k+kk,0), weight_vol * p.rdata(realIdx::vol) / grid_vol);
 
                 }
               }
