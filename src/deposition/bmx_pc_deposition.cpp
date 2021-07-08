@@ -261,7 +261,7 @@ InterphaseTxfrDeposition (F WeightFunc, int lev,
 
                     amrex::Real weight_vol = weights[ii+1][jj+1][kk+1];
 
-                    amrex::Gpu::Atomic::Add(&txfr_arr(i+ii,j+jj,k+kk,0), weight_vol*chem_incr[nn]);
+                    amrex::Gpu::Atomic::Add(&txfr_arr(i+ii,j+jj,k+kk,nn), weight_vol*chem_incr[nn]);
                   }
 
                 }
