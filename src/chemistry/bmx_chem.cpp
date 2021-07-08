@@ -203,12 +203,14 @@ void BMXChemistry::xferMeshToParticleAndUpdateChem(Real grid_vol,
   fA = mesh_vals[0];
   fB = mesh_vals[1];
   fC = mesh_vals[2];
+  amrex::Print() << "STARTING WITH MESH VALS " << fA << " " << fB << " " << fC << std::endl;
   //printf("Mesh Concentration A(in): %18.6e\n",fA);
   // cell concentrations
   Real cA, cB, cC;
   cA = p_vals[0];
   cB = p_vals[1];
   cC = p_vals[2];
+  amrex::Print() << "STARTING WITH PART VALS " << cA << " " << cB << " " << cC << std::endl;
   // incremental changes
   Real dA, dB, dC;
   dA = 0.5*dt*cell_area*(k1*fA-kr1*cA);
@@ -263,61 +265,15 @@ void BMXChemistry::xferMeshToParticleAndUpdateChem(Real grid_vol,
   p_vals[4] = cB+dB/cell_vol;
   p_vals[5] = cC+dC/cell_vol;
   // save fluid concentration increments
+
   p_vals[6] = -dA/(dt*grid_vol);
   p_vals[7] = -dB/(dt*grid_vol);
   p_vals[8] = -dC/(dt*grid_vol);
-}
 
-/**
- * Calculate transfer increments based on current concentrations in biological
- * cell and in grid cell
- * @param grid_vol volume of grid cell that contains biological cell
- * @param cell_par pointer to cell parameter values
- * @param mesh_inc values to increment concentrations on mesh
- * @param p_vals values of concentrations in particles
- * @param dt time step interval
- */
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void BMXChemistry::xferParticleToMesh(Real grid_vol, Real *cell_par,
-    Real *mesh_vals, Real *p_vals, Real dt)
-{
-#if 0
-  // cell parameters
-  Real cell_vol = cell_par[realIdx::vol];
-  Real cell_area = cell_par[realIdx::area];
-  // fluid concentrations
-  Real fA, fB, fC;
-  fA = p_vals[3];
-  fB = p_vals[4];
-  fC = p_vals[5];
-  // cell concentrations
-  Real cA, cB, cC;
-  cA = p_vals[0];
-  cB = p_vals[1];
-  cC = p_vals[2];
-  // incremental changes
-  Real dA, dB, dC;
-  dA = dt*cell_area*(k1*fA-kr1*cA);
-  dB = 0.0;
-  dC = dt*cell_area*(k3*fC-kr3*cC);
-  // adjust cell concentrations
-  p_vals[0] = p_vals[0]+dA/cell_vol;
-  p_vals[1] = p_vals[1]+dB/cell_vol;
-  p_vals[2] = p_vals[2]+dC/cell_vol;
-  // fluid concentration increments
-  mesh_vals[0] = -dA/(dt*grid_vol);
-  mesh_vals[1] = -dB/(dt*grid_vol);
-  mesh_vals[2] = -dC/(dt*grid_vol);
-#else
+  // Now update the actual particle values 
   p_vals[0] = p_vals[3];
   p_vals[1] = p_vals[4];
   p_vals[2] = p_vals[5];
-
-  mesh_vals[0] = p_vals[6];
-  mesh_vals[1] = p_vals[7];
-  mesh_vals[2] = p_vals[8];
-  //printf("Mesh Concentration A(out): %18.6e\n",mesh_vals[0]);
-#endif
 }
 
 /**

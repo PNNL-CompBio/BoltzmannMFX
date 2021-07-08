@@ -12,15 +12,19 @@ void bmx::bmx_calc_volume_fraction ()
   int start_mesh_comp = 0;
   int        num_comp = 1;
 
+  // Initialize to zero because the deposition routine will only change values
+  // where there are particles (note this is the default) 
+  bool zero_out_input = true;
+
+  // Divide the quantity on the mesh after deposition so it is relative to
+  // the volume of the cell (note this is the default) 
+  bool vol_weight     = true;
+
   if (bmx::m_deposition_scheme == DepositionScheme::trilinear) 
   {
-      // Initialize to zero because the deposition routine will only change values where there
-      // are particles
-      Real zero_out_input = true;
-
       ParticleToMesh(*pc,get_vf(),0,finest_level,
-                     TrilinearDeposition_new{start_part_comp,start_mesh_comp,num_comp},
-                     zero_out_input);
+                     TrilinearDeposition{start_part_comp,start_mesh_comp,num_comp},
+                     zero_out_input, vol_weight);
 #if 0
   } else if (bmx::m_deposition_scheme == DepositionScheme::square_dpvm) {
 
@@ -55,8 +59,5 @@ void bmx::bmx_calc_volume_fraction ()
     // Fill the boundaries so we calculate the correct average
     // solids volume fraction for periodic boundaries.
     vf.FillBoundary(gm.periodicity());
-
-    amrex::Print() << "AFTER" << std::endl;
-    print_state(vf,IntVect(7,7,11));
   }
 }
