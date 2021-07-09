@@ -1,6 +1,4 @@
 #include <bmx.H>
-#include <bmx_pc.H>
-#include <bmx_chem.H>
 #include <bmx_deposition_K.H>
 #include <AMReX_AmrParticles.H>
 

@@ -127,6 +127,14 @@ class bmx : public AmrCore
     void set_bcrec_lo (const int lev, const int dir, const int l_type);
     void set_bcrec_hi (const int lev, const int dir, const int l_type);
 
+    void EvolveFluid (int nstep, Real & dt, Real & time, Real & prev_dt, Real stop_time, Real & drag_timing);
+
+    //! Tagging cells for refinement
+    virtual void ErrorEst (int lev,
+                           TagBoxArray & tags,
+                           Real time,
+                           int ngrow) override;
+
     ////////////////////////////////////////////////////////////////////////////
     //
     // Diffusion
@@ -136,11 +144,6 @@ class bmx : public AmrCore
     std::shared_ptr<DiffusionOp> diffusion_op;
 
   protected:
-    //! Tagging cells for refinement
-    virtual void ErrorEst (int lev,
-                           TagBoxArray & tags,
-                           Real time,
-                           int ngrow) override;
 
     //! Make a new level using provided BoxArray and DistributionMapping and
     //! fill with interpolated coarse level data. Called by AmrCore::regrid.
@@ -213,8 +216,6 @@ class bmx : public AmrCore
     void WriteJobInfo (const std::string & dir ) const;
 
     static void GotoNextLine (std::istream & is);
-
-    void EvolveFluid (int nstep, Real & dt, Real & time, Real & prev_dt, Real stop_time, Real & drag_timing);
 
     void check_for_nans (int lev);
 

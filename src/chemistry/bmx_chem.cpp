@@ -1,9 +1,15 @@
 #include <stdio.h>
-#include <math.h>
 #include <bmx.H>
 #include <bmx_fluid_parms.H>
-#include <bmx_dem_parms.H>
 #include <bmx_chem.H>
+
+amrex::Real BMXChemistry::k1 = 0.0;
+amrex::Real BMXChemistry::k2 = 0.0;
+amrex::Real BMXChemistry::k3 = 0.0;
+amrex::Real BMXChemistry::kr1 = 0.0;
+amrex::Real BMXChemistry::kr2 = 0.0;
+amrex::Real BMXChemistry::kr3 = 0.0;
+amrex::Real BMXChemistry::kg = 0.0;
 
 BMXChemistry *BMXChemistry::p_instance = NULL;
 
@@ -28,7 +34,6 @@ BMXChemistry::BMXChemistry()
   p_num_reals = 2*p_num_species;
   p_num_ints = 0;
   p_inc_offset = p_num_species;
-  p_pi = 4.0*atan(1.0);
   p_verbose = false;
 }
 
@@ -70,7 +75,7 @@ void BMXChemistry::setParams(const char *file)
   p_overlap = 0.2;
   /* figure out cutoff for neighbor list */
   Real vol = SPECIES::max_vol;
-  Real radius = pow((3.0*vol/(4.0*p_pi)),1.0/3.0);
+  Real radius = pow((3.0*vol/(4.0*M_PI)),1.0/3.0);
   ParmParse ppF("cell_force");
   Real width;
   ppF.get("boundary_width",width);
@@ -101,179 +106,6 @@ void BMXChemistry::getVarArraySizes(int *num_ints, int *num_reals, int *tot_ints
   *num_ints = p_num_ivals;
   *tot_reals = p_num_reals;
   *tot_ints = p_num_ints;
-}
-
-/**
- * Transfer mesh values to internal concentrations
- * @param grid_vol volume of grid cell that contains biological cell
- * @param cell_par pointer to cell parameter values
- * @param mesh_vals values of concentrations on mesh
- * @param p_vals values of concentrations in particles
- * @param dt time step interval
- */
-void BMXChemistry::xferMeshToParticle(Real grid_vol, Real *cell_par,
-    Real *mesh_vals, Real *p_vals, Real dt)
-{
-  // cell parameters
-  Real cell_vol = cell_par[realIdx::vol];
-  Real cell_area = cell_par[realIdx::area];
-  // fluid concentrations
-  Real fA, fB, fC;
-  fA = mesh_vals[0];
-  fB = mesh_vals[1];
-  fC = mesh_vals[2];
-  // cell concentrations
-  Real cA, cB, cC;
-  cA = p_vals[0];
-  cB = p_vals[1];
-  cC = p_vals[2];
-  // incremental changes
-  Real dA, dB, dC;
-  dA = dt*cell_area*(k1*fA-kr1*cA);
-  dB = 0.0;
-  dC = dt*cell_area*(k3*fC-kr3*cC);
-  // adjusted cell values
-  p_vals[0] = p_vals[0]+dA/cell_vol;
-  p_vals[1] = p_vals[1]+dB/cell_vol;
-  p_vals[2] = p_vals[2]+dC/cell_vol;
-  // adjusted fluid values
-  p_vals[3] = fA-dA/grid_vol;
-  p_vals[4] = fB-dB/grid_vol;
-  p_vals[5] = fC-dC/grid_vol;
-}
-
-/**
- * Evaluate chemical rate of change inside chemistry module
- * @param pval current values of concentrations in particles
- * @param cell_par pointer to cell parameter values
- * @param dt time step interval
- */
-void BMXChemistry::updateChemistry(Real *p_vals, Real *cell_par, Real dt)
-{
-  // Concentrations of A, B, C
-  Real A, B, C;
-  A = p_vals[0];
-  B = p_vals[1];
-  C = p_vals[2];
-  // Rate of change of A, B, C
-  Real fA, fB, fC;
-  fA = -k2*A + kr2*B*C;
-  fB = k2*A - kr2*B*C;
-  fC = k2*A - kr2*B*C;
-  // Increment volume 
-  Real volume = cell_par[realIdx::vol];
-  Real dvdt = kg*volume*fB;
-  if (fB < 0.0) dvdt = 0.0;
-  cell_par[realIdx::dvdt] = dvdt; 
-  Real new_vol = volume + dt*dvdt;
-  cell_par[realIdx::vol] = new_vol;
-  Real radius = pow((3.0*volume/(4.0*p_pi)),1.0/3.0);
-  cell_par[realIdx::area] = 4.0*p_pi*radius*radius;
-  cell_par[realIdx::dadt] = 2.0*dvdt/radius;
-  cell_par[realIdx::a_size] = radius;
-  cell_par[realIdx::b_size] = radius;
-  cell_par[realIdx::c_size] = radius;
-  // Increment concentrations
-  p_vals[0] += dt*fA;
-  p_vals[1] += dt*fB;
-  p_vals[2] += dt*fC;
-  // Adjust concentrations for change in volume
-  Real ratio = volume/new_vol;
-  p_vals[0] *= ratio;
-  p_vals[1] *= ratio;
-  p_vals[2] *= ratio;
-}
-
-/**
- * Transfer mesh values to internal concentrations and evaluate chemistry
- * @param grid_vol volume of grid cell that contains biological cell
- * @param cell_par pointer to cell parameter values
- * @param mesh_vals values of concentrations on mesh
- * @param p_vals values of concentrations in particles
- * @param dt time step interval
- */
-void BMXChemistry::xferMeshToParticleAndUpdateChem(Real grid_vol,
-    Real *cell_par, Real *mesh_vals, Real *p_vals, Real dt)
-{
-  // cell parameters
-  Real cell_vol = cell_par[realIdx::vol];
-  Real cell_area = cell_par[realIdx::area];
-  // fluid concentrations
-  Real fA, fB, fC;
-  fA = mesh_vals[0];
-  fB = mesh_vals[1];
-  fC = mesh_vals[2];
-  amrex::Print() << "STARTING WITH MESH VALS " << fA << " " << fB << " " << fC << std::endl;
-  //printf("Mesh Concentration A(in): %18.6e\n",fA);
-  // cell concentrations
-  Real cA, cB, cC;
-  cA = p_vals[0];
-  cB = p_vals[1];
-  cC = p_vals[2];
-  amrex::Print() << "STARTING WITH PART VALS " << cA << " " << cB << " " << cC << std::endl;
-  // incremental changes
-  Real dA, dB, dC;
-  dA = 0.5*dt*cell_area*(k1*fA-kr1*cA);
-  dB = 0.0;
-  dC = 0.5*dt*cell_area*(k3*fC-kr3*cC);
-  // adjusted cell values
-  cA += dA/cell_vol;
-  cB += dB/cell_vol;
-  cC += dC/cell_vol;
-  // adjusted fluid values
-  fA = fA-dA/grid_vol;
-  fB = fB-dB/grid_vol;
-  fC = fC-dC/grid_vol;
-
-  // Rate of change of A, B, C
-  Real rA, rB, rC;
-  rA = -k2*cA + kr2*cB*cC;
-  rB = k2*cA - kr2*cB*cC;
-  rC = k2*cA - kr2*cB*cC;
-  // Increment volume 
-  Real volume = cell_par[realIdx::vol];
-  Real dvdt = kg*volume*rB;
-  if (rB < 0.0) dvdt = 0.0;
-  cell_par[realIdx::dvdt] = dvdt; 
-  Real new_vol = volume + dt*dvdt;
-  cell_par[realIdx::vol] = new_vol;
-  Real radius = pow((3.0*volume/(4.0*p_pi)),1.0/3.0);
-  cell_par[realIdx::area] = 4.0*p_pi*radius*radius;
-  cell_par[realIdx::dadt] = 2.0*dvdt/radius;
-  cell_par[realIdx::a_size] = radius;
-  cell_par[realIdx::b_size] = radius;
-  cell_par[realIdx::c_size] = radius;
-  // Increment concentrations
-  cA += dt*rA;
-  cB += dt*rB;
-  cC += dt*rC;
-  // Adjust concentrations for change in volume
-  Real ratio = volume/new_vol;
-  cA *= ratio;
-  cB *= ratio;
-  cC *= ratio;
-
-  // cell parameters
-  cell_vol = cell_par[realIdx::vol];
-  cell_area = cell_par[realIdx::area];
-  // incremental changes
-  dA = 0.5*dt*cell_area*(k1*fA-kr1*cA);
-  dB = 0.0;
-  dC = 0.5*dt*cell_area*(k3*fC-kr3*cC);
-  // save adjusted cell concentrations
-  p_vals[3] = cA+dA/cell_vol;
-  p_vals[4] = cB+dB/cell_vol;
-  p_vals[5] = cC+dC/cell_vol;
-  // save fluid concentration increments
-
-  p_vals[6] = -dA/(dt*grid_vol);
-  p_vals[7] = -dB/(dt*grid_vol);
-  p_vals[8] = -dC/(dt*grid_vol);
-
-  // Now update the actual particle values 
-  p_vals[0] = p_vals[3];
-  p_vals[1] = p_vals[4];
-  p_vals[2] = p_vals[5];
 }
 
 /**
@@ -313,8 +145,8 @@ void BMXChemistry::setChildParameters(Real *p_real_orig, int *p_int_orig,
 
   // fix up values that need to be modified due to splitting
   Real volume = p_real_orig[realIdx::vol]/2.0;
-  Real radius = pow((3.0*volume/(4.0*p_pi)),1.0/3.0);
-  Real area = 4.0*p_pi*radius*radius;
+  Real radius = pow((3.0*volume/(4.0*M_PI)),1.0/3.0);
+  Real area = 4.0*M_PI*radius*radius;
   Real dvdt = p_real_orig[realIdx::dvdt];
   Real dadt = 2.0*dvdt/radius;
   p_real_orig[realIdx::vol] = volume;
@@ -364,8 +196,8 @@ void BMXChemistry::setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
   setChildParameters(par_orig, ipar_orig, par_new, ipar_new);
   // Find new locations for split particles
   Real radius = par_new[realIdx::a_size];
-  Real theta = p_pi * amrex::Random();
-  Real phi = 2.0 * p_pi * amrex::Random();
+  Real theta = M_PI * amrex::Random();
+  Real phi = 2.0 * M_PI * amrex::Random();
   Real nx = sin(theta)*cos(phi);
   Real ny = sin(theta)*sin(phi);
   Real nz = cos(theta);

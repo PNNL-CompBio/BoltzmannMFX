@@ -1,7 +1,7 @@
 #include <bmx_pc.H>
 #include <bmx_dem_parms.H>
 #include <bmx_bc_parms.H>
-#include <bmx_cell_interaction.H>
+#include <bmx_cell_interaction_K.H>
 
 using namespace amrex;
 
@@ -78,12 +78,10 @@ void BMXParticleContainer::EvolveParticles (Real dt,
      * Iterate over sub-steps                                                   *
      ***************************************************************************/
 
-    int ncoll_total = 0;  // Counts total number of collisions
     int n = 0; // Counts sub-steps
 
     while (n < nsubsteps)
     {
-        amrex::Print() << "0HERE " << n << std::endl;  
         // Redistribute particles ever so often BUT always update the neighbour
         // list (Note that this fills the neighbour list after every
         // redistribute operation)
@@ -97,122 +95,6 @@ void BMXParticleContainer::EvolveParticles (Real dt,
         } else {
             updateNeighbors();
         }
-        amrex::Print() << "1HERE " << n << std::endl;  
-
-        /********************************************************************
-         * Compute number of Particle-Particle collisions
-         *******************************************************************/
-        int ncoll = 0;  // Counts number of collisions (over sub-steps)
-
-        if (debug_level > 0) 
-        {
-#ifdef AMREX_USE_GPU
-          if (amrex::Gpu::inLaunchRegion())
-          {
-            // Reduce sum operation for ncoll
-            ReduceOps<ReduceOpSum> reduce_op;
-            ReduceData<int> reduce_data(reduce_op);
-            using ReduceTuple = typename decltype(reduce_data)::Type;
-
-            for (BMXParIter pti(*this, lev); pti.isValid(); ++pti)
-            {
-              PairIndex index(pti.index(), pti.LocalTileIndex());
-
-              const int nrp = GetParticles(lev)[index].numRealParticles();
-
-              auto& plev = GetParticles(lev);
-              auto& ptile = plev[index];
-              auto& aos   = ptile.GetArrayOfStructs();
-              ParticleType* pstruct = aos().dataPtr();
-
-              auto nbor_data = m_neighbor_list[lev][index].data();
-
-              constexpr Real small_number = 1.0e-15;
-
-              reduce_op.eval(nrp, reduce_data, [pstruct,p_realarray,
-                  nbor_data,small_number]
-                AMREX_GPU_DEVICE (int i) -> ReduceTuple
-              {
-                int l_ncoll(0);
-
-                ParticleType p1 = pstruct[i];
-                const RealVect pos1 = p1.pos();
-
-                const auto neighbs = nbor_data.getNeighbors(i);
-                for (auto mit = neighbs.begin(); mit != neighbs.end(); ++mit)
-                {
-                  auto p2 = *mit;
-                  const int j = mit.index();
-
-                  const RealVect pos2 = p2.pos();
-
-                  Real r2 = (pos1 - pos2).radSquared();
-
-                  /**********************************************************
-                   * Use interaction cutoff radius, not particle radius
-                   **********************************************************/
-                  Real r_lm = interaction->maxInteractionDistance(&p1.rdata(0),&p2.rdata(0));
-
-                  if (r2 <= (r_lm-small_number)*(r_lm-small_number))
-                    l_ncoll = 1;
-                }
-
-                return {l_ncoll};
-              });
-            }
-
-            ReduceTuple host_tuple = reduce_data.value();
-            ncoll += amrex::get<0>(host_tuple);
-          }
-          else
-#endif
-          {
-#ifdef _OPENMP
-#pragma omp parallel reduction(+:ncoll) if (amrex::Gpu::notInLaunchRegion())
-#endif
-            for (BMXParIter pti(*this, lev); pti.isValid(); ++pti)
-            {
-              PairIndex index(pti.index(), pti.LocalTileIndex());
-
-              const int nrp = GetParticles(lev)[index].numRealParticles();
-
-              auto& plev = GetParticles(lev);
-              auto& ptile = plev[index];
-              auto& aos   = ptile.GetArrayOfStructs();
-              ParticleType* pstruct = aos().dataPtr();
-
-              auto nbor_data = m_neighbor_list[lev][index].data();
-
-              constexpr Real small_number = 1.0e-15;
-
-              for(int i(0); i < nrp; ++i)
-              {
-                ParticleType p1 = pstruct[i];
-                const RealVect pos1 = p1.pos();
-
-                const auto neighbs = nbor_data.getNeighbors(i);
-                for (auto mit = neighbs.begin(); mit != neighbs.end(); ++mit)
-                {
-                  auto p2 = *mit;
-
-                  const RealVect pos2 = p2.pos();
-
-                  Real r2 = (pos1 - pos2).radSquared();
-
-                  /**********************************************************
-                   * Use interaction cutoff radius, not particle radius
-                   **********************************************************/
-                  Real r_lm = interaction->maxInteractionDistance(&p1.rdata(0),&p2.rdata(0));
-
-                  if (r2 <= (r_lm-small_number)*(r_lm-small_number))
-                  {
-                    ncoll += 1;
-                  }
-                }
-              }
-            }
-          } 
-        } // end if (debug_level > 0)
 
         /********************************************************************
          * Particles routines                                               *
@@ -263,13 +145,18 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 
             constexpr Real small_number = 1.0e-15;
 
+            Real l_bndry_width   = BMXCellInteraction::p_bndry_width;
+            Real l_stiffness     = BMXCellInteraction::p_stiffness;
+            Real l_z_bndry_width = BMXCellInteraction::p_z_bndry_width;
+            Real l_z_stiffness   = BMXCellInteraction::p_z_stiffness;
+            Real l_z_wall        = BMXCellInteraction::p_z_wall;
+            Real l_z_gravity     = BMXCellInteraction::p_z_gravity;
+
             // now we loop over the neighbor list and compute the forces
             amrex::ParallelFor(nrp,
                 [nrp,pstruct,fc_ptr,nbor_data,
-#if defined(AMREX_DEBUG) || defined(AMREX_USE_ASSERTION)
-                 eps,
-#endif
-                 subdt,ntot,interaction]
+                 subdt,ntot,interaction,l_bndry_width,l_stiffness,
+                 l_z_bndry_width, l_z_stiffness, l_z_wall, l_z_gravity]
               AMREX_GPU_DEVICE (int i) noexcept
               {
                   auto particle = pstruct[i];
@@ -292,7 +179,8 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 
                       RealVect diff(dist_x,dist_y,dist_z);
 
-                      Real r_lm = interaction->maxInteractionDistance(&particle.rdata(0),&p2.rdata(0));
+                      Real r_lm = maxInteractionDistance(&particle.rdata(0),&p2.rdata(0),
+                                                         l_bndry_width);
 
                       AMREX_ASSERT_WITH_MESSAGE(
                           not (particle.id() == p2.id() and
@@ -302,8 +190,6 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                       if ( r2 <= (r_lm - small_number)*(r_lm - small_number) )
                       {
                           Real dist_mag = sqrt(r2);
-
-                          AMREX_ASSERT(dist_mag >= eps);
 
                           Real dist_mag_inv = 1.e0/dist_mag;
 
@@ -315,7 +201,8 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                           RealVect fn(0.);
                           RealVect ft(0.);
 
-                          interaction->evaluateForce(&diff[0],&particle.rdata(0),&p2.rdata(0),&fn[0]);
+                          evaluateForce(&diff[0],&particle.rdata(0),&p2.rdata(0),&fn[0],
+                                        l_bndry_width, l_stiffness);
 #ifdef _OPENMP
 #pragma omp critical
                           {
@@ -338,7 +225,8 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                       }
                   } // end of neighbor loop
                   RealVect fw(0.);
-                  interaction->evaluateSurfaceForce(&pos1[0],&particle.rdata(0),&fw[0]);
+                  evaluateSurfaceForce(&pos1[0],&particle.rdata(0),&fw[0],l_z_bndry_width,l_z_stiffness,
+                                       l_z_wall, l_z_gravity );
                   amrex::Gpu::Atomic::Add(&fc_ptr[i         ], fw[0]);
                   amrex::Gpu::Atomic::Add(&fc_ptr[i + ntot  ], fw[1]);
                   amrex::Gpu::Atomic::Add(&fc_ptr[i + 2*ntot], fw[2]);
@@ -400,12 +288,14 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                 particle.pos(1) = ppos[1];
                 particle.pos(2) = ppos[2];
 
+#if !defined(AMREX_USE_GPU)
                 if (verbose) {
                   char sbuf[128];
                   sprintf(sbuf,"particle: %d position: %14.8f %14.8f %14.8f",i,particle.pos(0),
                       particle.pos(1),particle.pos(2));
                   std::cout << sbuf << std::endl;
                 }
+#endif
               });
 
             BL_PROFILE_VAR_STOP(des_time_march);
@@ -438,36 +328,12 @@ void BMXParticleContainer::EvolveParticles (Real dt,
         // Update substep count
         n += 1;
 
-        /************************************************************************
-         * DEBUG: output the number of collisions in current substep            *
-         *        output the max velocity (and forces) in current substep       *
-         *        update max velocities and forces                              *
-         ***********************************************************************/
-
-        if (debug_level > 0) ncoll_total += ncoll;
-
-        if (debug_level > 1) {
-            ParallelDescriptor::ReduceIntSum(ncoll, ParallelDescriptor::IOProcessorNumber());
-            Print() << "Number of collisions: " << ncoll << " at step " << n << std::endl;
-        }
-
-
     } // end of loop over substeps
 
     // Redistribute particles at the end of all substeps (note that the particle
     // neighbour list needs to be reset when redistributing).
     clearNeighbors();
     Redistribute(0, 0, 0, 1);
-
-    /****************************************************************************
-     * DEBUG: output the total number of collisions over all substeps           *
-     *        output the maximum velocity and forces over all substeps          *
-     ***************************************************************************/
-    if (debug_level > 0) {
-        ParallelDescriptor::ReduceIntSum(ncoll_total, ParallelDescriptor::IOProcessorNumber());
-        amrex::Print() << "Number of collisions: " << ncoll_total << " in "
-                       << nsubsteps << " substeps " << std::endl;
-    }
 
     } // lev
 

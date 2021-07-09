@@ -5,6 +5,12 @@
 #include <bmx_cell_interaction.H>
 
 BMXCellInteraction *BMXCellInteraction::p_instance = NULL;
+amrex::Real BMXCellInteraction::p_z_gravity = 0.0;
+amrex::Real BMXCellInteraction::p_bndry_width = 0.0;
+amrex::Real BMXCellInteraction::p_stiffness = 0.0;
+amrex::Real BMXCellInteraction::p_z_bndry_width = 0.0;
+amrex::Real BMXCellInteraction::p_z_stiffness = 0.0;
+amrex::Real BMXCellInteraction::p_z_wall = 0.0;
 
 /**
  * Retrieve instance of BMXCellInteraction object
@@ -57,105 +63,6 @@ void BMXCellInteraction::setParams(const char *file)
   pp.get("wall_adhesion_stiffness",p_z_a_stiffness);
 #endif
 
-  p_zwall = FLUID::surface_location;
-  amrex::Print() << "SURFACE LOCATION: "<<p_zwall<<'\n';
-}
-
-/**
- * Calculate the maximum separation distance for which there is any
- * interaction
- * @param p1 parameters describing particle 1
- * @param p2 parameters describing particle 2
- * @return maximum interatction distance between particles 1 and 2
- */
-Real BMXCellInteraction::maxInteractionDistance(const Real *p1, const Real *p2)
-{
-  Real r1 = p1[realIdx::a_size];
-  Real r2 = p2[realIdx::a_size];
-  return r1+r2+p_bndry_width;
-}
-/**
- * Calculate the force between 2 particles. r12 is computed outside this routine
- * and periodic boundary conditions, if applicable, have already been applied
- * @param r12 position of particle 2 - position of particle 1
- * @param par1 parameters describing particle 1
- * @param par2 parameters describing particle 2
- * @param frc force between particle 1 and particle 2
- */
-void BMXCellInteraction::evaluateForce(const Real *r12, Real *par1,
-    Real *par2, Real *frc)
-{
-  Real rS = par1[realIdx::a_size] + par2[realIdx::a_size];
-  Real rA = rS + p_bndry_width;
-  Real rx, ry, rz, rn;
-  rx = r12[0];
-  ry = r12[1];
-  rz = r12[2];
-  rn = sqrt(rx*rx+ry*ry+rz*rz);
-  rx /= rn;
-  ry /= rn;
-  rz /= rn;
-#if 1
-  Real F;
-  if (rn < rA) {
-    F= p_stiffness*(rn-rA)*(rn-rA)*(rn-rS);
-  } else {
-    F = 0.0;
-  }
-#else
-  Real F;
-  if (rn < rS) {
-    F = p_r_stiffness*(rn-rA)*(rn-rA)*(rn-rS);
-  } else if (rn < rA) {
-    F = p_a_stiffness*(rn-rA)*(rn-rA)*(rn-rS);
-  } else {
-    F = 0.0;
-  }
-//  printf("Force: %f\n",F);
-#endif
-  frc[0] = F*rx;
-  frc[1] = F*ry;
-  frc[2] = F*rz;
-}
-
-/**
- * Calculate force between growth surface and particle
- * @param pos position of particle
- * @param par parameters describing particle
- * @param frc force on particle from wall
- */
-void BMXCellInteraction::evaluateSurfaceForce(const Real *pos, Real *par, Real *frc)
-{
-  frc[0] = 0.0;
-  frc[1] = 0.0;
-  Real z = pos[2];
-  Real dz = z - p_zwall; 
-  Real rS = par[realIdx::a_size];
-  Real rA = rS + p_z_bndry_width;
-  if (dz > 0.0 && dz < rA) {
-#if 1
-    frc[2] = -p_z_stiffness*(dz-rA)*(dz-rA)*(dz-rS);
-#else
-    if (dz < rS) {
-      frc[2] = -p_z_r_stiffness*(dz-rA)*(dz-rA)*(dz-rS);
-    } else if (dz < rA) {
-      frc[2] = -p_z_a_stiffness*(dz-rA)*(dz-rA)*(dz-rS);
-    } else {
-      frc[2] = 0.0;
-    }
-#endif
-  } else if (dz <= 0) {
-#if 1
-    frc[2] = p_z_stiffness*rA*rA*rS;
-#else
-    frc[2] = p_z_r_stiffness*rA*rA*rS;
-#endif
-  } else {
-    frc[2] = 0.0;
-  }
-#if 1
-  frc[2] -= p_z_gravity*p_z_stiffness*rA*rA*rS;
-#else
-  frc[2] -= p_z_gravity*p_z_r_stiffness*rA*rA*rS;
-#endif
+  p_z_wall = FLUID::surface_location;
+  amrex::Print() << "SURFACE LOCATION: "<<p_z_wall<<'\n';
 }

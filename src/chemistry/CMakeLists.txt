@@ -5,7 +5,9 @@ target_include_directories( bmxcore
 target_sources( bmxcore
    PRIVATE
    bmx_chem.H
+   bmx_chem_K.H
    bmx_cell_interaction.H
+   bmx_cell_interaction_K.H
    bmx_chem.cpp
    bmx_cell_interaction.cpp
    )

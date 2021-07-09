@@ -115,6 +115,7 @@ class BMXChemistry
    * @param p_vals values of concentrations in particles
    * @param dt time step interval
    */
+  AMREX_GPU_HOST_DEVICE AMREX_INLINE
   void xferMeshToParticle(Real grid_vol, Real *cell_par, Real *mesh_vals,
       Real *p_vals, Real dt);
 
@@ -134,6 +135,7 @@ class BMXChemistry
    * @param p_vals values of concentrations in particles
    * @param dt time step interval
    */
+  AMREX_GPU_HOST_DEVICE AMREX_INLINE
   void xferMeshToParticleAndUpdateChem(Real grid_vol, Real *cell_par,
       Real *mesh_vals, Real *p_vals, Real dt);
 
@@ -171,6 +173,13 @@ class BMXChemistry
    */
   void setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig, Real *par_new,
       int *ipar_orig, int *ipar_new);
+
+  // Hardwired variables for ABC model
+  static Real k1, kr1;   // rate coefficients for species A into and out of biological cell
+  static Real k2, kr2;   // rate coefficients for converting A into B and C inside biological cell
+  static Real k3, kr3;   // rate coefficients for species C into and out of biological cell
+  static Real kg;        // cell growth coefficient
+
   protected:
   /**
    * Constructor
@@ -190,20 +199,12 @@ class BMXChemistry
   int p_num_ints;    // Total number of int values allocated in model
   int p_inc_offset;  // Offset of increments relative to start of species data
 
-  // Hardwired variables for ABC model
-  Real k1, kr1;   // rate coefficients for species A into and out of biological cell
-  Real k2, kr2;   // rate coefficients for converting A into B and C inside biological cell
-  Real k3, kr3;   // rate coefficients for species C into and out of biological cell
-  Real kg;        // cell growth coefficient
-
   // Fraction of overlap
   Real p_overlap;
 
   // Flag for verbose output
   bool p_verbose;
 
-  // Value of pi
-  Real p_pi;
   static BMXChemistry *p_instance;
 };
 #endif

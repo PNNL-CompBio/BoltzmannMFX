@@ -1,15 +1,12 @@
 #include <bmx.H>
-#include <bmx_des_K.H>
 #include <bmx_deposition_K.H>
 #include <bmx_interp_K.H>
-#include <bmx_dem_parms.H>
-#include <bmx_chem_species_parms.H>
 #include <bmx_fluid_parms.H>
-#include <bmx_algorithm.H>
 #include <AMReX_AmrParticles.H>
 
 #ifdef NEW_CHEM
 #include <bmx_chem.H>
+#include <bmx_chem_K.H>
 #endif
 
 /**
@@ -140,6 +137,14 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
       Real grid_vol = dx[0]*dx[1]*dx[2];
 
+      Real l_kg  = BMXChemistry::kg;
+      Real l_k1  = BMXChemistry::k1;
+      Real l_k2  = BMXChemistry::k2;
+      Real l_k3  = BMXChemistry::k3;
+      Real l_kr1 = BMXChemistry::kr1;
+      Real l_kr2 = BMXChemistry::kr2;
+      Real l_kr3 = BMXChemistry::kr3;
+
       for (BMXParIter pti(*pc, lev); pti.isValid(); ++pti)
       {
         auto& particles = pti.GetArrayOfStructs();
@@ -150,7 +155,8 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
         const auto& interp_array = interp_ptr->array(pti);
 
         amrex::ParallelFor(np,
-            [pstruct,interp_array,plo,dxi,bmxchem,grid_vol,dt]
+            [pstruct,interp_array,plo,dxi,bmxchem,grid_vol,dt,
+             l_k1,l_k2,l_k3,l_kr1,l_kr2,l_kr3,l_kg]
             AMREX_GPU_DEVICE (int pid) noexcept
               {
               // Local array storing interpolated values
@@ -164,8 +170,10 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 #ifdef NEW_CHEM
               Real *cell_par = &p.rdata(0);
               Real *p_vals = &p.rdata(realIdx::first_data);
-              bmxchem->xferMeshToParticleAndUpdateChem(grid_vol, cell_par,
-                                                       &interp_loc[0], p_vals, dt);
+              xferMeshToParticleAndUpdateChem(grid_vol, cell_par,
+                                              &interp_loc[0], p_vals, dt,
+                                              l_k1, l_k2, l_k3,
+                                              l_kr1, l_kr2, l_kr3, l_kg);
 #endif
             });
       } // pti
