@@ -62,6 +62,7 @@ BMXParticleContainer::split_particles ()
         // Fill new particle data. If particle pid is split, the new particle
         // is at index np + poffsets[pid];
         auto poffsets = offsets.data();
+        int my_proc = amrex::ParallelDescriptor::MyProc();
         amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE (int pid) noexcept
         {
             BMXParticleContainer::ParticleType& p_orig = pstruct[pid];
@@ -75,7 +76,7 @@ BMXParticleContainer::split_particles ()
                 std::printf("MAKING NEW PARTICLE FROM VOL = %f \n", p_par[realIdx::vol]);
                 ParticleType& p = pstruct[np+poffsets[pid]];
                 p.id()  = next_pid + poffsets[pid];
-                p.cpu() = amrex::ParallelDescriptor::MyProc();
+                p.cpu() = my_proc;
 
                 Real *pos_orig = &p_orig.pos(0);
                 Real *pos_new  = &p.pos(0);
