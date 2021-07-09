@@ -22,22 +22,22 @@ BMXParticleContainer::split_particles ()
 
         const int np = particles.size();
 
-        // count how many particles will be split
-        Gpu::DeviceVector<unsigned int> counts(np+1, 0);
-        auto pcounts = counts.data();
+        // whether each particle will be split
+        Gpu::DeviceVector<unsigned int> do_split(np+1, 0);
+        auto do_split_p = do_split.data();
         amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE (int i) noexcept
         {
             BMXParticleContainer::ParticleType& p = pstruct[i];
             if (bmxchem->checkSplit(&p.rdata(0), &p.rdata(realIdx::first_data)))
             {
-                pcounts[i] = 1;
+                do_split_p[i] = 1;
             }
         });
         Gpu::Device::synchronize();
 
         // Prefix sum to count total number of new particles to create
         Gpu::DeviceVector<unsigned int> offsets(np);
-        Gpu::exclusive_scan(counts.begin(), counts.end(), offsets.begin());
+        Gpu::exclusive_scan(do_split.begin(), do_split.end(), offsets.begin());
         unsigned int num_split;
 #ifdef AMREX_USE_GPU
         Gpu::dtoh_memcpy(&num_split,offsets.dataPtr()+np,sizeof(unsigned int));
@@ -45,8 +45,9 @@ BMXParticleContainer::split_particles ()
         std::memcpy(&num_split,offsets.dataPtr()+np,sizeof(unsigned int));
 #endif
 
-        // make room for new particles
+        // make room for new particles - invalidates iterators, so get the ptr again
         particle_tile.resize(np+num_split);
+        pstruct = particles().dataPtr();
 
         // Update NextID to include particles created in this function
         Long next_pid;
@@ -61,7 +62,6 @@ BMXParticleContainer::split_particles ()
         // Fill new particle data. If particle pid is split, the new particle
         // is at index np + poffsets[pid];
         auto poffsets = offsets.data();
-        pstruct = particles().dataPtr();
         amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE (int pid) noexcept
         {
             BMXParticleContainer::ParticleType& p_orig = pstruct[pid];
@@ -70,7 +70,7 @@ BMXParticleContainer::split_particles ()
             // into two new particles
             Real* p_par =  &p_orig.rdata(0);
             //            std::printf("TESTING PARTICLE WITH VOL = %d %f \n", (Long) p_orig.id(), p_par[realIdx::vol]);
-            if (pcounts[pid])
+            if (do_split_p[pid])
             {
                 std::printf("MAKING NEW PARTICLE FROM VOL = %f \n", p_par[realIdx::vol]);
                 ParticleType& p = pstruct[np+poffsets[pid]];
