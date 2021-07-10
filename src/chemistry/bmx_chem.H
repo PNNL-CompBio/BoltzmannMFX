@@ -146,39 +146,17 @@ class BMXChemistry
    */
   void printCellConcentrations(Real *p_vals, Real *p_par);
 
-  /**
-   * Duplicate data from original particle to child when splitting
-   * @param p_real_orig pointer to real values from original particle
-   * @param p_int_orig pointer to integer values from original particle
-   * @param p_real_child pointer to real values on child  particle
-   * @param p_int_child pointer to integer values on child particle
-   */
-  void setChildParameters(Real *p_real_orig, int *p_int_orig, Real *p_real_child,
-      int *p_int_child);
-
-  /**
-   * Check to see if particle meets criteria for splitting
-   * @param p_par particle parameters
-   * @param p_conc species concentrations
-   * @return true if particle should split
-   */
-  bool checkSplit(Real *p_par, Real *p_conc);
-
-  /**
-   * Create positions and parameter values for new particle pair. This consist
-   * of the original particle and a new particle
-   * @param pos_orig, pos_new positions of original and new particles
-   * @param par_orig, par_new parameter values of original and new particles
-   * @param ipar_orig, ipar_new integer parameter values of original and new particles
-   */
-  void setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig, Real *par_new,
-      int *ipar_orig, int *ipar_new);
-
   // Hardwired variables for ABC model
   static Real k1, kr1;   // rate coefficients for species A into and out of biological cell
   static Real k2, kr2;   // rate coefficients for converting A into B and C inside biological cell
   static Real k3, kr3;   // rate coefficients for species C into and out of biological cell
   static Real kg;        // cell growth coefficient
+
+  // Fraction of overlap
+  static Real p_overlap;
+
+  static int p_num_reals;   // Total number of real values allocated in model
+  static int p_num_ints;    // Total number of int values allocated in model
 
   protected:
   /**
@@ -195,12 +173,7 @@ class BMXChemistry
 
   int p_num_species; // Total number chemical species in model
   int p_num_ivals;   // Total number integer settings in model
-  int p_num_reals;   // Total number of real values allocated in model
-  int p_num_ints;    // Total number of int values allocated in model
   int p_inc_offset;  // Offset of increments relative to start of species data
-
-  // Fraction of overlap
-  Real p_overlap;
 
   // Flag for verbose output
   bool p_verbose;

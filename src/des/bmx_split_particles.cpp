@@ -1,5 +1,8 @@
 #include <bmx.H>
+#include <bmx_chem.H>
+#include <bmx_chem_K.H>
 #include <bmx_des_K.H>
+#include <bmx_chem_species_parms.H>
 
 /**
  * @brief this function splits particles if some criterion is met
@@ -8,6 +11,11 @@ void
 BMXParticleContainer::split_particles ()
 {
   BMXChemistry *bmxchem = BMXChemistry::instance();
+
+  Real l_max_vol  = SPECIES::max_vol; 
+  Real l_overlap  = BMXChemistry::p_overlap;
+  int l_num_reals = BMXChemistry::p_num_reals;
+  int l_num_ints  = BMXChemistry::p_num_ints;
 
   for (int lev = 0; lev <= finest_level; lev++) {
 
@@ -28,7 +36,7 @@ BMXParticleContainer::split_particles ()
         amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE (int i) noexcept
         {
             BMXParticleContainer::ParticleType& p = pstruct[i];
-            if (bmxchem->checkSplit(&p.rdata(0), &p.rdata(realIdx::first_data)))
+            if (checkSplit(&p.rdata(0), &p.rdata(realIdx::first_data), l_max_vol))
             {
                 do_split_p[i] = 1;
             }
@@ -70,10 +78,9 @@ BMXParticleContainer::split_particles ()
             // Check to see if particle satisfies some criteria for splitting
             // into two new particles
             Real* p_par =  &p_orig.rdata(0);
-            // std::printf("TESTING PARTICLE WITH VOL = %d %f \n", (Long) p_orig.id(), p_par[realIdx::vol]);
             if (do_split_p[pid])
             {
-                std::printf("MAKING NEW PARTICLE FROM VOL = %f \n", p_par[realIdx::vol]);
+                // std::printf("MAKING NEW PARTICLE FROM VOL = %f \n", p_par[realIdx::vol]);
                 ParticleType& p = pstruct[np+poffsets[pid]];
                 p.id()  = next_pid + poffsets[pid];
                 p.cpu() = my_proc;
@@ -89,8 +96,9 @@ BMXParticleContainer::split_particles ()
 
                 // Set parameters on new particle base on values from
                 // original particle
-                bmxchem->setNewCell(pos_orig, pos_new, par_orig,
-                                    par_new, ipar_orig, ipar_new);
+                setNewCell(pos_orig, pos_new, par_orig,
+                           par_new, ipar_orig, ipar_new,
+                           l_overlap, l_num_reals, l_num_ints);
 
                 //                std::printf("OLD VOLUME OUT = %f \n", par_orig[realIdx::vol]);
                 //                std::printf("NEW VOLUME OUT = %f \n", par_new[realIdx::vol]);
