@@ -21,7 +21,11 @@ void bmx::bmx_calc_volume_fraction ()
   if (bmx::m_deposition_scheme == DepositionScheme::trilinear) 
   {
       ParticleToMesh(*pc,get_vf(),0,finest_level,
+#ifndef DEP_DEBUG
+                     TrilinearDeposition{start_mesh_comp,num_comp},
+#else
                      TrilinearDeposition{start_part_comp,start_mesh_comp,num_comp},
+#endif
                      zero_out_input, vol_weight);
 #if 0
   } else if (bmx::m_deposition_scheme == DepositionScheme::square_dpvm) {

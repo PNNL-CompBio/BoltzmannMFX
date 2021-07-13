@@ -35,9 +35,15 @@ BMXChemistry::BMXChemistry()
 {
   p_num_species = 3;
   p_num_ivals = 0;
+#ifndef DEP_DEBUG
+  p_num_reals = 3*p_num_species;
+  p_num_ints = 0;
+  p_inc_offset = 2*p_num_species;
+#else
   p_num_reals = 2*p_num_species;
   p_num_ints = 0;
   p_inc_offset = p_num_species;
+#endif
   p_verbose = false;
 }
 

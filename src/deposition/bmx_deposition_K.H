@@ -58,7 +58,9 @@ amrex::Real fcorner (const amrex::Real& ahat,
 
 struct TrilinearDeposition
 {
+#ifdef DEP_DEBUG
   int start_part_comp;
+#endif
   int start_mesh_comp;
   int   num_comp;
 
@@ -88,6 +90,13 @@ struct TrilinearDeposition
       GpuArray<GpuArray<GpuArray<Real,2>,2>,2> weights;
       amrex::Real total_weight = 0.0;
 
+#ifndef DEP_DEBUG
+//      const amrex::Real *p_vals = &p.rdata(realIdx::first_data);
+//      const amrex::Real *chem_incr = p_vals + p.idata(intIdx::first_real_inc);
+      const int start_part_comp = realIdx::first_data + p.idata(intIdx::first_real_inc);
+      printf("p[%d] FIRST_REAL_INC: %d\n",ParallelDescriptor::MyProc(),start_part_comp);
+#endif
+
       for (int ii = 0; ii <= 1; ++ii)
         for (int jj = 0; jj <= 1; ++jj)
           for (int kk = 0; kk <= 1; ++kk){
@@ -107,8 +116,14 @@ struct TrilinearDeposition
               for (int ii = 0; ii <= 1; ++ii) {
                   for (int icomp = 0; icomp < num_comp; icomp++)
                   {
+#ifndef DEP_DEBUG
                       amrex::Gpu::Atomic::AddNoRet(&rho(i+ii-1, j+jj-1, k+kk-1, start_mesh_comp+icomp),
-                                                   weights[ii][jj][kk]*p.rdata(start_part_comp+icomp));
+//                                                   weights[ii][jj][kk]*chem_incr[icomp]);
+			                            weights[ii][jj][kk]*p.rdata(start_part_comp+icomp));
+#else
+                      amrex::Gpu::Atomic::AddNoRet(&rho(i+ii-1, j+jj-1, k+kk-1, start_mesh_comp+icomp),
+			                            weights[ii][jj][kk]*p.rdata(start_part_comp+icomp));
+#endif
                   }
               }
           }

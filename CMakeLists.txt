@@ -45,6 +45,7 @@ endif()
 
 # Turn on new chemistry module
 add_compile_definitions(NEW_CHEM)
+add_compile_definitions(DEP_DEBUG)
 
 # We want to offer the user some core options, i.e. MPI, OpenMP, CUDA, HYPRE
 # and floating-point exceptions, which require related AMReX components to
