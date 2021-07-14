@@ -77,8 +77,13 @@ setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
 
   // Find new locations for split particles
   Real radius = par_new[realIdx::a_size];
+#if 0
   Real theta = M_PI ; // * amrex::Random();
   Real phi = 2.0 * M_PI ; // * amrex::Random();
+#else
+  Real theta = M_PI * amrex::Random();
+  Real phi = 2.0 * M_PI * amrex::Random();
+#endif
   Real nx = sin(theta)*cos(phi);
   Real ny = sin(theta)*sin(phi);
   Real nz = cos(theta);

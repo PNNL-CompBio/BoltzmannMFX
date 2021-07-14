@@ -17,15 +17,13 @@ void
 bmx::bmx_calc_txfr_fluid (Real /*time*/, Real dt)
 {
   amrex::Print() << "Entering calc_txfr " << std::endl;
-#ifdef DEP_DEBUG
-  int start_part_comp = realIdx::first_data + intIdx::first_real_inc + 2;
-#endif
+  BMXChemistry *bmxchem = BMXChemistry::instance();
+  int inc_start = bmxchem->getIntData(intIdx::first_real_inc);
+  int start_part_comp = realIdx::first_data + inc_start;
   int start_mesh_comp = 0;
   int        num_comp = FLUID::nchem_species;
 
-#ifdef DEP_DEBUG
   amrex::Print() << "TXFR: START PART COMP " << start_part_comp << std::endl;
-#endif
   amrex::Print() << "TXFR: START MESH COMP " << start_mesh_comp << std::endl;
   amrex::Print() << "TXFR:  NUM  COMP " << num_comp << std::endl;
 
@@ -40,11 +38,7 @@ bmx::bmx_calc_txfr_fluid (Real /*time*/, Real dt)
   if (bmx::m_deposition_scheme == DepositionScheme::trilinear) {
 
      ParticleToMesh(*pc,get_X_rhs(),0,finest_level,
-#ifndef DEP_DEBUG
-                    TrilinearDeposition{start_mesh_comp,num_comp},
-#else
                     TrilinearDeposition{start_part_comp,start_mesh_comp,num_comp},
-#endif
                     zero_out_input, vol_weight);
 
 #if 0

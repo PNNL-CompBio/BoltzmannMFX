@@ -35,16 +35,15 @@ BMXChemistry::BMXChemistry()
 {
   p_num_species = 3;
   p_num_ivals = 0;
-#ifndef DEP_DEBUG
   p_num_reals = 3*p_num_species;
   p_num_ints = 0;
   p_inc_offset = 2*p_num_species;
-#else
-  p_num_reals = 2*p_num_species;
-  p_num_ints = 0;
-  p_inc_offset = p_num_species;
-#endif
   p_verbose = false;
+  p_int_vals.push_back(p_num_species);
+  p_int_vals.push_back(p_num_ivals);
+  p_int_vals.push_back(p_num_reals);
+  p_int_vals.push_back(p_num_ints);
+  p_int_vals.push_back(p_inc_offset);
 }
 
 /**
@@ -136,3 +135,14 @@ void BMXChemistry::printCellConcentrations(Real *p_vals, Real *p_par)
     printf("        Z velocity     : %18.6e\n",p_par[realIdx::velz]);
   }
 }
+
+/**
+ * Return values that are also stored in particle idata fields
+ * @param idx intIdx parameter representing index of desired value
+ * @return integer value at index location
+ */
+int BMXChemistry::getIntData(int idx)
+{
+  return p_int_vals[idx];
+}
+

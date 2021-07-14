@@ -146,6 +146,13 @@ class BMXChemistry
    */
   void printCellConcentrations(Real *p_vals, Real *p_par);
 
+  /**
+   * Return values that are also stored in particle idata fields
+   * @param idx intIdx parameter representing index of desired value
+   * @return integer value at index location
+   */
+  int getIntData(int idx);
+
   // Hardwired variables for ABC model
   static Real k1, kr1;   // rate coefficients for species A into and out of biological cell
   static Real k2, kr2;   // rate coefficients for converting A into B and C inside biological cell
@@ -174,6 +181,8 @@ class BMXChemistry
   int p_num_species; // Total number chemical species in model
   int p_num_ivals;   // Total number integer settings in model
   int p_inc_offset;  // Offset of increments relative to start of species data
+
+  std::vector<int> p_int_vals; // stored values of integers
 
   // Flag for verbose output
   bool p_verbose;
