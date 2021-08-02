@@ -62,13 +62,13 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
     Real particle_vol = pc->computeParticleVolume();
 
     Real A_in_fluid     = volWgtSum(0,*(m_leveldata[lev]->vf), *(m_leveldata[lev]->X_k), 0, false) * dx * dy * dz;
-    Real A_in_particles = pc->computeParticleContent(28);
+    Real A_in_particles = pc->computeParticleContent(23);
 
     Real B_in_fluid     = volWgtSum(0,*(m_leveldata[lev]->vf), *(m_leveldata[lev]->X_k), 1, false) * dx * dy * dz;
-    Real B_in_particles = pc->computeParticleContent(29);
+    Real B_in_particles = pc->computeParticleContent(24);
 
     Real C_in_fluid     = volWgtSum(0,*(m_leveldata[lev]->vf), *(m_leveldata[lev]->X_k), 2, false) * dx * dy * dz;
-    Real C_in_particles = pc->computeParticleContent(30);
+    Real C_in_particles = pc->computeParticleContent(25);
 
     amrex::Print() << "Domain   volume : " << domain_vol << std::endl;
     amrex::Print() << "Fluid    volume : " << fluid_vol  << std::endl;
