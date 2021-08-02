@@ -10,7 +10,7 @@ using namespace amrex;
 void DiffusionOp::diffuse_chem_species (      Vector< MultiFab*      > X_k_in,
                                         const Vector< MultiFab const*> D_k_in,
                                         const Vector< MultiFab const*>  vf_in,
-                                        Real theta, Real dt)
+                                        Real omt, Real dt)
 {
     BL_PROFILE("DiffusionOp::diffuse_chem_species");
 
@@ -19,20 +19,20 @@ void DiffusionOp::diffuse_chem_species (      Vector< MultiFab*      > X_k_in,
     // Update the coefficients of the matrix going into the solve based on the current state of the
     // simulation. Recall that the relevant matrix is
     //
-    //      alpha a - beta div ( b grad )   <--->   rho - dt div ( mu_s grad )
+    //      alpha a - beta div ( b grad )   <--->   vf - (1-theta) dt div ( D_k grad )
     //
     // So the constants and variable coefficients are:
     //
     //      alpha: 1
-    //      beta: theta * dt
-    //      a: 1
+    //      beta: omt * dt
+    //      a: vf
     //      b: D_k
 
     if(verbose > 0)
       amrex::Print() << "Diffusing chem_species mass fractions ..." << std::endl;
 
     // Set alpha and beta
-    chem_species_matrix->setScalars(1.0, theta*dt);
+    chem_species_matrix->setScalars(1.0, omt*dt);
 
     // Number of fluid chem_species
     const int nchem_species = FLUID::nchem_species;
@@ -42,7 +42,7 @@ void DiffusionOp::diffuse_chem_species (      Vector< MultiFab*      > X_k_in,
     for(int lev = 0; lev <= finest_level; lev++)
     {
         // This sets the coefficients
-        chem_species_matrix->setACoeffs (lev, 1.);
+        chem_species_matrix->setACoeffs (lev, (*vf_in[lev]));
         chem_species_matrix->setBCoeffs (lev, GetArrOfConstPtrs(chem_species_b[lev]));
 
         // Zero these out just to have a clean start because they have 3 components
@@ -53,7 +53,7 @@ void DiffusionOp::diffuse_chem_species (      Vector< MultiFab*      > X_k_in,
         // Set rhs equal to X_k and
         // Multiply rhs by (D_k) -- we are solving
         //
-        //      X_star = X_old + theta * dt (div (D_k grad X_k) )
+        //      X_star = X_old + (1-theta) * dt (div (D_k grad X_k) )
         //
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -64,14 +64,17 @@ void DiffusionOp::diffuse_chem_species (      Vector< MultiFab*      > X_k_in,
 
           if (bx.ok())
           {
-            Array4<Real const> const& X_k_arr    = X_k_in[lev]->const_array(mfi);
+            Array4<Real const> const& X_k_arr     = X_k_in[lev]->const_array(mfi);
             Array4<Real      > const& rhs_arr     = chem_species_rhs[lev]->array(mfi);
+            Array4<Real const> const&  vf_arr     = vf_in[lev]->const_array(mfi);
 
-            amrex::ParallelFor(bx, [X_k_arr,rhs_arr,nchem_species]
+            amrex::ParallelFor(bx, [X_k_arr,rhs_arr,vf_arr,nchem_species]
               AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
               for (int n(0); n < nchem_species; ++n)
-                rhs_arr(i,j,k,n) = X_k_arr(i,j,k,n);
+              {
+                rhs_arr(i,j,k,n) = X_k_arr(i,j,k,n) * vf_arr(i,j,k);
+              }
             });
           }
         }
