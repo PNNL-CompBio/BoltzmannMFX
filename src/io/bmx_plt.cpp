@@ -95,7 +95,7 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
 
          if(plt_vf == 1)
          {
-             MultiFab::Copy(*mf[lev], *m_leveldata[lev]->vf, 0, lc, 1, 0);
+             MultiFab::Copy(*mf[lev], *m_leveldata[lev]->vf_n, 0, lc, 1, 0);
              lc += 1;
         }
       } // lev

@@ -54,8 +54,11 @@ bmx::EvolveFluid (int nstep,
     {
       MultiFab& X_k = *m_leveldata[lev]->X_k;
       MultiFab& X_ko = *m_leveldata[lev]->X_ko;
-
       MultiFab::Copy(X_ko, X_k, 0, 0, X_k.nComp(), X_ko.nGrow());
+
+      MultiFab& vf_n = *m_leveldata[lev]->vf_n;
+      MultiFab& vf_o = *m_leveldata[lev]->vf_o;
+      MultiFab::Copy(vf_o, vf_n, 0, 0, 1, vf_n.nGrow());
     }
 
     // Interpolate chem_species to particle locations
@@ -64,12 +67,14 @@ bmx::EvolveFluid (int nstep,
     // Deposit sources/sink from individual particles to grid
     bmx_calc_txfr_fluid(time, dt);
 
-    // Calculate the fraction of each grid cell not occupied by biological cells
+    // Calculate the fraction of each grid cell not occupied by biological cells -- this
+    //   1) defines vf_n using the current particle locations
+    //   2) updates X_k on the grid to allow for the change in vf
     bmx_calc_volume_fraction();
 
     // Average down from fine to coarse to ensure consistency
     for (int lev = finest_level; lev > 0; lev--)
-        average_down(*m_leveldata[lev]->vf,*m_leveldata[lev-1]->vf, 0, 1, refRatio(lev-1));
+        average_down(*m_leveldata[lev]->vf_n,*m_leveldata[lev-1]->vf_n, 0, 1, refRatio(lev-1));
 
     //
     // Time integration step
@@ -90,10 +95,10 @@ bmx::EvolveFluid (int nstep,
     // Compute explicit diffusive terms
     // *************************************************************************************
 
-    // fillpatch_vf(get_vf(),new_time);
+    // fillpatch_vf(get_vf_new(),new_time);
 
     if (m_diff_type != DiffusionType::Implicit)
-        diffusion_op->ComputeLapX(lap_X, get_X_k_old(), get_D_k_const(), get_vf_const());
+        diffusion_op->ComputeLapX(lap_X, get_X_k_old(), get_D_k_const(), get_vf_new_const());
     else
        for (int lev = 0; lev <= finest_level; lev++)
            lap_X[lev]->setVal(0.);
@@ -144,7 +149,7 @@ bmx::EvolveFluid (int nstep,
         bmx_set_chem_species_bcs(time, get_X_k(), get_D_k());
 
         Real omt = 1. - theta;
-        diffusion_op->diffuse_chem_species(get_X_k(), get_D_k_const(), get_vf_const(), omt, l_dt);
+        diffusion_op->diffuse_chem_species(get_X_k(), get_D_k_const(), get_vf_new_const(), omt, l_dt);
     }
 
     for (int lev = 0; lev <= finest_level; lev++)

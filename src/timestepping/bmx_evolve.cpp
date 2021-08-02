@@ -57,18 +57,18 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
 
     Real domain_vol = (p_hi[2]-p_lo[2])*(p_hi[1]-p_lo[1])*(p_hi[0]-p_lo[0]);
 
-    Real fluid_vol = volSum(0,*(m_leveldata[lev]->vf),false) * dx * dy * dz;
+    Real fluid_vol = volSum(0,*(m_leveldata[lev]->vf_n),false) * dx * dy * dz;
 
     Real particle_vol = pc->computeParticleVolume();
 
-    Real A_in_fluid     = volWgtSum(0,*(m_leveldata[lev]->vf), *(m_leveldata[lev]->X_k), 0, false) * dx * dy * dz;
-    Real A_in_particles = pc->computeParticleContent(23);
+    Real A_in_fluid     = volWgtSum(0,*(m_leveldata[lev]->vf_n), *(m_leveldata[lev]->X_k), 0, false) * dx * dy * dz;
+    Real A_in_particles = pc->computeParticleContent(22);
 
-    Real B_in_fluid     = volWgtSum(0,*(m_leveldata[lev]->vf), *(m_leveldata[lev]->X_k), 1, false) * dx * dy * dz;
-    Real B_in_particles = pc->computeParticleContent(24);
+    Real B_in_fluid     = volWgtSum(0,*(m_leveldata[lev]->vf_n), *(m_leveldata[lev]->X_k), 1, false) * dx * dy * dz;
+    Real B_in_particles = pc->computeParticleContent(23);
 
-    Real C_in_fluid     = volWgtSum(0,*(m_leveldata[lev]->vf), *(m_leveldata[lev]->X_k), 2, false) * dx * dy * dz;
-    Real C_in_particles = pc->computeParticleContent(25);
+    Real C_in_fluid     = volWgtSum(0,*(m_leveldata[lev]->vf_n), *(m_leveldata[lev]->X_k), 2, false) * dx * dy * dz;
+    Real C_in_particles = pc->computeParticleContent(24);
 
     amrex::Print() << "Domain   volume : " << domain_vol << std::endl;
     amrex::Print() << "Fluid    volume : " << fluid_vol  << std::endl;

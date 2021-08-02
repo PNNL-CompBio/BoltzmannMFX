@@ -31,7 +31,8 @@ class LevelData
     amrex::MultiFab* D_k;
 
     // Volume fraction of agar/biofilm in grid cell (= 1. - volume fraction of biological cell)
-    amrex::MultiFab* vf;
+    amrex::MultiFab* vf_o;
+    amrex::MultiFab* vf_n;
 };
 
 #endif

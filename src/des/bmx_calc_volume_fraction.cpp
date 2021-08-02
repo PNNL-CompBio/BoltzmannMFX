@@ -1,10 +1,12 @@
 #include <bmx.H>
 #include <bmx_deposition_K.H>
+#include <bmx_fluid_parms.H>
 #include <AMReX_AmrParticles.H>
 
-// This re-calculates the volume fraction within the domain
-// but does not change the values outside the domain
-void bmx::bmx_calc_volume_fraction ()
+// Calculate the fraction of each grid cell not occupied by biological cells -- this
+//   1) defines vf_n using the current particle locations
+//   2) updates X_k on the grid to allow for the change in vf
+void bmx::bmx_calc_volume_fraction (bool adjust_X)
 {
   int start_part_comp = realIdx::vol;
   int start_mesh_comp = 0;
@@ -20,7 +22,7 @@ void bmx::bmx_calc_volume_fraction ()
 
   if (bmx::m_deposition_scheme == DepositionScheme::trilinear) 
   {
-      ParticleToMesh(*pc,get_vf(),0,finest_level,
+      ParticleToMesh(*pc,get_vf_new(),0,finest_level,
                      TrilinearDeposition{start_part_comp,start_mesh_comp,num_comp},
                      zero_out_input, vol_weight);
 #if 0
@@ -43,7 +45,7 @@ void bmx::bmx_calc_volume_fraction ()
 
   for (int lev = 0; lev <= finest_level; lev++)  
   {
-    MultiFab& vf = *get_vf()[lev];
+    MultiFab& vf = *get_vf_new()[lev];
     Geometry& gm = Geom(lev); 
 
     // Now define this mf = (1 - particle_vol)
@@ -58,4 +60,35 @@ void bmx::bmx_calc_volume_fraction ()
     // solids volume fraction for periodic boundaries.
     vf.FillBoundary(gm.periodicity());
   }
+
+  const int nchem_species = FLUID::nchem_species;
+
+  // Now adjust the concentrations to account for the change in vf
+  if (adjust_X)
+  {
+      for (int lev = 0; lev <= finest_level; lev++)
+      {
+          auto& ld = *m_leveldata[lev];
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+          for (MFIter mfi(*ld.X_k,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+          {
+              Box const& bx = mfi.tilebox();
+              Array4<Real      > const& X_k_n    = ld.X_k->array(mfi);
+              Array4<Real const> const& vf_o     = ld.vf_o->const_array(mfi);
+              Array4<Real const> const& vf_n     = ld.vf_n->const_array(mfi);
+
+              ParallelFor(bx, nchem_species, [=]
+                AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+              {
+                  if (vf_n(i,j,k) != vf_o(i,j,k))
+                  {
+                      X_k_n(i,j,k,n) *= vf_o(i,j,k) / vf_n(i,j,k);
+                  }
+            });
+        } // mfi
+      } // lev
+  } // if (adjust_X)
 }

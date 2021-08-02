@@ -144,12 +144,22 @@ Vector< MultiFab* > bmx::get_D_k () noexcept
   return r;
 }
 
-Vector< MultiFab* > bmx::get_vf () noexcept
+Vector< MultiFab* > bmx::get_vf_old () noexcept
 {
   Vector<MultiFab*> r;
   r.reserve(m_leveldata.size());
   for (int lev = 0; lev < m_leveldata.size(); ++lev) {
-    r.push_back(m_leveldata[lev]->vf);
+    r.push_back(m_leveldata[lev]->vf_o);
+  }
+  return r;
+}
+
+Vector< MultiFab* > bmx::get_vf_new () noexcept
+{
+  Vector<MultiFab*> r;
+  r.reserve(m_leveldata.size());
+  for (int lev = 0; lev < m_leveldata.size(); ++lev) {
+    r.push_back(m_leveldata[lev]->vf_n);
   }
   return r;
 }
@@ -194,12 +204,22 @@ Vector< MultiFab const*> bmx::get_D_k_const () const noexcept
   return r;
 }
 
-Vector< MultiFab const*> bmx::get_vf_const () const noexcept
+Vector< MultiFab const*> bmx::get_vf_old_const () const noexcept
 {
   Vector<MultiFab const*> r;
   r.reserve(m_leveldata.size());
   for (int lev = 0; lev < m_leveldata.size(); ++lev) {
-    r.push_back(m_leveldata[lev]->vf);
+    r.push_back(m_leveldata[lev]->vf_o);
+  }
+  return r;
+}
+
+Vector< MultiFab const*> bmx::get_vf_new_const () const noexcept
+{
+  Vector<MultiFab const*> r;
+  r.reserve(m_leveldata.size());
+  for (int lev = 0; lev < m_leveldata.size(); ++lev) {
+    r.push_back(m_leveldata[lev]->vf_n);
   }
   return r;
 }
