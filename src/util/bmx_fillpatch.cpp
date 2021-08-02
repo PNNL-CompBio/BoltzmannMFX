@@ -352,7 +352,7 @@ bmx::GetDataVolFrac (int lev,
     datatime.clear();
 
     if (icomp == 0) {
-       data.push_back(m_leveldata[lev]->vf);
+       data.push_back(m_leveldata[lev]->vf_n);
     }
     datatime.push_back(t_new[lev]);
 }

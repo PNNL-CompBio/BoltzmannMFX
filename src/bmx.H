@@ -114,7 +114,7 @@ class bmx : public AmrCore
 
     static amrex::Real m_deposition_scale_factor;
 
-    void bmx_calc_volume_fraction ();
+    void bmx_calc_volume_fraction (bool adjust_X = true);
 
     void bmx_deposition_bcs (int lev, amrex::MultiFab & filled_mf);
 
@@ -261,13 +261,15 @@ class bmx : public AmrCore
     Vector< MultiFab* > get_X_k () noexcept;
     Vector< MultiFab* > get_X_k_old () noexcept;
     Vector< MultiFab* > get_D_k () noexcept;
-    Vector< MultiFab* > get_vf () noexcept;
+    Vector< MultiFab* > get_vf_old () noexcept;
+    Vector< MultiFab* > get_vf_new () noexcept;
     Vector< MultiFab* > get_X_rhs () noexcept;
 
     amrex::Vector< amrex::MultiFab const* > get_X_k_const () const noexcept;
     amrex::Vector< amrex::MultiFab const* > get_X_k_old_const () const noexcept;
     amrex::Vector< amrex::MultiFab const* > get_D_k_const () const noexcept;
-    amrex::Vector< amrex::MultiFab const* > get_vf_const () const noexcept;
+    amrex::Vector< amrex::MultiFab const* > get_vf_old_const () const noexcept;
+    amrex::Vector< amrex::MultiFab const* > get_vf_new_const () const noexcept;
 
     amrex::Vector<int> const& get_chem_species_iconserv () const noexcept { return m_iconserv_chem_species; }
   
