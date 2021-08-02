@@ -118,9 +118,9 @@ class bmx : public AmrCore
 
     void bmx_deposition_bcs (int lev, amrex::MultiFab & filled_mf);
 
-    Real volWgtSum (int lev, const MultiFab & mf, int comp, bool local=false) const;
-
-    Real volWgtSumBox (int lev, const MultiFab & mf, int comp, const Box a_bx, bool local=false) const;
+    Real volSum    (int lev, const MultiFab& vf, bool local=false) const;
+    Real volWgtSum (int lev, const MultiFab& vf, const MultiFab& mf, 
+                    int comp, bool local=false) const;
 
     void bmx_set_bc_type (int lev);
 

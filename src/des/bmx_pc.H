@@ -99,6 +99,10 @@ public:
 
     void printParticles ();
 
+    Real computeParticleVolume ();
+
+    Real computeParticleContent (int comp);
+
     void AllocData ();
 
     void PrintParticleCounts ();

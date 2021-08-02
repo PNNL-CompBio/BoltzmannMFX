@@ -85,6 +85,50 @@ void BMXParticleContainer::printParticles ()
     }
 }
 
+Real 
+BMXParticleContainer::computeParticleVolume ()
+{
+    const int lev = 0;
+    auto& plevel = GetParticles(lev);
+
+    Real sum = 0.;
+
+    for (auto& kv : plevel)
+    {
+       const auto& particles = kv.second.GetArrayOfStructs();
+       auto& soa = kv.second.GetStructOfArrays();
+       auto p_realarray = soa.realarray();
+
+       for (int i = 0; i < particles.numParticles(); ++i)
+       {
+          sum += particles[i].rdata(realIdx::vol);
+       }
+    }
+    return sum;
+}
+
+Real 
+BMXParticleContainer::computeParticleContent (int comp)
+{
+    const int lev = 0;
+    auto& plevel = GetParticles(lev);
+
+    Real sum = 0.;
+
+    for (auto& kv : plevel)
+    {
+       const auto& particles = kv.second.GetArrayOfStructs();
+       auto& soa = kv.second.GetStructOfArrays();
+       auto p_realarray = soa.realarray();
+
+       for (int i = 0; i < particles.numParticles(); ++i)
+       {
+          sum += particles[i].rdata(realIdx::vol) * particles[i].rdata(comp);
+       }
+    }
+    return sum;
+}
+
 void BMXParticleContainer::ReadStaticParameters ()
 {
     static bool initialized = false;
