@@ -75,15 +75,16 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
     amrex::Print() << "Particle volume : " << particle_vol << std::endl;
     amrex::Print() << "Particle + Fluid: " << fluid_vol+particle_vol << std::endl;
 
-    amrex::Print() << " A in fluid    : " << A_in_fluid << std::endl;
-    amrex::Print() << " B in fluid    : " << B_in_fluid << std::endl;
-    amrex::Print() << " C in fluid    : " << C_in_fluid << std::endl;
-    amrex::Print() << " A in particles: " << A_in_particles << std::endl;
-    amrex::Print() << " B in particles: " << B_in_particles << std::endl;
-    amrex::Print() << " C in particles: " << C_in_particles << std::endl;
-    amrex::Print() << " Total A + B+C : " << A_in_fluid + A_in_particles +
-                                             B_in_fluid + B_in_particles +
-                                             C_in_fluid + C_in_particles << std::endl;
+    amrex::Print() << " A in fluid        : " << A_in_fluid << std::endl;
+    amrex::Print() << " B in fluid        : " << B_in_fluid << std::endl;
+    amrex::Print() << " C in fluid        : " << C_in_fluid << std::endl;
+    amrex::Print() << " A in particles    : " << A_in_particles << std::endl;
+    amrex::Print() << " B in particles    : " << B_in_particles << std::endl;
+    amrex::Print() << " C in particles    : " << C_in_particles << std::endl;
+    amrex::Print() << " A+C   in fluid    : " << A_in_fluid + C_in_fluid << std::endl;
+    amrex::Print() << " A+C   in particles: " << A_in_particles + C_in_particles << std::endl;
+    amrex::Print() << " Total A + C       : " << A_in_fluid + A_in_particles +
+                                                 C_in_fluid + C_in_particles << std::endl;
 
     if (std::abs(domain_vol - (fluid_vol+particle_vol)) > 1.e-12 * domain_vol)
        amrex::Abort("Volumes don't match!");
