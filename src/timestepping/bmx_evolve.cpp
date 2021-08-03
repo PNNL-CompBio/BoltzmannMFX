@@ -78,9 +78,14 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
     amrex::Print() << " A in fluid        : " << A_in_fluid << std::endl;
     amrex::Print() << " B in fluid        : " << B_in_fluid << std::endl;
     amrex::Print() << " C in fluid        : " << C_in_fluid << std::endl;
+
     amrex::Print() << " A in particles    : " << A_in_particles << std::endl;
     amrex::Print() << " B in particles    : " << B_in_particles << std::endl;
     amrex::Print() << " C in particles    : " << C_in_particles << std::endl;
+
+    amrex::Print() << " A in fluid+part   : " << A_in_fluid + A_in_particles << std::endl;
+    amrex::Print() << " C in fluid+part   : " << C_in_fluid + C_in_particles << std::endl;
+
     amrex::Print() << " A+C   in fluid    : " << A_in_fluid + C_in_fluid << std::endl;
     amrex::Print() << " A+C   in particles: " << A_in_particles + C_in_particles << std::endl;
     amrex::Print() << " Total A + C       : " << A_in_fluid + A_in_particles +

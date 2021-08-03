@@ -108,26 +108,6 @@ class BMXChemistry
   void getVarArraySizes(int *num_ints, int *num_reals, int *tot_ints, int *tot_reals);
 
   /**
-   * Transfer mesh values to internal concentrations
-   * @param grid_vol volume of grid cell that contains biological cell
-   * @param cell_par pointer to cell parameter values
-   * @param mesh_vals values of concentrations on mesh
-   * @param p_vals values of concentrations in particles
-   * @param dt time step interval
-   */
-  AMREX_GPU_HOST_DEVICE AMREX_INLINE
-  void xferMeshToParticle(Real grid_vol, Real *cell_par, Real *mesh_vals,
-      Real *p_vals, Real dt);
-
-  /**
-   * Evaluate chemical rate of change inside chemistry module
-   * @param p_vals current values of concentrations in particles
-   * @param cell_par pointer to cell parameter values
-   * @param dt time step interval
-   */
-  void updateChemistry(Real *p_vals, Real *cell_par, Real dt);
-
-  /**
    * Transfer mesh values to internal concentrations and evaluate chemistry
    * @param grid_vol volume of grid cell that contains biological cell
    * @param cell_par pointer to cell parameter values

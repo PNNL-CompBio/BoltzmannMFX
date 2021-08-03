@@ -53,7 +53,7 @@ void DiffusionOp::diffuse_chem_species (      Vector< MultiFab*      > X_k_in,
         // Set rhs equal to X_k and
         // Multiply rhs by (D_k) -- we are solving
         //
-        //      X_star = X_old + (1-theta) * dt (div (D_k grad X_k) )
+        //      vf X_star = vf X_old + (1-theta) * dt (div (D_k grad X_k) )
         //
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
