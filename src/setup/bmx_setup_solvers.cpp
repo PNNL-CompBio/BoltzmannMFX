@@ -8,7 +8,7 @@ bmx::bmx_init_solvers ()
 {
     BL_PROFILE("bmx::bmx_init_solvers");
 
-    diffusion_op.reset(new DiffusionOp(this, BC::diff_chem_species_lobc,     BC::diff_chem_species_hibc, nghost));
+    diffusion_op.reset(new DiffusionOp(this, BC::diff_chem_species_lobc, BC::diff_chem_species_hibc, nghost));
 }
 
 void
