@@ -99,9 +99,9 @@ public:
 
     void printParticles ();
 
-    Real computeParticleVolume ();
+    Real computeParticleVolume () const;
 
-    Real computeParticleContent (int comp);
+    Real computeParticleContent (int comp) const;
 
     void AllocData ();
 
