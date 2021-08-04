@@ -128,7 +128,7 @@ bmx::ComputeAndPrintSums()
     Real B_in_fluid     = volWgtSum(get_X_k_const(), 1);
     Real B_in_particles = pc->computeParticleContent(23);
 
-    Real C_in_fluid     = volWgtSum(get_X_k_const(), 1);
+    Real C_in_fluid     = volWgtSum(get_X_k_const(), 2);
     Real C_in_particles = pc->computeParticleContent(24);
 
     amrex::Print() << "Domain   volume : " << domain_vol << std::endl;

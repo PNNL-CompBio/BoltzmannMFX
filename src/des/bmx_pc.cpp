@@ -88,29 +88,25 @@ void BMXParticleContainer::printParticles ()
 Real 
 BMXParticleContainer::computeParticleVolume ()
 {
-    amrex::ReduceOps<ReduceOpSum> reduce_ops;
-    auto r = amrex::ParticleReduce<ReduceData<amrex::Real>> (
-     *this, [=] AMREX_GPU_DEVICE (const ParticleType& p) noexcept -> amrex::GpuTuple<amrex::Real>
+    auto r = amrex::ReduceSum(*this, [=]
+       AMREX_GPU_DEVICE (const ParticleType& p) noexcept -> amrex::Real
        {
-           const amrex::Real sum = p.rdata(realIdx::vol);
-           return sum;
-       }, reduce_ops);
+           return p.rdata(realIdx::vol);
+       });
 
-    return amrex::get<0>(r);
+    return r;
 }
 
 Real 
 BMXParticleContainer::computeParticleContent (int comp)
 {
-    amrex::ReduceOps<ReduceOpSum> reduce_ops;
-    auto r = amrex::ParticleReduce<ReduceData<amrex::Real>> (
-     *this, [=] AMREX_GPU_DEVICE (const ParticleType& p) noexcept -> amrex::GpuTuple<amrex::Real>
+    auto r = amrex::ReduceSum(*this, [=]
+       AMREX_GPU_DEVICE (const ParticleType& p) noexcept -> amrex::Real
        {
-           const amrex::Real sum = p.rdata(realIdx::vol) * p.rdata(comp);
-           return sum;
-       }, reduce_ops);
+           return (p.rdata(realIdx::vol) * p.rdata(comp));
+       });
 
-    return amrex::get<0>(r);
+    return r;
 }
 
 void BMXParticleContainer::ReadStaticParameters ()
