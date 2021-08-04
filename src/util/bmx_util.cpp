@@ -1,49 +1,147 @@
 #include <bmx.H>
 
 Real
-bmx::volSum (int lev, const MultiFab& vf, bool local) const
+bmx::volSum () const
 {
-    BL_PROFILE("bmx::volWgtSum()");
+    BL_PROFILE("bmx::volSum()");
+    AMREX_ALWAYS_ASSERT(finest_level <= 1);
 
-    Real sum = amrex::ReduceSum(vf, 0,
-        [] AMREX_GPU_HOST_DEVICE (Box const & bx,
-                                      Array4<const Real> const & vfrc)
+    Real sum_across_levels(0.);
+    Real sum_on_level;
+
+    MultiFab* mask;
+    if (finest_level > 0)
+        mask = build_fine_mask();
+
+    for (int lev = 0; lev <= finest_level; lev++) 
+    { 
+        const MultiFab& vf = *get_vf_new_const()[lev];
+        if (lev == finest_level)
         {
-          Real dm = 0.0;
+            sum_on_level = amrex::ReduceSum(vf, 0,
+                [] AMREX_GPU_HOST_DEVICE (Box const & bx,
+                                              Array4<const Real> const & vfrc)
+                {
+                  Real dm = 0.0;
+        
+                  amrex::Loop(bx, [vfrc,&dm] (int i, int j, int k) noexcept
+                      { dm += vfrc(i,j,k); });
+        
+                  return dm;
+                });
+        } else {
+            sum_on_level = amrex::ReduceSum(vf, *mask, 0,
+                [] AMREX_GPU_HOST_DEVICE (Box const & bx,
+                                          Array4<const Real> const & vfrc,
+                                          Array4<const Real> const & msk)
+                {
+                  Real dm = 0.0;
+        
+                  amrex::Loop(bx, [vfrc,msk,&dm] (int i, int j, int k) noexcept
+                      { dm += vfrc(i,j,k) * msk(i,j,k); });
+        
+                  return dm;
+                });
+        }
+        ParallelDescriptor::ReduceRealSum(sum_on_level);
 
-          amrex::Loop(bx, [vfrc,&dm] (int i, int j, int k) noexcept
-              { dm += vfrc(i,j,k); });
+        Real dx = geom[lev].CellSize(0);
+        Real dy = geom[lev].CellSize(1);
+        Real dz = geom[lev].CellSize(2);
+        Real cell_vol = dx * dy * dz;
 
-          return dm;
-        });
+        sum_across_levels += sum_on_level * cell_vol;
+    }
 
-    if (!local)
-        ParallelDescriptor::ReduceRealSum(sum);
-
-    return sum;
+    return sum_across_levels;
 }
 
 Real
-bmx::volWgtSum (int lev, const MultiFab& vf, const MultiFab& mf, int comp, bool local) const
+bmx::volWgtSum (Vector<const MultiFab*> const& mfs, int comp) const
 {
     BL_PROFILE("bmx::volWgtSum()");
+    AMREX_ALWAYS_ASSERT(finest_level <= 1);
+    Real sum_across_levels(0.);
+    Real sum_on_level;
 
-    Real sum = amrex::ReduceSum(mf, vf, 0,
-        [comp] AMREX_GPU_HOST_DEVICE (Box const & bx,
-                                      Array4<const Real> const & qty,
-                                      Array4<const Real> const & vfrc)
+    MultiFab* mask;
+    if (finest_level > 0)
+        mask = build_fine_mask();
+
+    for (int lev = 0; lev <= finest_level; lev++) 
+    { 
+        if (lev == finest_level)
         {
-          Real dm = 0.0;
+            const MultiFab& vf = *(get_vf_new_const()[lev]);
+            sum_on_level = amrex::ReduceSum(*mfs[lev],vf,0,
+                [comp] AMREX_GPU_HOST_DEVICE (Box const & bx,
+                                              Array4<const Real> const & qty,
+                                              Array4<const Real> const & vfrc)
+                {
+                  Real dm = 0.0;
+        
+                  amrex::Loop(bx, [qty,vfrc,comp,&dm] (int i, int j, int k) noexcept
+                      { dm += qty(i,j,k,comp) * vfrc(i,j,k); });
 
-          amrex::Loop(bx, [qty,vfrc,comp,&dm] (int i, int j, int k) noexcept
-              { dm += qty(i,j,k,comp) * vfrc(i,j,k); });
+                  return dm;
+                });
+        } else {
+            const MultiFab& vf = *(get_vf_new_const()[lev]);
+            sum_on_level = amrex::ReduceSum(*mfs[lev],vf,*mask,0,
+                [comp] AMREX_GPU_HOST_DEVICE (Box const & bx,
+                                              Array4<const Real> const & qty,
+                                              Array4<const Real> const & vfrc,
+                                              Array4<const Real> const & msk)
+                {
+                  Real dm = 0.0;
+        
+                  amrex::Loop(bx, [qty,vfrc,msk,comp,&dm] (int i, int j, int k) noexcept
+                      { dm += qty(i,j,k,comp) * vfrc(i,j,k) * msk(i,j,k); });
 
-          return dm;
-        });
+                  return dm;
+                });
+        }
+        ParallelDescriptor::ReduceRealSum(sum_on_level);
 
-    if (!local)
-        ParallelDescriptor::ReduceRealSum(sum);
+        Real dx = geom[lev].CellSize(0);
+        Real dy = geom[lev].CellSize(1);
+        Real dz = geom[lev].CellSize(2);
+        Real cell_vol = dx * dy * dz;
 
-    return sum;
+        sum_across_levels += sum_on_level * cell_vol;
+    } 
+
+    return sum_across_levels;
 }
 
+MultiFab*
+bmx::build_fine_mask() const
+{
+    MultiFab* fine_mask; 
+    int crse_level = 0;
+
+    if (fine_mask != 0) return fine_mask;
+
+    BoxArray baf = grids[crse_level+1];
+    baf.coarsen(refRatio(crse_level));
+
+    const BoxArray& bac = grids[crse_level];
+    fine_mask = new MultiFab(bac,dmap[crse_level], 1,0);
+    fine_mask->setVal(1.0);
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+    for (MFIter mfi(*fine_mask,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
+        FArrayBox& fab = (*fine_mask)[mfi];
+
+        std::vector< std::pair<int,Box> > isects = baf.intersections(fab.box());
+
+        for (int ii = 0; ii < isects.size(); ii++)
+        {
+            fab.setVal<RunOn::Device>(0.0,isects[ii].second,0);
+        }
+    }
+    return fine_mask;
+}

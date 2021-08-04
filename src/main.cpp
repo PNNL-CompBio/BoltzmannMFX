@@ -301,6 +301,8 @@ int main (int argc, char* argv[])
         BL_PROFILE("bmx_solve");
         BL_PROFILE_REGION("bmx_solve");
 
+        bmx.ComputeAndPrintSums();
+
         if ( !do_not_evolve)
         {
             while (finish == 0)

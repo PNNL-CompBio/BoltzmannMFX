@@ -64,6 +64,8 @@ class bmx : public AmrCore
 
     void WriteParticleAscii (std::string& par_ascii_file_name, int nstep = 0) const;
 
+    void ComputeAndPrintSums ();
+
     void Regrid ();
 
     void Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time);
@@ -118,9 +120,8 @@ class bmx : public AmrCore
 
     void bmx_deposition_bcs (int lev, amrex::MultiFab & filled_mf);
 
-    Real volSum    (int lev, const MultiFab& vf, bool local=false) const;
-    Real volWgtSum (int lev, const MultiFab& vf, const MultiFab& mf, 
-                    int comp, bool local=false) const;
+    Real volSum    () const;
+    Real volWgtSum (amrex::Vector<MultiFab const*> const& mfs, int comp) const;
 
     void bmx_set_bc_type (int lev);
 
@@ -218,7 +219,6 @@ class bmx : public AmrCore
     static void GotoNextLine (std::istream & is);
 
     void check_for_nans (int lev);
-
 
     void fillpatch_Xk (Vector< MultiFab* > const& X_k_in, Real time);
     void fillpatch_Dk (Vector< MultiFab* > const& D_k_in, Real time);
@@ -357,11 +357,14 @@ class bmx : public AmrCore
     //
     // DO NOT USE  A LOCAL VARIABLE WITH THE SAME NAME
     //
-
     const int nghost = 1;
+
+    int nghost_state() const { return 1; }
 
     IntVect particle_sorting_bin = IntVect::TheZeroVector();
 
+    amrex::Vector<int> m_iconserv_chem_species;
+    amrex::Gpu::DeviceVector<int> m_iconserv_chem_species_d;
      /***************************************************************************
      *                                                                         *
      * I/O stuff                                                               *
@@ -401,14 +404,22 @@ class bmx : public AmrCore
 
     amrex::Gpu::DeviceVector<amrex::BCRec> m_bcrec_chem_species_d;
 
-    int nghost_state() const { return 1; }
-
-    // Invalid, Explicit, Crank_Nicolson, Implicit
+    /***************************************************************************
+     *                                                                         *
+     * Invalid, Explicit, Crank_Nicolson, Implicit
+     *                                                                         *
+     **************************************************************************/
     DiffusionType predictor_diff_type () const{
         return DiffusionType::Implicit;
     }
 
-    amrex::Vector<int> m_iconserv_chem_species;
-    amrex::Gpu::DeviceVector<int> m_iconserv_chem_species_d;
+    /***************************************************************************
+    *                                                                         *
+    * Used for diagnostics ...                                               *
+    *                                                                         *
+    **************************************************************************/
+
+    MultiFab* fine_mask;
+    MultiFab* build_fine_mask() const;
 };
 #endif

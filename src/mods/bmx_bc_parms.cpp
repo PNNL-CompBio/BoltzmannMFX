@@ -49,7 +49,7 @@ namespace BC
       }
     }
 
-    // Default bc to Dirichlet if not periodic
+    // Default bc to Neumann if not periodic
     for (int dir=0; dir < 3; dir ++ ){
       if (geom.isPeriodic(dir))
       {
@@ -58,8 +58,8 @@ namespace BC
 
       } else {
 
-        diff_chem_species_lobc[dir] = amrex::LinOpBCType::Dirichlet;
-        diff_chem_species_hibc[dir] = amrex::LinOpBCType::Dirichlet;
+        diff_chem_species_lobc[dir] = amrex::LinOpBCType::Neumann;
+        diff_chem_species_hibc[dir] = amrex::LinOpBCType::Neumann;
 
       }
     }

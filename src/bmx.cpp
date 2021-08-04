@@ -103,7 +103,60 @@ bmx::bmx ()
 
     m_X_k_bc_types["Dirichlet"] = {bc_list.get_minf()};
 
+    fine_mask = 0;
+
     Gpu::synchronize();
+}
+
+void
+bmx::ComputeAndPrintSums() 
+{
+    BL_PROFILE("bmx::ComputeAndPrintSums()");
+
+    const auto p_lo = Geom(0).ProbLoArray();
+    const auto p_hi = Geom(0).ProbHiArray();
+
+    Real domain_vol = (p_hi[2]-p_lo[2])*(p_hi[1]-p_lo[1])*(p_hi[0]-p_lo[0]);
+
+    Real fluid_vol = volSum();
+
+    Real particle_vol = pc->computeParticleVolume();
+
+    Real A_in_fluid     = volWgtSum(get_X_k_const(), 0);
+    Real A_in_particles = pc->computeParticleContent(22);
+
+    Real B_in_fluid     = volWgtSum(get_X_k_const(), 1);
+    Real B_in_particles = pc->computeParticleContent(23);
+
+    Real C_in_fluid     = volWgtSum(get_X_k_const(), 2);
+    Real C_in_particles = pc->computeParticleContent(24);
+
+    amrex::Print() << "Domain   volume : " << domain_vol << std::endl;
+    amrex::Print() << "Particle + Fluid: " << fluid_vol+particle_vol << std::endl;
+    amrex::Print() << "Fluid    volume : " << fluid_vol  << std::endl;
+    amrex::Print() << "Particle volume : " << particle_vol << std::endl;
+
+    if (std::abs(domain_vol - (fluid_vol+particle_vol)) > 1.e-12 * domain_vol)
+       amrex::Abort("Volumes don't match!");
+
+#if 1
+    amrex::Print() << " A in fluid        : " << A_in_fluid << std::endl;
+    amrex::Print() << " B in fluid        : " << B_in_fluid << std::endl;
+    amrex::Print() << " C in fluid        : " << C_in_fluid << std::endl;
+
+    amrex::Print() << " A in particles    : " << A_in_particles << std::endl;
+    amrex::Print() << " B in particles    : " << B_in_particles << std::endl;
+    amrex::Print() << " C in particles    : " << C_in_particles << std::endl;
+
+    amrex::Print() << " A in fluid+part   : " << A_in_fluid + A_in_particles << std::endl;
+    amrex::Print() << " C in fluid+part   : " << C_in_fluid + C_in_particles << std::endl;
+
+    amrex::Print() << " A+C   in fluid    : " << A_in_fluid + C_in_fluid << std::endl;
+    amrex::Print() << " A+C   in particles: " << A_in_particles + C_in_particles << std::endl;
+#endif
+    amrex::Print() << " Total A + C       : " << A_in_fluid + A_in_particles +
+                                                 C_in_fluid + C_in_particles << std::endl;
+
 }
 
 void

@@ -122,7 +122,9 @@ bmx::EvolveFluid (int nstep,
 
     for (int lev = 0; lev <= finest_level; lev++)
     {
+        Real grid_vol = (geom[lev].CellSize(0))*(geom[lev].CellSize(1))*(geom[lev].CellSize(2));
         auto& ld = *m_leveldata[lev];
+
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -132,11 +134,13 @@ bmx::EvolveFluid (int nstep,
             Array4<Real      > const& X_k_n     = ld.X_k->array(mfi);
             Array4<Real const> const& X_RHS_arr = ld.X_rhs->const_array(mfi);
             Array4<Real const> const& lap_X_arr = lap_X[lev]->const_array(mfi);
+            Array4<Real const> const&    vf_arr = ld.vf_n->const_array(mfi);
 
             ParallelFor(bx, nchem_species, [=]
               AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
-                X_k_n(i,j,k,n) += theta * l_dt * lap_X_arr(i,j,k,n) + l_dt * X_RHS_arr(i,j,k,n);
+                X_k_n(i,j,k,n) += theta * l_dt * lap_X_arr(i,j,k,n) / vf_arr(i,j,k) 
+                                               + X_RHS_arr(i,j,k,n) / (vf_arr(i,j,k) * grid_vol);
             });
         } // mfi
     } // lev
