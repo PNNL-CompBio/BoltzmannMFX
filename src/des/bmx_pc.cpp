@@ -93,6 +93,7 @@ BMXParticleContainer::computeParticleVolume ()
        {
            return p.rdata(realIdx::vol);
        });
+    ParallelDescriptor::ReduceRealSum(r);
 
     return r;
 }
@@ -106,6 +107,7 @@ BMXParticleContainer::computeParticleContent (int comp)
            return (p.rdata(realIdx::vol) * p.rdata(comp));
        });
 
+    ParallelDescriptor::ReduceRealSum(r);
     return r;
 }
 
