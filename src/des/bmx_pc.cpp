@@ -88,45 +88,29 @@ void BMXParticleContainer::printParticles ()
 Real 
 BMXParticleContainer::computeParticleVolume ()
 {
-    const int lev = 0;
-    auto& plevel = GetParticles(lev);
-
-    Real sum = 0.;
-
-    for (auto& kv : plevel)
-    {
-       const auto& particles = kv.second.GetArrayOfStructs();
-       auto& soa = kv.second.GetStructOfArrays();
-       auto p_realarray = soa.realarray();
-
-       for (int i = 0; i < particles.numParticles(); ++i)
+    amrex::ReduceOps<ReduceOpSum> reduce_ops;
+    auto r = amrex::ParticleReduce<ReduceData<amrex::Real>> (
+     *this, [=] AMREX_GPU_DEVICE (const ParticleType& p) noexcept -> amrex::GpuTuple<amrex::Real>
        {
-          sum += particles[i].rdata(realIdx::vol);
-       }
-    }
-    return sum;
+           const amrex::Real sum = p.rdata(realIdx::vol);
+           return sum;
+       }, reduce_ops);
+
+    return amrex::get<0>(r);
 }
 
 Real 
 BMXParticleContainer::computeParticleContent (int comp)
 {
-    const int lev = 0;
-    auto& plevel = GetParticles(lev);
-
-    Real sum = 0.;
-
-    for (auto& kv : plevel)
-    {
-       const auto& particles = kv.second.GetArrayOfStructs();
-       auto& soa = kv.second.GetStructOfArrays();
-       auto p_realarray = soa.realarray();
-
-       for (int i = 0; i < particles.numParticles(); ++i)
+    amrex::ReduceOps<ReduceOpSum> reduce_ops;
+    auto r = amrex::ParticleReduce<ReduceData<amrex::Real>> (
+     *this, [=] AMREX_GPU_DEVICE (const ParticleType& p) noexcept -> amrex::GpuTuple<amrex::Real>
        {
-          sum += particles[i].rdata(realIdx::vol) * particles[i].rdata(comp);
-       }
-    }
-    return sum;
+           const amrex::Real sum = p.rdata(realIdx::vol) * p.rdata(comp);
+           return sum;
+       }, reduce_ops);
+
+    return amrex::get<0>(r);
 }
 
 void BMXParticleContainer::ReadStaticParameters ()
