@@ -63,7 +63,7 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void 
 setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
            Real *par_new, int *ipar_orig, int *ipar_new,
-           Real overlap, int num_reals, int num_ints) 
+           Real overlap, int num_reals, int num_ints, amrex::RandomEngine const& engine)
 {
   Real x,y,z;
   x = pos_orig[0];
@@ -81,8 +81,8 @@ setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
   Real theta = M_PI ; // * amrex::Random();
   Real phi = 2.0 * M_PI ; // * amrex::Random();
 #else
-  Real theta = M_PI * amrex::Random();
-  Real phi = 2.0 * M_PI * amrex::Random();
+  Real theta = M_PI * amrex::Random(engine);
+  Real phi = 2.0 * M_PI * amrex::Random(engine);
 #endif
   Real nx = sin(theta)*cos(phi);
   Real ny = sin(theta)*sin(phi);

@@ -71,7 +71,7 @@ BMXParticleContainer::split_particles ()
         // is at index np + poffsets[pid];
         auto poffsets = offsets.data();
         int my_proc = amrex::ParallelDescriptor::MyProc();
-        amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE (int pid) noexcept
+        amrex::ParallelForRNG( np, [=] AMREX_GPU_DEVICE (int pid, amrex::RandomEngine const& engine) noexcept
         {
             BMXParticleContainer::ParticleType& p_orig = pstruct[pid];
 
@@ -98,7 +98,7 @@ BMXParticleContainer::split_particles ()
                 // original particle
                 setNewCell(pos_orig, pos_new, par_orig,
                            par_new, ipar_orig, ipar_new,
-                           l_overlap, l_num_reals, l_num_ints);
+                           l_overlap, l_num_reals, l_num_ints, engine);
 
                 //                std::printf("OLD VOLUME OUT = %f \n", par_orig[realIdx::vol]);
                 //                std::printf("NEW VOLUME OUT = %f \n", par_new[realIdx::vol]);
