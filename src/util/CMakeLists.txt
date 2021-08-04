@@ -11,4 +11,5 @@ target_sources( bmxcore
    bmx_fillpatch_bc.H
    bmx_fillpatch.cpp
    bmx_set_chem_species_bcs.cpp
+   bmx_util.cpp
    )
