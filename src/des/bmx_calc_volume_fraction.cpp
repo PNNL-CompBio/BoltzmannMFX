@@ -52,7 +52,7 @@ void bmx::bmx_calc_volume_fraction (bool adjust_X)
     vf.mult(-1.0, vf.nGrow());
     vf.plus( 1.0, vf.nGrow());
  
-    if (vf.max(0,0) < 0.0)
+    if (vf.min(0,0) < 0.0)
     {
        amrex::Print() << "MIN OF VF AT LEVEL " << lev  << " is " << vf.min(0,0) << std::endl;
        amrex::Abort("This is unphysical");
