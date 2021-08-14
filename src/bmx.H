@@ -120,8 +120,8 @@ class bmx : public AmrCore
 
     void bmx_deposition_bcs (int lev, amrex::MultiFab & filled_mf);
 
-    Real volSum    () const;
-    Real volWgtSum (amrex::Vector<MultiFab const*> const& mfs, int comp) const;
+    Real volSum    ();
+    Real volWgtSum (amrex::Vector<MultiFab const*> const& mfs, int comp);
 
     void bmx_set_bc_type (int lev);
 
@@ -234,9 +234,16 @@ class bmx : public AmrCore
 
     void bmx_chem_species_X_rhs(Vector< MultiFab*      > const& rhs);
 
-  public:
-
     void bmx_normalize_fluid_chem_species(const Vector< MultiFab* >& X_k);
+
+    /***************************************************************************
+    *                                                                         *
+    * Used for diagnostics ...                                               *
+    *                                                                         *
+    **************************************************************************/
+
+    MultiFab* fine_mask;
+    MultiFab* build_fine_mask();
 
   private:
 
@@ -412,14 +419,5 @@ class bmx : public AmrCore
     DiffusionType predictor_diff_type () const{
         return DiffusionType::Implicit;
     }
-
-    /***************************************************************************
-    *                                                                         *
-    * Used for diagnostics ...                                               *
-    *                                                                         *
-    **************************************************************************/
-
-    MultiFab* fine_mask;
-    MultiFab* build_fine_mask() const;
 };
 #endif

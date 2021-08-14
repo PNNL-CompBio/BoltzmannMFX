@@ -1,7 +1,7 @@
 #include <bmx.H>
 
 Real
-bmx::volSum () const
+bmx::volSum ()
 {
     BL_PROFILE("bmx::volSum()");
     AMREX_ALWAYS_ASSERT(finest_level <= 1);
@@ -57,7 +57,7 @@ bmx::volSum () const
 }
 
 Real
-bmx::volWgtSum (Vector<const MultiFab*> const& mfs, int comp) const
+bmx::volWgtSum (Vector<const MultiFab*> const& mfs, int comp )
 {
     BL_PROFILE("bmx::volWgtSum()");
     AMREX_ALWAYS_ASSERT(finest_level <= 1);
@@ -115,9 +115,8 @@ bmx::volWgtSum (Vector<const MultiFab*> const& mfs, int comp) const
 }
 
 MultiFab*
-bmx::build_fine_mask() const
+bmx::build_fine_mask()
 {
-    MultiFab* fine_mask; 
     int crse_level = 0;
 
     if (fine_mask != 0) return fine_mask;

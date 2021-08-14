@@ -51,6 +51,12 @@ void bmx::bmx_calc_volume_fraction (bool adjust_X)
     // Now define this mf = (1 - particle_vol)
     vf.mult(-1.0, vf.nGrow());
     vf.plus( 1.0, vf.nGrow());
+ 
+    if (vf.max(0,0) < 0.0)
+    {
+       amrex::Print() << "MIN OF VF AT LEVEL " << lev  << " is " << vf.min(0,0) << std::endl;
+       amrex::Abort("This is unphysical");
+    }
 
     // Move any volume deposited outside the domain back into the domain
     // when BC is either a pressure inlet or mass inflow.
