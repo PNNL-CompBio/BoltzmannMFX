@@ -41,11 +41,18 @@ void DiffusionOp::define_coeffs_on_faces ( const Vector< MultiFab const* > D_k_i
 
         Box const& bx = mfi.growntilebox(1);
 
+        // Evaluate diffusion coefficient in grid cell modified by value of
+        // volume fraction.
         // These formulas assume that volume fraction = fraction of fluid in grid cell.
         amrex::ParallelFor(bx, nchem_species, [=]
           AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
           {
-             dadj_arr(i,j,k,n) = vf_arr(i,j,k) * d0_arr(i,j,k,n) / (1.0-0.45*log(vf_arr(i,j,k)));
+            if (vf_arr(i,j,k) > 0.0) {
+              dadj_arr(i,j,k,n) = vf_arr(i,j,k) * d0_arr(i,j,k,n) / (1.0-0.45*log(vf_arr(i,j,k)));
+            } else {
+              dadj_arr(i,j,k,n) = 0.1*d0_arr(i,j,k,n);
+            }
+            if (dadj_arr(i,j,k,n) < 0.1*d0_arr(i,j,k,n)) dadj_arr(i,j,k,n) = 0.1*d0_arr(i,j,k,n);
           });
 
       } // MFIter
@@ -88,7 +95,10 @@ void DiffusionOp::define_coeffs_on_faces ( const Vector< MultiFab const* > D_k_i
 
               if (z > zhi)
                  if (vf_arr(i,j,k) == 1. || vf_arr(i-1,j,k) == 1.)
+                 {
+               //  printf("bx[%d,%d,%d,%d] is zero\n",i,j,k,n);
                      bx_arr(i,j,k,n) = 0.;
+                     }
           });
 
           Box const& ybx = mfi.nodaltilebox(1);
@@ -100,7 +110,10 @@ void DiffusionOp::define_coeffs_on_faces ( const Vector< MultiFab const* > D_k_i
 
               if (z > zhi)
                  if (vf_arr(i,j,k) == 1. || vf_arr(i,j-1,k) == 1.)
+                 {
+              //   printf("by[%d,%d,%d,%d] is zero\n",i,j,k,n);
                      by_arr(i,j,k,n) = 0.;
+                     }
           });
 
           Box const& zbx = mfi.nodaltilebox(2);
@@ -111,9 +124,14 @@ void DiffusionOp::define_coeffs_on_faces ( const Vector< MultiFab const* > D_k_i
               Real zk   = (static_cast<double>(k)+.5) * dz; 
               Real zkm1 = (static_cast<double>(k)-.5) * dz; 
 
-              if ( (zk   > zhi && vf_arr(i,j,k  ) == 1.) || 
-                   (zkm1 > zhi && vf_arr(i,j,k-1) == 1.) )
+              if ( (zk   > zhi && vf_arr(i,j,k  ) == 1.) || // zk is above surface and is empty
+
+                   (zkm1 > zhi && vf_arr(i,j,k-1) == 1.) )  // zk is above surface and might have particle
+                                                            //   but cell below is empty
+                 {
+               //  printf("bz[%d,%d,%d,%d] is zero\n",i,j,k,n);
                        bz_arr(i,j,k,n) = 0.;
+                       }
           });
         } // mfi
     } // lev
