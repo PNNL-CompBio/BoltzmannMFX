@@ -537,10 +537,13 @@ bmx::bmx_init_fluid (int is_restarting, Real /*dt*/, Real /*stop_time*/)
     if (ooo_debug) amrex::Print() << "bmx_init_fluid" << std::endl;
 
     // Set to bogus value just to make sure everything gets filled later 
-    for (int lev = 0; lev <= finestLevel(); lev++)
+    if (!is_restarting)
     {
-         m_leveldata[lev]->X_k->setVal(1.e234);
-         m_leveldata[lev]->D_k->setVal(1.e234);
+        for (int lev = 0; lev <= finestLevel(); lev++)
+        {
+             m_leveldata[lev]->X_k->setVal(1.e234);
+             m_leveldata[lev]->D_k->setVal(1.e234);
+        }
     }
 
     for (int lev = 0; lev <= finestLevel(); lev++)

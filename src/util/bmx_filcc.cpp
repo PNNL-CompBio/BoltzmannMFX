@@ -11,8 +11,8 @@ void filcc (Real* data,
             const int* hi,
             const int* dom_lo,
             const int* dom_hi,
-            const Real* dx,
-            const Real* grd_lo,
+            const Real* /*dx*/,
+            const Real* /*grd_lo*/,
             const Real* time,
             const int* bc)
 {
@@ -40,14 +40,13 @@ void filcc (Real* data,
   const int dcomp = 0;
   const int numcomp = 1;
   const int bcomp = 0;
-  const int orig_comp = 0;
 
   amrex::ParallelFor(bx,
-    [q,geom,bcr,time]
+    [q,geom,bcr,domain]
     AMREX_GPU_DEVICE (int i, int j, int k) noexcept
   {
     IntVect iv(i,j,k);
-    amrex::filcc_cell(iv, q, dcomp, numcomp, geom, *time, &bcr, bcomp, orig_comp);
+    FilccCell()(iv, q, dcomp, numcomp, domain, &bcr, bcomp);
   });
 }
 
