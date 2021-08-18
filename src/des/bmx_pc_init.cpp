@@ -47,6 +47,8 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
 
     Gpu::HostVector<ParticleType> host_particles(np);
 
+    std::vector<amrex::Real> init_conc = FLUID::init_conc;
+
     for (int i = 0; i < np; i++)
     {
 #ifdef NEW_CHEM
@@ -76,9 +78,16 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
       ifs >> host_particles[i].rdata(realIdx::tauz);
       ifs >> host_particles[i].rdata(realIdx::dadt);
       ifs >> host_particles[i].rdata(realIdx::dvdt);
+      /*
+      Real tmp[3];
+      tmp[0] = 2.0e-05;
+      tmp[1] = 0.0;
+      tmp[2] = 2.0e-06;
+      */
       for (int c=0; c<FLUID::nchem_species; c++) 
       {
-        host_particles[i].rdata(realIdx::first_data+c) = FLUID::init_conc[c];
+       host_particles[i].rdata(realIdx::first_data+c) = init_conc[c];
+        //host_particles[i].rdata(realIdx::first_data+c) = tmp[c];
       }
       bmxchem->setIntegers(&host_particles[i].idata(0));
       
