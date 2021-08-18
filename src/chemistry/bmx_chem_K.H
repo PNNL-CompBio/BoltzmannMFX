@@ -112,7 +112,6 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
 {
   // cell parameters
   Real orig_cell_vol  = cell_par[realIdx::vol];
-  Real orig_cell_area = cell_par[realIdx::area];
 
   // ********************************************************************
   // Define original concentrations
@@ -122,6 +121,9 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
   fA = mesh_vals[0];
   fB = mesh_vals[1];
   fC = mesh_vals[2];
+//  printf("   Mesh Concentration A: %18.6e\n",mesh_vals[0]);
+//  printf("   Mesh Concentration B: %18.6e\n",mesh_vals[1]);
+//  printf("   Mesh Concentration C: %18.6e\n",mesh_vals[2]);
   
   // Original cell concentrations
   Real cA, cB, cC;
@@ -129,92 +131,128 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
   cB = p_vals[1];
   cC = p_vals[2];
  
-  // ********************************************************************
-  // Compute exchange with fluid
-  // 1) Update cA, cB, cC
-  // 2) Update fA, fB, fC (approximate)
-  // ********************************************************************
-  Real dA1, dB1, dC1;
-  dA1 = 0.5*dt*orig_cell_area*(k1*fA-kr1*cA);
-  dB1 = 0.0;
-  dC1 = 0.5*dt*orig_cell_area*(k3*fC-kr3*cC);
+  int i;
+  int nloop = 4;
+  double dtp = dt/static_cast<double>(nloop);
 
-  // Update cell values
-  cA += dA1/orig_cell_vol;
-  cB += dB1/orig_cell_vol;
-  cC += dC1/orig_cell_vol;
+  Real fA_tmp = fA;
+  Real fB_tmp = fB;
+  Real fC_tmp = fC;
 
-  // Adjusted fluid values -- these are just approximations because
-  //    we are not taking into account the fluid volume fraction --
-  Real fA_tmp = fA-dA1/grid_vol;
-  Real fB_tmp = fB-dB1/grid_vol;
-  Real fC_tmp = fC-dC1/grid_vol;
+  p_vals[3] = cA;
+  p_vals[4] = cB;
+  p_vals[5] = cC;
 
-  // ********************************************************************
-  // Compute changes due to reactions within the cell only 
-  // Update cA, cB, cC
-  // ********************************************************************
-  Real rA, rB, rC;
-  rA = -k2*cA + kr2*cB*cC;
-  rB =  k2*cA - kr2*cB*cC;
-  rC =  k2*cA - kr2*cB*cC;
-
-  // Increment concentrations
-  cA += dt*rA;
-  cB += dt*rB;
-  cC += dt*rC;
-
-  // ********************************************************************
-  // Increment volume 
-  // ********************************************************************
-  Real dvdt = std::max(kg*rB*orig_cell_vol,0.0);
-
-  cell_par[realIdx::dvdt] = dvdt; 
-  cell_par[realIdx::vol] = orig_cell_vol + dt*dvdt;
+  p_vals[6] = 0.0;
+  p_vals[7] = 0.0;
+  p_vals[8] = 0.0;
 
   Real new_cell_vol = cell_par[realIdx::vol];
-
-  // Update the cell area, change in area, and sizes
-  Real radius = pow((3.0*new_cell_vol/(4.0*M_PI)),1.0/3.0);
-  cell_par[realIdx::area] = 4.0*M_PI*radius*radius;
-  cell_par[realIdx::dadt] = 2.0*dvdt/radius;
-  cell_par[realIdx::a_size] = radius;
-  cell_par[realIdx::b_size] = radius;
-  cell_par[realIdx::c_size] = radius;
-
-  // Adjust concentrations for change in volume
-  Real ratio = orig_cell_vol/new_cell_vol;
-  cA *= ratio;
-  cB *= ratio;
-  cC *= ratio;
-
-  // cell parameters
   Real new_cell_area = cell_par[realIdx::area];
+  // ********************************************************************
+  // Take multiple shorter steps to evaluate chemistry
+  // ********************************************************************
+  for (i=0; i<nloop; i++) {
+    // ********************************************************************
+    // Compute exchange with fluid
+    // 1) Update cA, cB, cC
+    // 2) Update fA, fB, fC (approximate)
+    // ********************************************************************
+    Real dA1, dB1, dC1;
+    dA1 = 0.5*dtp*new_cell_area*(k1*fA_tmp-kr1*cA);
+    dB1 = 0.0;
+    dC1 = 0.5*dtp*new_cell_area*(k3*fC_tmp-kr3*cC);
 
-  // ********************************************************************
-  // Compute second exchange with fluid
-  // Update cA, cB, cC
-  // ********************************************************************
-  Real dA2, dB2, dC2;
-  dA2 = 0.5*dt*new_cell_area*(k1*fA_tmp-kr1*cA);
-  dB2 = 0.0;
-  dC2 = 0.5*dt*new_cell_area*(k3*fC_tmp-kr3*cC);
+    // Update cell values
+    cA += dA1/orig_cell_vol;
+    cB += dB1/orig_cell_vol;
+    cC += dC1/orig_cell_vol;
+    if (cA < 0.0) printf("   Initial internal concentration A: %16.8e\n",cA);
+    if (cB < 0.0) printf("   Initial internal concentration B: %16.8e\n",cB);
+    if (cC < 0.0) printf("   Initial internal concentration C: %16.8e\n",cC);
 
-  p_vals[3] = cA+(dA2/new_cell_vol);
-  p_vals[4] = cB+(dB2/new_cell_vol);
-  p_vals[5] = cC+(dC2/new_cell_vol);
+    // Adjusted fluid values -- these are just approximations because
+    //    we are not taking into account the fluid volume fraction --
+    fA_tmp += -dA1/grid_vol;
+    fB_tmp += -dB1/grid_vol;
+    fC_tmp += -dC1/grid_vol;
 
-  // ********************************************************************
-  // Save fluid concentration increments - we will divide by grid volume 
-  //      (and not multiply by dt) when we add it to the fluid 
-  // ********************************************************************
-  p_vals[6] = -(dA1+dA2);
-  p_vals[7] = -(dB1+dB2);
-  p_vals[8] = -(dC1+dC2);
+    // ********************************************************************
+    // Compute changes due to reactions within the cell only 
+    // Update cA, cB, cC
+    // ********************************************************************
+    Real rA, rB, rC;
+    rA = -k2*cA + kr2*cB*cC;
+    rB =  k2*cA - kr2*cB*cC;
+    rC =  k2*cA - kr2*cB*cC;
+
+    // Increment concentrations
+    cA += dtp*rA;
+    cB += dtp*rB;
+    cC += dtp*rC;
+    if (cA < 0.0) printf("   Intermediate internal concentration A: %16.8e\n",cA);
+    if (cB < 0.0) printf("   Intermediate internal concentration B: %16.8e\n",cB);
+    if (cC < 0.0) printf("   Intermediate internal concentration C: %16.8e\n",cC);
+
+    // ********************************************************************
+    // Increment volume 
+    // ********************************************************************
+    Real dvdt = std::max(kg*rB*new_cell_vol,0.0);
+
+    cell_par[realIdx::dvdt] = dvdt; 
+    orig_cell_vol = new_cell_vol;
+    new_cell_vol += dtp*dvdt;
+
+
+    // Update the cell area, change in area, and sizes
+    Real radius = pow((3.0*new_cell_vol/(4.0*M_PI)),1.0/3.0);
+    cell_par[realIdx::area] = 4.0*M_PI*radius*radius;
+    new_cell_area = cell_par[realIdx::area];
+    cell_par[realIdx::dadt] = 2.0*dvdt/radius;
+    cell_par[realIdx::a_size] = radius;
+    cell_par[realIdx::b_size] = radius;
+    cell_par[realIdx::c_size] = radius;
+
+    // Adjust concentrations for change in volume
+    Real ratio = orig_cell_vol/new_cell_vol;
+    cA *= ratio;
+    cB *= ratio;
+    cC *= ratio;
+
+    // cell parameters
+
+    // ********************************************************************
+    // Compute second exchange with fluid
+    // Update cA, cB, cC
+    // ********************************************************************
+    Real dA2, dB2, dC2;
+    dA2 = 0.5*dtp*new_cell_area*(k1*fA_tmp-kr1*cA);
+    dB2 = 0.0;
+    dC2 = 0.5*dtp*new_cell_area*(k3*fC_tmp-kr3*cC);
+
+    cA += dA2/new_cell_vol;
+    cB += dB2/new_cell_vol;
+    cC += dC2/new_cell_vol;
+
+    // ********************************************************************
+    // Save fluid concentration increments - we will divide by grid volume 
+    //      (and not multiply by dt) when we add it to the fluid 
+    // ********************************************************************
+    fA_tmp += -dA2/grid_vol;
+    fB_tmp += -dB2/grid_vol;
+    fC_tmp += -dC2/grid_vol;
+
+    p_vals[6] += -(dA1+dA2);
+    p_vals[7] += -(dB1+dB2);
+    p_vals[8] += -(dC1+dC2);
+  }
 
   // ********************************************************************
   // Now update the actual particle values 
   // ********************************************************************
+  p_vals[3] = cA;
+  p_vals[4] = cB;
+  p_vals[5] = cC;
   p_vals[0] = p_vals[3];
   p_vals[1] = p_vals[4];
   p_vals[2] = p_vals[5];

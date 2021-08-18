@@ -15,7 +15,7 @@ maxInteractionDistance(const Real *p1, const Real *p2, Real bndry_width)
 {
   Real r1 = p1[realIdx::a_size];
   Real r2 = p2[realIdx::a_size];
-  return r1+r2+bndry_width;
+  return (r1+r2+bndry_width);
 }
 /**
  * Calculate the force between 2 particles. r12 is computed outside this routine

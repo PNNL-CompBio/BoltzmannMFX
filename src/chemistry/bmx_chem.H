@@ -33,25 +33,25 @@ struct realIdx
     b_size,      // second ellipsoid dimension
     c_size,      // third ellipsoid dimension
     psi,         // first Euler angle
-    theta,       // second Euler angle
+    theta,       // second Euler angle                             4
     phi,         // third Euler angle
     area,        // cell surface area
     vol,         // cell volume
     velx,        // x-component of linear velocity
-    vely,        // y-component of linear velocity
+    vely,        // y-component of linear velocity                 9
     velz,        // z-component of linear velocity
     wx,          // x-component of angular velocity
     wy,          // y-component of angular velocity
     wz,          // z-component of angular velocity
-    fx,          // x-component of linear force
+    fx,          // x-component of linear force                   14
     fy,          // y-component of linear force
     fz,          // z-component of linear force
     taux,        // x-component of torque
     tauy,        // y-component of torque
-    tauz,        // z-component of torque
+    tauz,        // z-component of torque                         19
     dadt,        // rate of change of the cell area
     dvdt,        // rate of change of the cell volume
-    first_data,  // index of first value in uncharacterized block
+    first_data,  // index of first value in uncharacterized block 22
     count        // total number of elements in this enumeration
   };
 };
