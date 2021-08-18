@@ -147,6 +147,27 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
       Real l_kr2 = BMXChemistry::kr2;
       Real l_kr3 = BMXChemistry::kr3;
 
+      if (m_verbose != 0) {
+        for (BMXParIter pti(*pc, lev); pti.isValid(); ++pti)
+        {
+          auto& particles = pti.GetArrayOfStructs();
+          BMXParticleContainer::ParticleType* pstruct = particles().dataPtr();
+
+          const int np = particles.size();
+
+          const auto& interp_array = interp_ptr->array(pti);
+          for (int pid=0; pid<np; pid++) {
+              // Local array storing interpolated values
+              GpuArray<Real, interp_ncomp> interp_loc;
+
+              BMXParticleContainer::ParticleType& p = pstruct[pid];
+              Real *cell_par = &p.rdata(0);
+              Real *p_vals = &p.rdata(realIdx::first_data);
+              bmxchem->printCellConcentrations(p_vals, cell_par);
+          }
+        }
+      }
+
       for (BMXParIter pti(*pc, lev); pti.isValid(); ++pti)
       {
         auto& particles = pti.GetArrayOfStructs();

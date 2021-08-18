@@ -58,6 +58,8 @@ amrex::Real fcorner (const amrex::Real& ahat,
 
 struct TrilinearDeposition
 {
+  // These three variables are set when the TrilinearDeposition struct is passed
+  // to the ParticleToMesh routine.
   int start_part_comp;
   int start_mesh_comp;
   int   num_comp;
