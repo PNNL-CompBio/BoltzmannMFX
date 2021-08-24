@@ -598,10 +598,13 @@ bmx::bmx_init_fluid (int is_restarting, Real /*dt*/, Real /*stop_time*/)
     }
 
     // Calculate the initial volume fraction
-    bool adjust_X = false;
-    bmx_calc_volume_fraction(adjust_X);
-    for (int lev = 0; lev <= finestLevel(); lev++)
-       MultiFab::Copy(*m_leveldata[lev]->vf_o, *m_leveldata[lev]->vf_n, 0, 0, 1, m_leveldata[lev]->vf_n->nGrow());
+    if (!is_restarting) 
+    {
+        bool adjust_X = false;
+        bmx_calc_volume_fraction(adjust_X);
+        for (int lev = 0; lev <= finestLevel(); lev++)
+           MultiFab::Copy(*m_leveldata[lev]->vf_o, *m_leveldata[lev]->vf_n, 0, 0, 1, m_leveldata[lev]->vf_n->nGrow());
+    }
 
     // Average down from fine to coarse to ensure consistency
     for (int lev = finestLevel(); lev > 0; lev--)
