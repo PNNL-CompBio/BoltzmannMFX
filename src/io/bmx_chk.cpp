@@ -140,6 +140,12 @@ bmx::WriteCheckPointFile (std::string& check_file,
                   amrex::MultiFabFileFullPrefix(lev, checkpointname,
                         level_prefix, chkChemSpeciesVarsName[i]));
              }
+             {
+                MultiFab& vf_n = *m_leveldata[lev]->vf_n;
+                VisMF::Write( vf_n,
+                  amrex::MultiFabFileFullPrefix(lev, checkpointname,
+                        level_prefix, "volfrac"));
+             }
           }
        }
     }

@@ -138,6 +138,20 @@ bmx::Restart (std::string& restart_file, int *nstep, Real *dt, Real *time)
                  // Copy from the mf we used to read in to the mf we will use going forward
                  (*(chkChemSpeciesVars[i][lev])).ParallelCopy(mf, 0, 0, FLUID::nchem_species,0,0);
               }
+              {
+                 amrex::Print() << "  Loading volume fraction " << std::endl;
+    
+                 MultiFab mf;
+                 VisMF::Read(mf,
+                         amrex::MultiFabFileFullPrefix(lev,
+                                                   restart_file, level_prefix, "volfrac"),
+                                                   nullptr,
+                                                   ParallelDescriptor::IOProcessorNumber());
+
+                 // Copy from the mf we used to read in to the mf we will use going forward
+                 MultiFab* vf_n = m_leveldata[lev]->vf_n;
+                 vf_n->ParallelCopy(mf, 0, 0, 1, 0, 0);
+              }
           }
        }
 
