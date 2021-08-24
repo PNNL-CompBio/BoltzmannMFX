@@ -610,6 +610,7 @@ bmx::bmx_init_fluid (int is_restarting, Real /*dt*/, Real /*stop_time*/)
     for (int lev = finestLevel(); lev > 0; lev--)
     {
         average_down(*m_leveldata[lev]->vf_n,*m_leveldata[lev-1]->vf_n, 0, 1, refRatio(lev-1));
-        average_down(*m_leveldata[lev]->vf_o,*m_leveldata[lev-1]->vf_o, 0, 1, refRatio(lev-1));
+        if (!is_restarting) 
+            average_down(*m_leveldata[lev]->vf_o,*m_leveldata[lev-1]->vf_o, 0, 1, refRatio(lev-1));
     }
 }
