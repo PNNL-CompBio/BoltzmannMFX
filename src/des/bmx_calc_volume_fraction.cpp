@@ -93,6 +93,11 @@ void bmx::bmx_calc_volume_fraction (bool adjust_X)
                   {
                       X_k_n(i,j,k,n) *= vf_o(i,j,k) / vf_n(i,j,k);
                   }
+#if 0
+                  if (vf_n(i,j,k) < 0.0) {
+                    printf("Volume fraction at (%d,%d,%d) is %f\n",i,j,k,vf_n(i,j,k));
+                  }
+#endif
             });
         } // mfi
       } // lev
