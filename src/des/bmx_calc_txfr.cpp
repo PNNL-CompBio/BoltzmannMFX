@@ -14,7 +14,7 @@
  * species fields defined on the AMR grid
  */
 void
-bmx::bmx_calc_txfr_fluid (Real /*time*/, Real dt)
+bmx::bmx_calc_txfr_fluid (Real /*time*/, Real /*dt*/)
 {
   amrex::Print() << "Entering calc_txfr " << std::endl;
   BMXChemistry *bmxchem = BMXChemistry::instance();
@@ -155,10 +155,8 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
           const int np = particles.size();
 
-          const auto& interp_array = interp_ptr->array(pti);
           for (int pid=0; pid<np; pid++) {
               // Local array storing interpolated values
-              GpuArray<Real, interp_ncomp> interp_loc;
 
               BMXParticleContainer::ParticleType& p = pstruct[pid];
               Real *cell_par = &p.rdata(0);

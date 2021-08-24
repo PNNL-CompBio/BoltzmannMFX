@@ -6,7 +6,7 @@
  */
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 bool 
-checkSplit(Real *p_par, Real *p_conc, Real max_vol)
+checkSplit(Real *p_par, Real* /*p_conc*/, Real max_vol)
 {
   bool ret = false;
   if (p_par[realIdx::vol] > max_vol) ret = true;
@@ -24,7 +24,7 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void 
 setChildParameters(Real *p_real_orig, int *p_int_orig,
                    Real *p_real_child, int *p_int_child,
-                   Real overlap, int num_reals, int num_ints) 
+                   Real /*overlap*/, int num_reals, int num_ints) 
 {
   int i;
   int nreals = num_reals + realIdx::count-1;

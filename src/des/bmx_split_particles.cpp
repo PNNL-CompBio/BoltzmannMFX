@@ -10,8 +10,6 @@
 void
 BMXParticleContainer::split_particles ()
 {
-  BMXChemistry *bmxchem = BMXChemistry::instance();
-
   Real l_max_vol  = SPECIES::max_vol; 
   Real l_overlap  = BMXChemistry::p_overlap;
   int l_num_reals = BMXChemistry::p_num_reals;
@@ -77,7 +75,7 @@ BMXParticleContainer::split_particles ()
 
             // Check to see if particle satisfies some criteria for splitting
             // into two new particles
-            Real* p_par =  &p_orig.rdata(0);
+            // Real* p_par =  &p_orig.rdata(0);
             if (do_split_p[pid])
             {
                 // std::printf("MAKING NEW PARTICLE FROM VOL = %f \n", p_par[realIdx::vol]);
