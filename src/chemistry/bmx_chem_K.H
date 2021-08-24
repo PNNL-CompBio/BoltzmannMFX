@@ -121,9 +121,6 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
   fA = mesh_vals[0];
   fB = mesh_vals[1];
   fC = mesh_vals[2];
-//  printf("   Mesh Concentration A: %18.6e\n",mesh_vals[0]);
-//  printf("   Mesh Concentration B: %18.6e\n",mesh_vals[1]);
-//  printf("   Mesh Concentration C: %18.6e\n",mesh_vals[2]);
   
   // Original cell concentrations
   Real cA, cB, cC;
@@ -167,9 +164,11 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
     cA += dA1/orig_cell_vol;
     cB += dB1/orig_cell_vol;
     cC += dC1/orig_cell_vol;
+#if 0
     if (cA < 0.0) printf("   Initial internal concentration A: %16.8e\n",cA);
     if (cB < 0.0) printf("   Initial internal concentration B: %16.8e\n",cB);
     if (cC < 0.0) printf("   Initial internal concentration C: %16.8e\n",cC);
+#endif
 
     // Adjusted fluid values -- these are just approximations because
     //    we are not taking into account the fluid volume fraction --
@@ -190,9 +189,11 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
     cA += dtp*rA;
     cB += dtp*rB;
     cC += dtp*rC;
+#if 0
     if (cA < 0.0) printf("   Intermediate internal concentration A: %16.8e\n",cA);
     if (cB < 0.0) printf("   Intermediate internal concentration B: %16.8e\n",cB);
     if (cC < 0.0) printf("   Intermediate internal concentration C: %16.8e\n",cC);
+#endif
 
     // ********************************************************************
     // Increment volume 
@@ -202,6 +203,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
     cell_par[realIdx::dvdt] = dvdt; 
     orig_cell_vol = new_cell_vol;
     new_cell_vol += dtp*dvdt;
+    cell_par[realIdx::vol] = new_cell_vol; 
 
 
     // Update the cell area, change in area, and sizes
@@ -233,6 +235,12 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
     cA += dA2/new_cell_vol;
     cB += dB2/new_cell_vol;
     cC += dC2/new_cell_vol;
+
+#if 0
+    if (cA < 0.0) printf("   Final internal concentration A: %16.8e\n",cA);
+    if (cB < 0.0) printf("   Final internal concentration B: %16.8e\n",cB);
+    if (cC < 0.0) printf("   Final internal concentration C: %16.8e\n",cC);
+#endif
 
     // ********************************************************************
     // Save fluid concentration increments - we will divide by grid volume 

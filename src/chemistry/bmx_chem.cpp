@@ -119,13 +119,15 @@ void BMXChemistry::getVarArraySizes(int *num_ints, int *num_reals, int *tot_ints
 
 /**
  * Print concentrations of chemical species in cell
+ * @param id particle index
  * @param p_vals values of concentrations in particles
  * @param p_par values of particle parameters
  */
-void BMXChemistry::printCellConcentrations(Real *p_vals, Real *p_par)
+void BMXChemistry::printCellConcentrations(int id, Real *p_vals, Real *p_par)
 {
   if (p_verbose) {
     printf("\n");
+    printf("        Particle: %d\n",id);
     if (p_vals[0] < 0) {
       printf(" XXXX   Concentration A: %18.6e\n",p_vals[0]);
     } else {

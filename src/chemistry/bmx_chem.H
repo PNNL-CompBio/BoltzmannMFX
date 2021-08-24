@@ -121,10 +121,11 @@ class BMXChemistry
 
   /**
    * Print concentrations of chemical species in cell
+   * @param id particle index
    * @param p_vals values of concentrations in particles
    * @param p_par values of particle parameters
    */
-  void printCellConcentrations(Real *p_vals, Real *p_par);
+  void printCellConcentrations(int id, Real *p_vals, Real *p_par);
 
   /**
    * Return values that are also stored in particle idata fields

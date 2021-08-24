@@ -90,6 +90,9 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
     // Pointer to Multifab for interpolation
     MultiFab* interp_ptr;
 
+    // Pointer to Multifab for volume fraction
+    MultiFab* interp_vptr;
+
 #ifdef NEW_CHEM
     const int interp_ng    = 1;    // Only one layer needed for interpolation
     const int interp_ncomp = 3;
@@ -108,6 +111,14 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
                       m_leveldata[lev]->X_k->nComp(), interp_ng);
       interp_ptr->FillBoundary(geom[lev].periodicity());
 
+      // Store vf_n for interpolation
+      interp_vptr = new MultiFab(grids[lev], dmap[lev], 1, 1, MFInfo());
+
+      // Copy 
+      MultiFab::Copy(*interp_vptr,*m_leveldata[lev]->vf_n, 0, 0,
+                      m_leveldata[lev]->vf_n->nComp(), 1);
+      interp_vptr->FillBoundary(geom[lev].periodicity());
+
     }
     else
     {
@@ -123,6 +134,16 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
                                 interp_ng, interp_ng);
 
       interp_ptr->FillBoundary(geom[lev].periodicity());
+
+      // Store vf_n for interpolation
+      interp_vptr = new MultiFab(pba, pdm, 1, 1, MFInfo());
+
+      // Copy 
+      interp_vptr->ParallelCopy(*m_leveldata[lev]->vf_n, 0, 0,
+                                m_leveldata[lev]->vf_n->nComp(),
+                                1, 1);
+
+      interp_vptr->FillBoundary(geom[lev].periodicity());
     }
 
 #ifdef _OPENMP
@@ -161,7 +182,7 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
               BMXParticleContainer::ParticleType& p = pstruct[pid];
               Real *cell_par = &p.rdata(0);
               Real *p_vals = &p.rdata(realIdx::first_data);
-              bmxchem->printCellConcentrations(p_vals, cell_par);
+              bmxchem->printCellConcentrations(p.id(), p_vals, cell_par);
           }
         }
       }
@@ -175,23 +196,30 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
         const auto& interp_array = interp_ptr->array(pti);
 
+        const auto& interp_varray = interp_vptr->array(pti);
+
         amrex::ParallelFor(np,
-            [pstruct,interp_array,plo,dxi,bmxchem,grid_vol,dt,
+            [pstruct,interp_array,interp_varray,plo,dxi,grid_vol,dt,
              l_k1,l_k2,l_k3,l_kr1,l_kr2,l_kr3,l_kg]
             AMREX_GPU_DEVICE (int pid) noexcept
               {
               // Local array storing interpolated values
               GpuArray<Real, interp_ncomp> interp_loc;
 
+              GpuArray<Real, 1> interp_vloc;
+
               BMXParticleContainer::ParticleType& p = pstruct[pid];
 
               trilinear_interp(p.pos(), &interp_loc[0],
                                interp_array, plo, dxi, interp_ncomp);
 
+              trilinear_interp(p.pos(), &interp_vloc[0],
+                               interp_varray, plo, dxi, 1);
+
 #ifdef NEW_CHEM
               Real *cell_par = &p.rdata(0);
               Real *p_vals = &p.rdata(realIdx::first_data);
-              xferMeshToParticleAndUpdateChem(grid_vol, cell_par,
+              xferMeshToParticleAndUpdateChem(grid_vol*interp_vloc[0], cell_par,
                                               &interp_loc[0], p_vals, dt,
                                               l_k1, l_k2, l_k3,
                                               l_kr1, l_kr2, l_kr3, l_kg);
