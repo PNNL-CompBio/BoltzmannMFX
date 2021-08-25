@@ -42,7 +42,7 @@ BMXParticleContainer::split_particles ()
         Gpu::Device::synchronize();
 
         // Prefix sum to count total number of new particles to create
-        Gpu::DeviceVector<unsigned int> offsets(np);
+        Gpu::DeviceVector<unsigned int> offsets(np+1);
         Gpu::exclusive_scan(do_split.begin(), do_split.end(), offsets.begin());
         unsigned int num_split;
 #ifdef AMREX_USE_GPU
