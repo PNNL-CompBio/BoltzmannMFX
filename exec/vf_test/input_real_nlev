@@ -12,7 +12,7 @@ amrex.fpe_trap_invalid = 1
 #! Fluid solver
 #!-----------------------------------------------------------//
 
-bmx.fixed_dt = 1
+bmx.fixed_dt = 1.0
 
 bmx.max_step = 40000
 #bmx.max_step = 1
@@ -20,7 +20,7 @@ bmx.max_step = 40000
 dem.solve = bacteria
 bmx.particle_init_type = "AsciiFile"
 
-bmx.verbose = 1
+bmx.verbose = 0
 
 #_______________________________________________________________________
 # Geometry / grids / tiles
@@ -94,7 +94,7 @@ amr.par_ascii_file ="vis"
 amr.plot_int       =  200
 amr.plot_file      ="plt"
 
-amr.check_int      = -1
+amr.check_int      = 4000
 amr.check_file     ="chk"
 
 #! Restart from checkpoint
@@ -119,7 +119,7 @@ chem_species.k2 = 0.4
 chem_species.kr2 = 0.06
 chem_species.k3 = 2.0e-5
 chem_species.kr3 = 2.0e-5
-chem_species.kg = 100.0
+chem_species.kg = 400.0
 
 #_______________________________________________________________________
 # Cell force parameters
