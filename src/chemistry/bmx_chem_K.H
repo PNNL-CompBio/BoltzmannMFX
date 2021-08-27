@@ -146,6 +146,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
 
   Real new_cell_vol = cell_par[realIdx::vol];
   Real new_cell_area = cell_par[realIdx::area];
+  bool is_negative = false;
   // ********************************************************************
   // Take multiple shorter steps to evaluate chemistry
   // ********************************************************************
@@ -164,10 +165,13 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
     cA += dA1/orig_cell_vol;
     cB += dB1/orig_cell_vol;
     cC += dC1/orig_cell_vol;
-#if 0
+#ifndef AMREX_USE_GPU
     if (cA < 0.0) printf("   Initial internal concentration A: %16.8e\n",cA);
     if (cB < 0.0) printf("   Initial internal concentration B: %16.8e\n",cB);
     if (cC < 0.0) printf("   Initial internal concentration C: %16.8e\n",cC);
+    if (cA < 0.0) is_negative = true;
+    if (cB < 0.0) is_negative = true;
+    if (cC < 0.0) is_negative = true;
 #endif
 
     // Adjusted fluid values -- these are just approximations because
@@ -189,10 +193,13 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
     cA += dtp*rA;
     cB += dtp*rB;
     cC += dtp*rC;
-#if 0
+#ifndef AMREX_USE_GPU
     if (cA < 0.0) printf("   Intermediate internal concentration A: %16.8e\n",cA);
     if (cB < 0.0) printf("   Intermediate internal concentration B: %16.8e\n",cB);
     if (cC < 0.0) printf("   Intermediate internal concentration C: %16.8e\n",cC);
+    if (cA < 0.0) is_negative = true;
+    if (cB < 0.0) is_negative = true;
+    if (cC < 0.0) is_negative = true;
 #endif
 
     // ********************************************************************
@@ -236,10 +243,13 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
     cB += dB2/new_cell_vol;
     cC += dC2/new_cell_vol;
 
-#if 0
+#ifndef AMREX_USE_GPU
     if (cA < 0.0) printf("   Final internal concentration A: %16.8e\n",cA);
     if (cB < 0.0) printf("   Final internal concentration B: %16.8e\n",cB);
     if (cC < 0.0) printf("   Final internal concentration C: %16.8e\n",cC);
+    if (cA < 0.0) is_negative = true;
+    if (cB < 0.0) is_negative = true;
+    if (cC < 0.0) is_negative = true;
 #endif
 
     // ********************************************************************
@@ -253,6 +263,10 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
     p_vals[6] += -(dA1+dA2);
     p_vals[7] += -(dB1+dB2);
     p_vals[8] += -(dC1+dC2);
+  }
+  if (is_negative) {
+    std::cout << "Negative concentrations found. Aborting..." << std::endl;
+    amrex::Abort("Negative concentrations found. Aborting...");
   }
 
   // ********************************************************************
