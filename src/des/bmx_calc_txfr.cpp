@@ -198,9 +198,10 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
         const auto& interp_varray = interp_vptr->array(pti);
 
+        int nloop = m_nloop;
         amrex::ParallelFor(np,
             [pstruct,interp_array,interp_varray,plo,dxi,grid_vol,dt,
-             l_k1,l_k2,l_k3,l_kr1,l_kr2,l_kr3,l_kg]
+             nloop,l_k1,l_k2,l_k3,l_kr1,l_kr2,l_kr3,l_kg]
             AMREX_GPU_DEVICE (int pid) noexcept
               {
               // Local array storing interpolated values
@@ -220,7 +221,7 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
               Real *cell_par = &p.rdata(0);
               Real *p_vals = &p.rdata(realIdx::first_data);
               xferMeshToParticleAndUpdateChem(grid_vol*interp_vloc[0], cell_par,
-                                              &interp_loc[0], p_vals, dt,
+                                              &interp_loc[0], p_vals, dt, nloop,
                                               l_k1, l_k2, l_k3,
                                               l_kr1, l_kr2, l_kr3, l_kg);
 #endif

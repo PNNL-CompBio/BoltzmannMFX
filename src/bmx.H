@@ -306,9 +306,11 @@ class bmx : public AmrCore
 
     amrex::Real enthalpy_source = 0;
 
-    // Options to control bmx verbosity level
+    // Option to control bmx verbosity level
     int m_verbose = 0;
 
+    // Option to control number of substeps in chemistry integration
+    int m_nloop;
     // ***************************************************************
 
     int call_udf;

@@ -76,6 +76,10 @@ bmx::InitParams ()
     // Set the bmx class flag equal to the FLUID parameter
     advect_fluid_chem_species = FLUID::solve_chem_species;
 
+    // Read in number of substeps in chemistry integration
+    m_nloop = 4;
+    pp.query("substeps",m_nloop);
+
     // We can still turn it off explicitly even if we passed chem_species inputs
     pp.query("advect_fluid_chem_species", advect_fluid_chem_species);
 

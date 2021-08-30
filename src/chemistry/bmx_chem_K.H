@@ -103,10 +103,11 @@ setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
  * @param mesh_vals values of concentrations on mesh
  * @param p_vals values of concentrations in particles
  * @param dt time step interval
+ * @param nloop number of subintervals to use for chemistry
  */
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void xferMeshToParticleAndUpdateChem(Real grid_vol,
-    Real *cell_par, Real *mesh_vals, Real *p_vals, Real dt,
+    Real *cell_par, Real *mesh_vals, Real *p_vals, Real dt, int nloop,
     Real k1, Real k2, Real k3, Real kr1, Real kr2, Real kr3,
     Real kg)
 {
@@ -129,7 +130,6 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
   cC = p_vals[2];
  
   int i;
-  int nloop = 4;
   double dtp = dt/static_cast<double>(nloop);
 
   Real fA_tmp = fA;

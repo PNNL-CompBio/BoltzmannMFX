@@ -107,6 +107,7 @@ class BMXChemistry
    */
   void getVarArraySizes(int *num_ints, int *num_reals, int *tot_ints, int *tot_reals);
 
+#if 0
   /**
    * Transfer mesh values to internal concentrations and evaluate chemistry
    * @param grid_vol volume of grid cell that contains biological cell
@@ -118,6 +119,7 @@ class BMXChemistry
   AMREX_GPU_HOST_DEVICE AMREX_INLINE
   void xferMeshToParticleAndUpdateChem(Real grid_vol, Real *cell_par,
       Real *mesh_vals, Real *p_vals, Real dt);
+#endif
 
   /**
    * Print concentrations of chemical species in cell
