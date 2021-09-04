@@ -122,7 +122,15 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
   fA = mesh_vals[0];
   fB = mesh_vals[1];
   fC = mesh_vals[2];
-  
+
+#ifndef AMREX_USE_GPU
+    if (fA < 0.0) printf("   internal NEGATIVE fluid concentration A : %16.8e\n",fA);
+    if (fB < 0.0) printf("   internal NEGATIVE fluid concentration B : %16.8e\n",fB);
+    if (fC < 0.0) printf("   internal NEGATIVE fluid concentration C : %16.8e\n",fC);
+#endif
+
+   if (fA < 0. || fB < 0. || fC < 0.) amrex::Abort("Negative fluid concentration into particle integrator");
+
   // Original cell concentrations
   Real cA, cB, cC;
   cA = p_vals[0];
@@ -165,10 +173,11 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
     cA += dA1/orig_cell_vol;
     cB += dB1/orig_cell_vol;
     cC += dC1/orig_cell_vol;
+
 #ifndef AMREX_USE_GPU
-    if (cA < 0.0) printf("   Initial internal concentration A: %16.8e\n",cA);
-    if (cB < 0.0) printf("   Initial internal concentration B: %16.8e\n",cB);
-    if (cC < 0.0) printf("   Initial internal concentration C: %16.8e\n",cC);
+    if (cA < 0.0) printf("   internal concentration A at iteration : %d %16.8e\n",i,cA);
+    if (cB < 0.0) printf("   internal concentration B at iteration : %d %16.8e\n",i,cB);
+    if (cC < 0.0) printf("   internal concentration C at iteration : %d %16.8e\n",i,cC);
     if (cA < 0.0) is_negative = true;
     if (cB < 0.0) is_negative = true;
     if (cC < 0.0) is_negative = true;
@@ -179,6 +188,12 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
     fA_tmp += -dA1/grid_vol;
     fB_tmp += -dB1/grid_vol;
     fC_tmp += -dC1/grid_vol;
+
+    if (fA_tmp < 0. || fB_tmp < 0. || fC_tmp < 0.) 
+    {
+      std::cout << "Negative F_tmp values at iteration " << i << " " << fA_tmp << " " << fB_tmp << " " << fC_tmp << std::endl;
+      amrex::Abort("Negative fluid concentration into particle integrator");
+    }
 
     // ********************************************************************
     // Compute changes due to reactions within the cell only 

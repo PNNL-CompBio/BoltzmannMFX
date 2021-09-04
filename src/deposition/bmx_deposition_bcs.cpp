@@ -4,8 +4,6 @@ void bmx::bmx_deposition_bcs (int lev, amrex::MultiFab& filled_mf)
 {
   BL_PROFILE("bmx::bmx_deposition_bcs_scalar()");
 
-  amrex::Print() << "BCS ON LEV " << lev << std::endl;
-
   Box domain(Geom(lev).Domain());
 
   const int minf = bc_list.get_minf();
