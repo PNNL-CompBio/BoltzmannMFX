@@ -291,7 +291,8 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 #if !defined(AMREX_USE_GPU)
                 if (verbose) {
                   char sbuf[128];
-                  sprintf(sbuf,"particle: %d position: %14.8f %14.8f %14.8f volume: %16.8e",particle.id(),particle.pos(0),
+                  int p_id = particle.id();
+                  sprintf(sbuf,"particle: %d position: %14.8f %14.8f %14.8f volume: %16.8e",p_id,particle.pos(0),
                       particle.pos(1),particle.pos(2), particle.rdata(realIdx::vol));
                   std::cout << sbuf << std::endl;
                 }

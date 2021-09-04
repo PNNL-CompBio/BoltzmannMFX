@@ -154,6 +154,35 @@ bmx::EvolveFluid (int nstep,
 
         Real omt = 1. - theta;
         diffusion_op->diffuse_chem_species(get_X_k(), get_D_k_const(), get_vf_new_const(), omt, l_dt);
+
+        for (int lev = 0; lev <= finest_level; lev++)
+        {
+            Real grid_vol = (geom[lev].CellSize(0))*(geom[lev].CellSize(1))*(geom[lev].CellSize(2));
+            auto& ld = *m_leveldata[lev];
+
+            for (MFIter mfi(*ld.X_k,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+            {
+                Box const& bx = mfi.tilebox();
+                Array4<Real      > const& X_k_o     = ld.X_ko->array(mfi);
+                Array4<Real      > const& X_k_n     = ld.X_k->array(mfi);
+                Array4<Real const> const& X_RHS_arr = ld.X_rhs->const_array(mfi);
+
+                ParallelFor(bx, nchem_species, [=]
+                  AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                {
+                    if (X_k_n(i,j,k,n) < -1.e-15) 
+                    {
+                        amrex::Print() << "Implicitly created negative fluid X_k at (i,j,k) " 
+                                       << IntVect(i,j,k) << " at level  " << lev << " in component " << n << " " << X_k_n(i,j,k) << std::endl;
+                        amrex::Print() << "OLD WAS " << X_k_o(i,j,k,n) << std::endl;
+                        amrex::Print() << "RHS WAS " << X_RHS_arr(i,j,k,n) << std::endl;
+                        amrex::Abort();
+                    } else {
+                        X_k_n(i,j,k,n) = std::max(X_k_n(i,j,k,n),0.0);
+                    }
+                });
+            }
+        }
     }
 
     for (int lev = 0; lev <= finest_level; lev++)

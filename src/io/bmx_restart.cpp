@@ -1,6 +1,5 @@
 #include <AMReX_MultiFab.H>
 #include <AMReX_PlotFileUtil.H>
-
 #include <AMReX_VisMF.H>    // amrex::VisMF::Write(MultiFab)
 #include <AMReX_VectorIO.H> // amrex::[read,write]IntData(array_of_ints)
 #include <AMReX_AmrCore.H>
@@ -125,7 +124,8 @@ bmx::Restart (std::string& restart_file, int *nstep, Real *dt, Real *time)
            {
               for (int i = 0; i < chkChemSpeciesVars.size(); i++ )
               {
-                 amrex::Print() << "  Loading " << chkChemSpeciesVarsName[i] << std::endl;
+                 amrex::Print() << "  Loading " << chkChemSpeciesVarsName[i] << " at level " << lev << std::endl;
+                 (chkChemSpeciesVars[i][lev])->setVal(0.);
     
                  MultiFab mf;
                  VisMF::Read(mf,
@@ -139,7 +139,7 @@ bmx::Restart (std::string& restart_file, int *nstep, Real *dt, Real *time)
                  (*(chkChemSpeciesVars[i][lev])).ParallelCopy(mf, 0, 0, FLUID::nchem_species,0,0);
               }
               {
-                 amrex::Print() << "  Loading volume fraction " << std::endl;
+                 amrex::Print() << "  Loading volume fraction " << " at level " << lev << std::endl;
     
                  MultiFab mf;
                  VisMF::Read(mf,
@@ -150,6 +150,7 @@ bmx::Restart (std::string& restart_file, int *nstep, Real *dt, Real *time)
 
                  // Copy from the mf we used to read in to the mf we will use going forward
                  MultiFab* vf_n = m_leveldata[lev]->vf_n;
+                 vf_n->setVal(0.);
                  vf_n->ParallelCopy(mf, 0, 0, 1, 0, 0);
               }
           }
