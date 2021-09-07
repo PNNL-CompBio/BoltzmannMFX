@@ -3,6 +3,7 @@
 
 # Random number seed
 bmx.seed = 21893
+bmx.seed = 75734
 
 #_______________________________________________________________________
 # Solver settings
@@ -12,9 +13,9 @@ amrex.fpe_trap_invalid = 1
 #! Fluid solver
 #!-----------------------------------------------------------//
 
-bmx.fixed_dt = 1.0
+bmx.fixed_dt = 0.25
 
-bmx.max_step = 40000
+bmx.max_step = 80000
 #bmx.max_step = 1
 
 dem.solve = bacteria
@@ -99,7 +100,7 @@ amr.check_file     ="chk"
 
 #! Restart from checkpoint
 #!-----------------------------------------------------------//
-#amr.restart   ="chk00100"
+amr.restart   ="chk40000"
 
 #_______________________________________________________________________
 # Fluid model settings
@@ -120,6 +121,7 @@ chem_species.kr2 = 0.06
 chem_species.k3 = 2.0e-5
 chem_species.kr3 = 2.0e-5
 chem_species.kg = 400.0
+bmx.substeps = 4
 
 #_______________________________________________________________________
 # Cell force parameters

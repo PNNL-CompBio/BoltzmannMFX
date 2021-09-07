@@ -183,8 +183,8 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
     if (cC < 0.0) is_negative = true;
 #endif
 
-    // Adjusted fluid values -- these are just approximations because
-    //    we are not taking into account the fluid volume fraction --
+    // Adjusted fluid values. Grid vol represents the volume of fluid in the
+    // grid cell not occupied by the particle
     fA_tmp += -dA1/grid_vol;
     fB_tmp += -dB1/grid_vol;
     fC_tmp += -dC1/grid_vol;
@@ -220,10 +220,9 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
     // ********************************************************************
     // Increment volume 
     // ********************************************************************
-    Real dvdt = std::max(kg*rB*new_cell_vol,0.0);
+    Real dvdt = std::max(kg*rB*orig_cell_vol,0.0);
 
     cell_par[realIdx::dvdt] = dvdt; 
-    orig_cell_vol = new_cell_vol;
     new_cell_vol += dtp*dvdt;
     cell_par[realIdx::vol] = new_cell_vol; 
 
@@ -278,6 +277,8 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
     p_vals[6] += -(dA1+dA2);
     p_vals[7] += -(dB1+dB2);
     p_vals[8] += -(dC1+dC2);
+
+    orig_cell_vol = new_cell_vol;
   }
   if (is_negative) {
     std::cout << "Negative concentrations found. Aborting..." << std::endl;

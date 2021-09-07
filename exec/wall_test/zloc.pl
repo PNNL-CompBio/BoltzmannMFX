@@ -5,6 +5,7 @@ while(<STDIN>) {
     $t = $1;
   }
   if (/particle: 0 position:\s+\S+\s+\S+\s+(\S+)/) {
-    print "$t $1\n";
+    $z = $1-0.001848;
+    print "$t $z\n";
   }
 }

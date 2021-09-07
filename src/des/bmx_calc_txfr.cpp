@@ -182,7 +182,7 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
               BMXParticleContainer::ParticleType& p = pstruct[pid];
               Real *cell_par = &p.rdata(0);
               Real *p_vals = &p.rdata(realIdx::first_data);
-              bmxchem->printCellConcentrations(p.id(), p_vals, cell_par);
+              bmxchem->printCellConcentrations((int)p.id(), p_vals, cell_par);
           }
         }
       }

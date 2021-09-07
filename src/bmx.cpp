@@ -111,6 +111,7 @@ bmx::bmx ()
 void
 bmx::ComputeAndPrintSums() 
 {
+  return;
     BL_PROFILE("bmx::ComputeAndPrintSums()");
 
     const auto p_lo = Geom(0).ProbLoArray();

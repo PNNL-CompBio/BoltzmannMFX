@@ -12,7 +12,7 @@ bmx.seed = 21893
 #! Fluid solver
 #!-----------------------------------------------------------//
 
-bmx.fixed_dt = 0.005
+bmx.fixed_dt = 1.0
 
 bmx.max_step = 1000
 
@@ -21,6 +21,7 @@ bmx.particle_init_type = "AsciiFile"
 
 amr.blocking_factor = 2
 
+bmx.verbose = 1
 #_______________________________________________________________________
 # Geometry / grids / tiles
 
@@ -30,7 +31,7 @@ amr.max_level = 0
 geometry.coord_sys   = 0                       # 0: Cartesian
 geometry.is_periodic = 1       1       0       # Is periodic in each direction?
 geometry.prob_lo     = 0.      0.      0.      # lo corner of physical domain
-geometry.prob_hi     = 1.0     1.0     1.0     # hi corner of physical domain
+geometry.prob_hi     = 0.2464  0.2464  0.2464  # hi corner of physical domain
 
 # Number of grid cells in each direction at the coarsest level
 amr.n_cell =  8 8 8
@@ -97,30 +98,35 @@ amr.check_file     ="chk"
 #
 fluid.solve = fluid
 fluid.chem_species      = A B C
-fluid.chem_species_diff = 0.01 0.0 0.01
-fluid.init_conc_species = 0.1 0.0 0.01
-fluid.surface_location = 0.75
-fluid.liquid_film_thickness = 0.05
+fluid.chem_species_diff = 6.0e-10 0.0 6.0e-10
+fluid.init_conc_species = 2.0e-5 0.0 2.0e-6
+fluid.surface_location = 0.001848
 
 #_______________________________________________________________________
 # Reaction model parameters (shut off reactions for this test)
 #
-chem_species.max_vol = 0.001
+chem_species.max_vol = 1.0e-12
 chem_species.k1 = 0.0
 chem_species.kr1 = 0.0
 chem_species.k2 = 0.0
 chem_species.kr2 = 0.0
 chem_species.k3 = 0.0
 chem_species.kr3 = 0.0
-chem_species.kg = 2000.0
+chem_species.kg = 35.0
 
 #_______________________________________________________________________
 # Cell force parameters (shut off wall force for this test)
 #
-cell_force.boundary_width = 0.05
-cell_force.stiffness = 100.0
-cell_force.wall_boundary_width = 0.03
+cell_force.boundary_width = 5.0e-5
+cell_force.wall_boundary_width = 0.0
+
+cell_force.stiffness = 2.0e6
 cell_force.wall_stiffness = 0.0
+
+#cell_force.repulsion_stiffness = 5.0e6
+#cell_force.adhesion_stiffness = 1.0e6
+#cell_force.wall_repulsion_stiffness = 0.0
+#cell_force.wall_adhesion_stiffness = 0.0
 
 #Diffusion_type: 0 = explicit, 1 = C-N, 2 = implicit
 bmx.diffusion_type = 0

@@ -19,7 +19,7 @@ bmx.max_step = 40000
 dem.solve = bacteria
 bmx.particle_init_type = "AsciiFile"
 
-bmx.verbose = 0
+bmx.verbose = 1
 
 amr.blocking_factor = 2
 

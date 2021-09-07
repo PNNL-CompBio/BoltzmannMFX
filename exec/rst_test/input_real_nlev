@@ -15,13 +15,13 @@ amrex.fpe_trap_invalid = 1
 
 bmx.fixed_dt = 1.0
 
-bmx.max_step = 40000
+bmx.max_step = 20010
 #bmx.max_step = 1
 
 dem.solve = bacteria
 bmx.particle_init_type = "AsciiFile"
 
-bmx.verbose = 0
+bmx.verbose = 1
 
 #_______________________________________________________________________
 # Geometry / grids / tiles
@@ -121,7 +121,7 @@ chem_species.kr2 = 0.06
 chem_species.k3 = 2.0e-5
 chem_species.kr3 = 2.0e-5
 chem_species.kg = 400.0
-bmx.substeps = 4
+bmx.substeps = 32
 
 #_______________________________________________________________________
 # Cell force parameters
