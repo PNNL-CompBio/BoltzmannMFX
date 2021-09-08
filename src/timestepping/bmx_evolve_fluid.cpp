@@ -170,12 +170,12 @@ bmx::EvolveFluid (int nstep,
                 ParallelFor(bx, nchem_species, [=]
                   AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
                 {
-                    if (X_k_n(i,j,k,n) < -1.e-15) 
+                    if (X_k_n(i,j,k,n) < -1.e-12) 
                     {
-                        amrex::Print() << "Implicitly created negative fluid X_k at (i,j,k) " 
-                                       << IntVect(i,j,k) << " at level  " << lev << " in component " << n << " " << X_k_n(i,j,k) << std::endl;
-                        amrex::Print() << "OLD WAS " << X_k_o(i,j,k,n) << std::endl;
-                        amrex::Print() << "RHS WAS " << X_RHS_arr(i,j,k,n) << std::endl;
+                        std::cout << "Implicitly created negative fluid X_k at (i,j,k) " 
+                                  << IntVect(i,j,k) << " at level  " << lev << " in component " << n << " " << X_k_n(i,j,k) << std::endl;
+                        std::cout << "OLD WAS " << X_k_o(i,j,k,n) << std::endl;
+                        std::cout << "RHS WAS " << X_RHS_arr(i,j,k,n) << std::endl;
                         amrex::Abort();
                     } else {
                         X_k_n(i,j,k,n) = std::max(X_k_n(i,j,k,n),0.0);
