@@ -13,9 +13,9 @@ amrex.fpe_trap_invalid = 1
 #! Fluid solver
 #!-----------------------------------------------------------//
 
-bmx.fixed_dt = 0.25
+bmx.fixed_dt = 0.5
 
-bmx.max_step = 80000
+bmx.max_step = 40000
 #bmx.max_step = 1
 
 dem.solve = bacteria
@@ -100,7 +100,7 @@ amr.check_file     ="chk"
 
 #! Restart from checkpoint
 #!-----------------------------------------------------------//
-amr.restart   ="chk40000"
+#amr.restart   ="chk40000"
 
 #_______________________________________________________________________
 # Fluid model settings
