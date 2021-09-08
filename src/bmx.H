@@ -355,6 +355,7 @@ class bmx : public AmrCore
     int plt_X_k    = 1;
     int plt_D_k    = 0;
     int plt_vf     = 1;
+    int plt_np     = 1;
 
     // Total number of variables to write in plot file
     int pltVarCount = 0;

@@ -27,9 +27,11 @@ bmx::InitIOPltData ()
         pp.query("plt_X",     plt_X_k   );
         pp.query("plt_D",     plt_D_k   );
         pp.query("plt_vf",    plt_vf    );
+        pp.query("plt_np",    plt_np    );
  
         if( plt_X_k == 1)  pltVarCount += FLUID::nchem_species;
         if( plt_D_k == 1)  pltVarCount += FLUID::nchem_species;
+        if( plt_np  == 1)  pltVarCount += 1;
         if( plt_vf  == 1)  pltVarCount += 1;
     }
 }
@@ -70,6 +72,10 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
       if(plt_vf == 1)
           pltFldNames.push_back("volfrac");
 
+      // Number of particles per grid cell
+      if(plt_np == 1)
+          pltFldNames.push_back("particle_count");
+
       for (int lev = 0; lev <= finestLevel(); ++lev)
       {
         // Multifab to hold all the variables -- there can be only one!!!!
@@ -93,9 +99,18 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
           lc += FLUID::nchem_species;
         }
 
-         if(plt_vf == 1)
-         {
+        if(plt_vf == 1)
+        {
              MultiFab::Copy(*mf[lev], *m_leveldata[lev]->vf_n, 0, lc, 1, 0);
+             lc += 1;
+        }
+
+        if(plt_np == 1)
+        {
+             MultiFab temp_dat(grids[lev], dmap[lev], 1, 0);
+             temp_dat.setVal(0);
+             pc->Increment(temp_dat, lev);
+             MultiFab::Copy(*mf[lev], temp_dat, 0, lc, 1, 0);
              lc += 1;
         }
       } // lev
