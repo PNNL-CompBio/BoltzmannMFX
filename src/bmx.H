@@ -22,7 +22,7 @@
 #include <bmx_leveldata.H>
 
 // Deposition scheme enumeration
- enum DepositionScheme {trilinear, square_dpvm, true_dpvm, centroid};
+ enum DepositionScheme {one_to_one, trilinear, square_dpvm, true_dpvm, centroid};
 
 using namespace amrex;
 

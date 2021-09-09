@@ -20,8 +20,14 @@ void bmx::bmx_calc_volume_fraction (bool adjust_X)
   // the volume of the cell (note this is the default) 
   bool vol_weight     = true;
 
-  if (bmx::m_deposition_scheme == DepositionScheme::trilinear) 
+  if (bmx::m_deposition_scheme == DepositionScheme::one_to_one) 
   {
+      ParticleToMesh(*pc,get_vf_new(),0,finest_level,
+                     OneToOneDeposition{start_part_comp,start_mesh_comp,num_comp},
+                     zero_out_input, vol_weight);
+
+  } else if (bmx::m_deposition_scheme == DepositionScheme::trilinear) {
+
       ParticleToMesh(*pc,get_vf_new(),0,finest_level,
                      TrilinearDeposition{start_part_comp,start_mesh_comp,num_comp},
                      zero_out_input, vol_weight);

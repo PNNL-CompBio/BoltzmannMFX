@@ -147,10 +147,13 @@ bmx::InitParams ()
   {
     ParmParse pp("bmx");
 
-    std::string deposition_scheme = "trilinear";
+    std::string deposition_scheme = "one_to_one";
     pp.query("deposition_scheme", deposition_scheme);
 
-    if (deposition_scheme.compare("trilinear") == 0) {
+    if (deposition_scheme.compare("one_to_one") == 0) {
+      m_deposition_scheme = DepositionScheme::one_to_one;
+    }
+    else if (deposition_scheme.compare("trilinear") == 0) {
       m_deposition_scheme = DepositionScheme::trilinear;
     }
     else if (deposition_scheme.compare("trilinear-dpvm-square") == 0) {

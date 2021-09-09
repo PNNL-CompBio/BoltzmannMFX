@@ -38,6 +38,21 @@ void trilinear_interp (const amrex::RealVect& pos,
                         sx_hi[0]*sx_hi[1]*sx_hi[2]*interp_array(i  , j  , k  ,n);
 }
 
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void one_to_one_interp (const amrex::RealVect& pos,
+                        amrex::Real* interp_vals,
+                        amrex::Array4<amrex::Real const> const& interp_array,
+                        const amrex::RealVect& plo,
+                        const amrex::RealVect& dxi,
+                        const int interp_comp)
+{
 
+    const amrex::RealVect lx = (pos - plo)*dxi;
+    const amrex::IntVect ijk = lx.floor();
 
+    int i = ijk[0]; int j = ijk[1]; int k = ijk[2];
+
+    for (int n = 0; n < interp_comp; n++)
+       interp_vals[n] = interp_array(i,j,k,n);
+}
 #endif

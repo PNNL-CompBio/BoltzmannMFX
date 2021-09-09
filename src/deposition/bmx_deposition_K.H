@@ -56,6 +56,34 @@ amrex::Real fcorner (const amrex::Real& ahat,
 
 }
 
+struct OneToOneDeposition
+{
+  // These three variables are set when the TrilinearDeposition struct is passed
+  // to the ParticleToMesh routine.
+  int start_part_comp;
+  int start_mesh_comp;
+  int   num_comp;
+
+  AMREX_GPU_DEVICE
+  void operator()
+                  (const BMXParticleContainer::ParticleType& p,
+                   amrex::Array4<amrex::Real> const& rho,
+                   amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& plo,
+                   amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& dxi) const noexcept
+  {
+      amrex::Real lx = (p.pos(0) - plo[0]) * dxi[0];
+      amrex::Real ly = (p.pos(1) - plo[1]) * dxi[1];
+      amrex::Real lz = (p.pos(2) - plo[2]) * dxi[2];
+
+      int i = static_cast<int>(amrex::Math::floor(lx));
+      int j = static_cast<int>(amrex::Math::floor(ly));
+      int k = static_cast<int>(amrex::Math::floor(lz));
+
+      for (int icomp = 0; icomp < num_comp; icomp++)
+          rho(i,j,k,start_mesh_comp+icomp) += p.rdata(start_part_comp+icomp);
+  }
+};
+
 struct TrilinearDeposition
 {
   // These three variables are set when the TrilinearDeposition struct is passed

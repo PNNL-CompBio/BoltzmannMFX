@@ -35,7 +35,13 @@ bmx::bmx_calc_txfr_fluid (Real /*time*/, Real /*dt*/)
   // (note the default is true)
   bool vol_weight     = false;
 
-  if (bmx::m_deposition_scheme == DepositionScheme::trilinear) {
+  if (bmx::m_deposition_scheme == DepositionScheme::one_to_one) {
+
+     ParticleToMesh(*pc,get_X_rhs(),0,finest_level,
+                    OneToOneDeposition{start_part_comp,start_mesh_comp,num_comp},
+                    zero_out_input, vol_weight);
+
+  } else if (bmx::m_deposition_scheme == DepositionScheme::trilinear) {
 
      ParticleToMesh(*pc,get_X_rhs(),0,finest_level,
                     TrilinearDeposition{start_part_comp,start_mesh_comp,num_comp},
@@ -198,10 +204,18 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
         const auto& interp_varray = interp_vptr->array(pti);
 
+        int l_deposition_scheme;
+        if (bmx::m_deposition_scheme == DepositionScheme::one_to_one) 
+             l_deposition_scheme = 0;
+        else if (bmx::m_deposition_scheme == DepositionScheme::trilinear) 
+             l_deposition_scheme = 1;
+        else 
+           amrex::Abort("Dont know this depsoition scheme in calc_txfr_particle");
+
         int nloop = m_nloop;
         amrex::ParallelFor(np,
             [pstruct,interp_array,interp_varray,plo,dxi,grid_vol,dt,
-             nloop,l_k1,l_k2,l_k3,l_kr1,l_kr2,l_kr3,l_kg]
+             nloop,l_k1,l_k2,l_k3,l_kr1,l_kr2,l_kr3,l_kg,l_deposition_scheme]
             AMREX_GPU_DEVICE (int pid) noexcept
               {
               // Local array storing interpolated values
@@ -211,11 +225,20 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
               BMXParticleContainer::ParticleType& p = pstruct[pid];
 
-              trilinear_interp(p.pos(), &interp_loc[0],
-                               interp_array, plo, dxi, interp_ncomp);
-
-              trilinear_interp(p.pos(), &interp_vloc[0],
-                               interp_varray, plo, dxi, 1);
+              if (l_deposition_scheme == 0)
+              {
+                  one_to_one_interp(p.pos(), &interp_loc[0],
+                                    interp_array, plo, dxi, interp_ncomp);
+                  one_to_one_interp(p.pos(), &interp_vloc[0],
+                                    interp_varray, plo, dxi, 1);
+              }
+              else if (l_deposition_scheme == 1)
+              {
+                  trilinear_interp(p.pos(), &interp_loc[0],
+                                   interp_array, plo, dxi, interp_ncomp);
+                  trilinear_interp(p.pos(), &interp_vloc[0],
+                                   interp_varray, plo, dxi, 1);
+              }
 
 #ifdef NEW_CHEM
               Real *cell_par = &p.rdata(0);
