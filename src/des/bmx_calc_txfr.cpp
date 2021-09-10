@@ -99,6 +99,12 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
     // Pointer to Multifab for volume fraction
     MultiFab* interp_vptr;
 
+    // Create Multifab with number of particles in grid cell
+    MultiFab temp_npart(grids[lev], dmap[lev], 1, 0);
+    temp_npart.setVal(0);
+    pc->Increment(temp_npart, lev);
+    MultiFab* interp_nptr;
+
 #ifdef NEW_CHEM
     const int interp_ng    = 1;    // Only one layer needed for interpolation
     const int interp_ncomp = 3;
@@ -125,6 +131,14 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
                       m_leveldata[lev]->vf_n->nComp(), 1);
       interp_vptr->FillBoundary(geom[lev].periodicity());
 
+      // Store n_part for interpolation
+      interp_nptr = new MultiFab(grids[lev], dmap[lev], 1, 1, MFInfo());
+
+      // Copy 
+      MultiFab::Copy(*interp_nptr,temp_npart, 0, 0,
+                      temp_npart.nComp(), 1);
+      interp_nptr->FillBoundary(geom[lev].periodicity());
+
     }
     else
     {
@@ -150,6 +164,16 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
                                 1, 1);
 
       interp_vptr->FillBoundary(geom[lev].periodicity());
+
+      // Store n_part for interpolation
+      interp_nptr = new MultiFab(pba, pdm, 1, 1, MFInfo());
+
+      // Copy 
+      interp_nptr->ParallelCopy(temp_npart, 0, 0,
+                                temp_npart.nComp(),
+                                1, 1);
+
+      interp_nptr->FillBoundary(geom[lev].periodicity());
     }
 
 #ifdef _OPENMP
@@ -204,6 +228,8 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
         const auto& interp_varray = interp_vptr->array(pti);
 
+        const auto& interp_narray = interp_nptr->array(pti);
+
         int l_deposition_scheme;
         if (bmx::m_deposition_scheme == DepositionScheme::one_to_one) 
              l_deposition_scheme = 0;
@@ -214,7 +240,7 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
         int nloop = m_nloop;
         amrex::ParallelFor(np,
-            [pstruct,interp_array,interp_varray,plo,dxi,grid_vol,dt,
+            [pstruct,interp_array,interp_varray,interp_narray,plo,dxi,grid_vol,dt,
              nloop,l_k1,l_k2,l_k3,l_kr1,l_kr2,l_kr3,l_kg,l_deposition_scheme]
             AMREX_GPU_DEVICE (int pid) noexcept
               {
@@ -222,6 +248,8 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
               GpuArray<Real, interp_ncomp> interp_loc;
 
               GpuArray<Real, 1> interp_vloc;
+
+              GpuArray<Real, 1> interp_nloc;
 
               BMXParticleContainer::ParticleType& p = pstruct[pid];
 
@@ -239,11 +267,14 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
                   trilinear_interp(p.pos(), &interp_vloc[0],
                                    interp_varray, plo, dxi, 1);
               }
+              one_to_one_interp(p.pos(), &interp_nloc[0],
+                  interp_narray, plo, dxi, 1);
 
 #ifdef NEW_CHEM
               Real *cell_par = &p.rdata(0);
               Real *p_vals = &p.rdata(realIdx::first_data);
-              xferMeshToParticleAndUpdateChem(grid_vol*interp_vloc[0], cell_par,
+              if (interp_nloc[0] == 0.0) amrex::Abort("Number of particles is Zero!");
+              xferMeshToParticleAndUpdateChem(grid_vol*interp_vloc[0]/interp_nloc[0], cell_par,
                                               &interp_loc[0], p_vals, dt, nloop,
                                               l_k1, l_k2, l_k3,
                                               l_kr1, l_kr2, l_kr3, l_kg);
@@ -253,6 +284,8 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
     } // omp region
 
     delete interp_ptr;
+    delete interp_vptr;
+    delete interp_nptr;
 
   } // lev
   amrex::Print() << "TOTAL PARTICLES "<<nparticles<<std::endl;
