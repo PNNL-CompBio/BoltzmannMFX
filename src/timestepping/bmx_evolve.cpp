@@ -31,7 +31,7 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
 
 #if 0
     const int nchem_species = FLUID::nchem_species;
-    for (int lev = 0; lev <= finest_level; lev++)
+    for (int lev = 1; lev <= finest_level; lev++)
     {
       auto& ld = *m_leveldata[lev];
 
@@ -43,16 +43,27 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
         Box const& bx = mfi.tilebox();
 
         Array4<Real const> const& vf_n     = ld.vf_n->const_array(mfi);
+        Array4<Real const> const& X_k_arr = ld.X_k->const_array(mfi);
 
-        ParallelFor(bx, nchem_species, [=]
+        int ix, iy, iz;
+        ix = -1;
+        iy = -1;
+        iz = -1;
+        ParallelFor(bx, nchem_species, [&ix,&iy,&iz,vf_n]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
               if (vf_n(i,j,k) != 1.0)
               {
-                IntVect cell(i,j,k);
-                print_state(*ld.X_k, cell, -1);
+                ix = i;
+                iy = j;
+                iz = k;
               }
             });
+        if (ix > -1 && iy > -1 && iz > -1) {
+          std::cout << "XK " << X_k_arr(ix,iy,iz,0) << std::endl;
+          std::cout << "XK " << X_k_arr(ix,iy,iz,1) << std::endl;
+          std::cout << "XK " << X_k_arr(ix,iy,iz,2) << std::endl;
+        }
       } // mfi
     } // lev
 #endif
