@@ -14,7 +14,7 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
 
     /****************************************************************************
      *                                                                          *
-     * Evolve Fluid                                                             *
+     * Evolve Fluid and Update Chemistry inside Particles                       *
      *                                                                          *
      ***************************************************************************/
     Real start_fluid = ParallelDescriptor::second();
@@ -28,6 +28,35 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
 
     Real end_fluid = ParallelDescriptor::second() - start_fluid - drag_timing;
     ParallelDescriptor::ReduceRealMax(end_fluid, ParallelDescriptor::IOProcessorNumber());
+
+#if 0
+    const int nchem_species = FLUID::nchem_species;
+    for (int lev = 0; lev <= finest_level; lev++)
+    {
+      auto& ld = *m_leveldata[lev];
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+      for (MFIter mfi(*ld.vf_n,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+      {
+        Box const& bx = mfi.tilebox();
+
+        Array4<Real const> const& vf_n     = ld.vf_n->const_array(mfi);
+
+        ParallelFor(bx, nchem_species, [=]
+            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            {
+              if (vf_n(i,j,k) != 1.0)
+              {
+                IntVect cell(i,j,k);
+                print_state(*ld.X_k, cell, -1);
+              }
+            });
+      } // mfi
+    } // lev
+#endif
+
 
     /****************************************************************************
      *                                                                          *
