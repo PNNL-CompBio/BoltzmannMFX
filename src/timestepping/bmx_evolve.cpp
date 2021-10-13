@@ -60,6 +60,7 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
               }
             });
         if (ix > -1 && iy > -1 && iz > -1) {
+          std::cout << "VF " << vf_n(ix,iy,iz,0) << std::endl;
           std::cout << "XK " << X_k_arr(ix,iy,iz,0) << std::endl;
           std::cout << "XK " << X_k_arr(ix,iy,iz,1) << std::endl;
           std::cout << "XK " << X_k_arr(ix,iy,iz,2) << std::endl;
