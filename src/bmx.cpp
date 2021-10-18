@@ -11,7 +11,8 @@ std::string      bmx::load_balance_type    = "KnapSack";
 std::string      bmx::knapsack_weight_type = "RunTimeCosts";
 int              bmx::load_balance_fluid   = 1;
 int              bmx::knapsack_nmax        = 128;
-DepositionScheme bmx::m_deposition_scheme;
+DepositionScheme bmx::m_cnc_deposition_scheme;
+DepositionScheme bmx::m_vf_deposition_scheme;
 amrex::Real      bmx::m_deposition_scale_factor = 1.0;
 
 int  bmx::plot_int        = -1;

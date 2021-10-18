@@ -66,6 +66,45 @@ bmx::EvolveFluid (int nstep,
 
     // Deposit sources/sink from individual particles to grid
     bmx_calc_txfr_fluid(time, dt);
+#if 1
+    for (int lev = 1; lev <= finest_level; lev++)
+    {
+      auto& ld = *m_leveldata[lev];
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+      for (MFIter mfi(*ld.vf_n,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+      {
+        Box const& bx = mfi.tilebox();
+
+        Array4<Real const> const& vf_n     = ld.vf_n->const_array(mfi);
+        Array4<Real const> const& X_k_arr = ld.X_k->const_array(mfi);
+
+        int ix, iy, iz;
+        ix = -1;
+        iy = -1;
+        iz = -1;
+        ParallelFor(bx, nchem_species, [&ix,&iy,&iz,vf_n]
+            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            {
+              if (vf_n(i,j,k) != 1.0)
+              {
+                ix = i;
+                iy = j;
+                iz = k;
+              }
+            });
+        if (ix > -1 && iy > -1 && iz > -1) {
+          std::cout << "VF(1) " << vf_n(ix,iy,iz,0) << std::endl;
+          std::cout << "XK(1) " << X_k_arr(ix,iy,iz,0) << std::endl;
+          std::cout << "XK(1) " << X_k_arr(ix,iy,iz,1) << std::endl;
+          std::cout << "XK(1) " << X_k_arr(ix,iy,iz,2) << std::endl;
+        }
+      } // mfi
+    } // lev
+#endif
+
 
     // Calculate the fraction of each grid cell not occupied by biological cells -- this
     //   1) defines vf_n using the current particle locations

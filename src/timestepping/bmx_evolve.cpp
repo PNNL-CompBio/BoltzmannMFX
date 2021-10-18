@@ -29,7 +29,7 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
     Real end_fluid = ParallelDescriptor::second() - start_fluid - drag_timing;
     ParallelDescriptor::ReduceRealMax(end_fluid, ParallelDescriptor::IOProcessorNumber());
 
-#if 0
+#if 1
     const int nchem_species = FLUID::nchem_species;
     for (int lev = 1; lev <= finest_level; lev++)
     {

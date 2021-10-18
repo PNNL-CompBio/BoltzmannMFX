@@ -112,7 +112,8 @@ class bmx : public AmrCore
                           const int lev,
                           const Box& domain);
 
-    static DepositionScheme m_deposition_scheme;
+    static DepositionScheme m_cnc_deposition_scheme;
+    static DepositionScheme m_vf_deposition_scheme;
 
     static amrex::Real m_deposition_scale_factor;
 

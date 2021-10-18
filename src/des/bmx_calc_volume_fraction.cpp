@@ -20,33 +20,33 @@ void bmx::bmx_calc_volume_fraction (bool adjust_X)
   // the volume of the cell (note this is the default) 
   bool vol_weight     = true;
 
-  if (bmx::m_deposition_scheme == DepositionScheme::one_to_one) 
+  if (bmx::m_vf_deposition_scheme == DepositionScheme::one_to_one) 
   {
       ParticleToMesh(*pc,get_vf_new(),0,finest_level,
                      OneToOneDeposition{start_part_comp,start_mesh_comp,num_comp},
                      zero_out_input, vol_weight);
 
-  } else if (bmx::m_deposition_scheme == DepositionScheme::trilinear) {
+  } else if (bmx::m_vf_deposition_scheme == DepositionScheme::trilinear) {
 
       ParticleToMesh(*pc,get_vf_new(),0,finest_level,
                      TrilinearDeposition{start_part_comp,start_mesh_comp,num_comp},
                      zero_out_input, vol_weight);
 #if 0
-  } else if (bmx::m_deposition_scheme == DepositionScheme::square_dpvm) {
+  } else if (bmx::m_vf_deposition_scheme == DepositionScheme::square_dpvm) {
 
     ParticleToMesh(*pc,get_vf(),0,finest_level,DPVMSquareDeposition());
 
-  } else if (bmx::m_deposition_scheme == DepositionScheme::true_dpvm) {
+  } else if (bmx::m_vf_deposition_scheme == DepositionScheme::true_dpvm) {
 
     ParticleToMesh(*pc,get_vf(),0,finest_level,TrueDPVMDeposition());
 
-  } else if (bmx::m_deposition_scheme == DepositionScheme::centroid) {
+  } else if (bmx::m_vf_deposition_scheme == DepositionScheme::centroid) {
 
     ParticleToMesh(*pc,get_vf(),0,finest_level,CentroidDeposition());
 #endif
 
   } else {
-    amrex::Abort("Don't know this deposition_scheme!");
+    amrex::Abort("Don't know this deposition_scheme for volume fraction!");
   }
 
   for (int lev = 0; lev <= finest_level; lev++)  

@@ -122,6 +122,16 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
   fA = mesh_vals[0];
   fB = mesh_vals[1];
   fC = mesh_vals[2];
+  Real mA, mB, mC;
+  mA = fA*grid_vol;
+  mB = fB*grid_vol;
+  mC = fC*grid_vol;
+
+  printf("   Loop size                     : %16d\n",nloop);
+  printf("   Initial radius                : %16.8e\n",cell_par[realIdx::a_size]);
+  printf("   Initial fluid concentration A : %16.8e\n",fA);
+  printf("   Initial fluid concentration B : %16.8e\n",fB);
+  printf("   Initial fluid concentration C : %16.8e\n",fC);
 
 #ifndef AMREX_USE_GPU
     if (fA < 0.0) printf("   internal NEGATIVE fluid concentration A : %16.8e\n",fA);
@@ -174,25 +184,79 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
     cB += dB1/orig_cell_vol;
     cC += dC1/orig_cell_vol;
 
+    // Adjusted fluid values. Grid vol represents the volume of fluid in the
+    // grid cell not occupied by the particle
+    double dfA = dA1/grid_vol;
+    double dfB = dB1/grid_vol;
+    double dfC = dC1/grid_vol;
+    //if (dfA > fA_tmp) dfA = fA_tmp;
+    //if (dfB > fB_tmp) dfB = fB_tmp;
+    //if (dfC > fC_tmp) dfC = fC_tmp;
+    fA_tmp -= dfA;
+    fB_tmp -= dfB;
+    fC_tmp -= dfC;
+    if (cA < 0.0) {
+      cA -= dA1/orig_cell_vol;
+      fA_tmp += dfA;
+      dA1 = -cA*orig_cell_vol;
+      cA = 0.0;
+      dfA = dA1/grid_vol;
+      fA_tmp -= dfA;
+    }
+    if (fA_tmp < 0.0) {
+      cA -= dA1/orig_cell_vol;
+      fA_tmp += dfA;
+      dA1 = fA_tmp*grid_vol;
+      dfA = dA1/grid_vol;
+      fA_tmp = 0.0;
+      cA += dA1/orig_cell_vol;
+    }
+    if (cB < 0.0) {
+      cB -= dB1/orig_cell_vol;
+      fB_tmp += dfB;
+      dB1 = -cB*orig_cell_vol;
+      cB = 0.0;
+      dfB = dB1/grid_vol;
+      fB_tmp -= dfB;
+    }
+    if (fB_tmp < 0.0) {
+      cB -= dB1/orig_cell_vol;
+      fB_tmp += dfB;
+      dB1 = fB_tmp*grid_vol;
+      dfB = dB1/grid_vol;
+      fB_tmp = 0.0;
+      cB += dB1/orig_cell_vol;
+    }
+    if (cC < 0.0) {
+      cC -= dC1/orig_cell_vol;
+      fC_tmp += dfC;
+      dC1 = -cC*orig_cell_vol;
+      cC = 0.0;
+      dfC = dC1/grid_vol;
+      fC_tmp -= dfC;
+    }
+    if (fC_tmp < 0.0) {
+      cC -= dC1/orig_cell_vol;
+      fC_tmp += dfC;
+      dC1 = fC_tmp*grid_vol;
+      dfC = dC1/grid_vol;
+      fC_tmp = 0.0;
+      cC += dC1/orig_cell_vol;
+    }
+
 #ifndef AMREX_USE_GPU
-    if (cA < 0.0) printf("   internal concentration A at iteration : %d %16.8e\n",i,cA);
-    if (cB < 0.0) printf("   internal concentration B at iteration : %d %16.8e\n",i,cB);
-    if (cC < 0.0) printf("   internal concentration C at iteration : %d %16.8e\n",i,cC);
+    if (cA < 0.0) printf("   Internal concentration A : %d %16.8e\n",cA);
+    if (cB < 0.0) printf("   Internal concentration B : %d %16.8e\n",cB);
+    if (cC < 0.0) printf("   Internal concentration C : %d %16.8e\n",cC);
     if (cA < 0.0) is_negative = true;
     if (cB < 0.0) is_negative = true;
     if (cC < 0.0) is_negative = true;
 #endif
 
-    // Adjusted fluid values. Grid vol represents the volume of fluid in the
-    // grid cell not occupied by the particle
-    fA_tmp += -dA1/grid_vol;
-    fB_tmp += -dB1/grid_vol;
-    fC_tmp += -dC1/grid_vol;
-
     if (fA_tmp < 0. || fB_tmp < 0. || fC_tmp < 0.) 
     {
-      std::cout << "Negative F_tmp values at iteration " << i << " " << fA_tmp << " " << fB_tmp << " " << fC_tmp << std::endl;
-      amrex::Abort("Negative fluid concentration into particle integrator");
+      std::cout << "Negative F_tmp values at first update " << fA_tmp << " " << fB_tmp << " " << fC_tmp << std::endl;
+      amrex::Abort("Negative fluid concentration at first update");
     }
 
     // ********************************************************************
@@ -205,9 +269,41 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
     rC =  k2*cA - kr2*cB*cC;
 
     // Increment concentrations
-    cA += dtp*rA;
-    cB += dtp*rB;
-    cC += dtp*rC;
+    Real dA3, dB3, dC3;
+    dA3 = dtp*rA;
+    dB3 = dtp*rB;
+    dC3 = dtp*rC;
+    cA += dA3;
+    cB += dB3;
+    cC += dC3;
+    if (cA < 0.0) {
+      cA -= dA3;
+      dA3 = -cA;
+      dB3 = -dA3;
+      dC3 = -dA3;
+      cA += dA3;
+      cB += dB3;
+      cC += dC3;
+    }
+    if (cB < 0.0) {
+      cB -= dB3;
+      dB3 = -cB;
+      dA3 = -dB3;
+      dC3 = dB3;
+      cA += dA3;
+      cB += dB3;
+      cC += dC3;
+    }
+    if (cC < 0.0) {
+      cC -= dC3;
+      dC3 = -cC;
+      dA3 = -dC3;
+      dB3 = dC3;
+      cA += dA3;
+      cB += dB3;
+      cC += dC3;
+    }
+
 #ifndef AMREX_USE_GPU
     if (cA < 0.0) printf("   Intermediate internal concentration A: %16.8e\n",cA);
     if (cB < 0.0) printf("   Intermediate internal concentration B: %16.8e\n",cB);
@@ -257,6 +353,68 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
     cB += dB2/new_cell_vol;
     cC += dC2/new_cell_vol;
 
+    // ********************************************************************
+    // Save fluid concentration increments - we will divide by grid volume 
+    //      (and not multiply by dt) when we add it to the fluid 
+    // ********************************************************************
+    dfA = dA2/grid_vol;
+    dfB = dB2/grid_vol;
+    dfC = dC2/grid_vol;
+    //if (dfA > fA_tmp) dfA = fA_tmp;
+    //if (dfB > fB_tmp) dfB = fB_tmp;
+    //if (dfC > fC_tmp) dfC = fC_tmp;
+    fA_tmp -= dfA;
+    fB_tmp -= dfB;
+    fC_tmp -= dfC;
+    if (cA < 0.0) {
+      cA -= dA1/orig_cell_vol;
+      fA_tmp += dfA;
+      dA2 = -cA*orig_cell_vol;
+      cA = 0.0;
+      dfA = dA2/grid_vol;
+      fA_tmp -= dfA;
+    }
+    if (fA_tmp < 0.0) {
+      cA -= dA2/orig_cell_vol;
+      fA_tmp += dfA;
+      dA2 = - fA_tmp*grid_vol;
+      dfA = -fA_tmp;
+      fA_tmp = 0.0;
+      cA += dA2/orig_cell_vol;
+    }
+    if (cB < 0.0) {
+      cB -= dB1/orig_cell_vol;
+      fB_tmp += dfB;
+      dB2 = -cB*orig_cell_vol;
+      cA = 0.0;
+      dfB = dB2/grid_vol;
+      fB_tmp -= dfB;
+    }
+    if (fB_tmp < 0.0) {
+      cB -= dB2/orig_cell_vol;
+      fB_tmp += dfB;
+      dB2 = - fB_tmp*grid_vol;
+      dfB = -fB_tmp;
+      fB_tmp = 0.0;
+      cB += dB2/orig_cell_vol;
+    }
+    if (cC < 0.0) {
+      cC -= dC2/orig_cell_vol;
+      fC_tmp += dfC;
+      dC2 = -cC*orig_cell_vol;
+      cA = 0.0;
+      dfC = dC2/grid_vol;
+      fC_tmp -= dfC;
+    }
+    if (fC_tmp < 0.0) {
+      cC -= dC2/orig_cell_vol;
+      fC_tmp += dfC;
+      dC2 = - fC_tmp*grid_vol;
+      dfC = -fC_tmp;
+      fC_tmp = 0.0;
+      cC += dC2/orig_cell_vol;
+    }
+
 #ifndef AMREX_USE_GPU
     if (cA < 0.0) printf("   Final internal concentration A: %16.8e\n",cA);
     if (cB < 0.0) printf("   Final internal concentration B: %16.8e\n",cB);
@@ -266,13 +424,11 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
     if (cC < 0.0) is_negative = true;
 #endif
 
-    // ********************************************************************
-    // Save fluid concentration increments - we will divide by grid volume 
-    //      (and not multiply by dt) when we add it to the fluid 
-    // ********************************************************************
-    fA_tmp += -dA2/grid_vol;
-    fB_tmp += -dB2/grid_vol;
-    fC_tmp += -dC2/grid_vol;
+    if (fA_tmp < 0. || fB_tmp < 0. || fC_tmp < 0.) 
+    {
+      std::cout << "Negative F_tmp values at second update " << fA_tmp << " " << fB_tmp << " " << fC_tmp << std::endl;
+      amrex::Abort("Negative fluid concentration at second update");
+    }
 
     p_vals[6] += -(dA1+dA2);
     p_vals[7] += -(dB1+dB2);
@@ -280,6 +436,9 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
 
     orig_cell_vol = new_cell_vol;
   }
+  printf("   Final mesh concentration A    : %16.8e\n",fA_tmp);
+  printf("   Final mesh concentration B    : %16.8e\n",fB_tmp);
+  printf("   Final mesh concentration C    : %16.8e\n",fC_tmp);
   if (is_negative) {
     std::cout << "Negative concentrations found. Aborting..." << std::endl;
     amrex::Abort("Negative concentrations found. Aborting...");
@@ -294,5 +453,8 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
   p_vals[0] = p_vals[3];
   p_vals[1] = p_vals[4];
   p_vals[2] = p_vals[5];
+  printf("   Final concentration increment for A: %16.8e\n",p_vals[6]);
+  printf("   Final concentration increment for B: %16.8e\n",p_vals[7]);
+  printf("   Final concentration increment for C: %16.8e\n",p_vals[8]);
 }
 

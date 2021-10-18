@@ -35,34 +35,34 @@ bmx::bmx_calc_txfr_fluid (Real /*time*/, Real /*dt*/)
   // (note the default is true)
   bool vol_weight     = false;
 
-  if (bmx::m_deposition_scheme == DepositionScheme::one_to_one) {
+  if (bmx::m_cnc_deposition_scheme == DepositionScheme::one_to_one) {
 
      ParticleToMesh(*pc,get_X_rhs(),0,finest_level,
                     OneToOneDeposition{start_part_comp,start_mesh_comp,num_comp},
                     zero_out_input, vol_weight);
 
-  } else if (bmx::m_deposition_scheme == DepositionScheme::trilinear) {
+  } else if (bmx::m_cnc_deposition_scheme == DepositionScheme::trilinear) {
 
      ParticleToMesh(*pc,get_X_rhs(),0,finest_level,
                     TrilinearDeposition{start_part_comp,start_mesh_comp,num_comp},
                     zero_out_input, vol_weight);
 
 #if 0
-  } else if (bmx::m_deposition_scheme == DepositionScheme::square_dpvm) {
+  } else if (bmx::m_cnc_deposition_scheme == DepositionScheme::square_dpvm) {
 
     ParticleToMesh(*pc,get_X_rhsvf(),0,finest_level,DPVMSquareDeposition());
 
-  } else if (bmx::m_deposition_scheme == DepositionScheme::true_dpvm) {
+  } else if (bmx::m_cnc_deposition_scheme == DepositionScheme::true_dpvm) {
 
     ParticleToMesh(*pc,get_X_rhsvf(),0,finest_level,TrueDPVMDeposition());
 
-  } else if (bmx::m_deposition_scheme == DepositionScheme::centroid) {
+  } else if (bmx::m_cnc_deposition_scheme == DepositionScheme::centroid) {
 
     ParticleToMesh(*pc,get_X_rhsvf(),0,finest_level,CentroidDeposition());
 #endif
 
   } else {
-    amrex::Abort("Don't know this deposition_scheme!");
+    amrex::Abort("Don't know this deposition_scheme for concentrations!");
   }
   amrex::Print() << "Leaving calc_txfr " << std::endl;
 }
@@ -107,9 +107,10 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
 #ifdef NEW_CHEM
     const int interp_ng    = 1;    // Only one layer needed for interpolation
+    //const int interp_ncomp = bmxchem->getIntData(intIdx::num_reals);
     const int interp_ncomp = 3;
 
-    if (m_leveldata[lev]->X_k->nComp() != 3)
+    if (m_leveldata[lev]->X_k->nComp() != interp_ncomp)
       amrex::Abort("We are not interpolating the right number of components in calc_txfr_particle");
 #endif
 
@@ -230,50 +231,74 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
         const auto& interp_narray = interp_nptr->array(pti);
 
-        int l_deposition_scheme;
-        if (bmx::m_deposition_scheme == DepositionScheme::one_to_one) 
-             l_deposition_scheme = 0;
-        else if (bmx::m_deposition_scheme == DepositionScheme::trilinear) 
-             l_deposition_scheme = 1;
+        int l_cnc_deposition_scheme;
+        if (bmx::m_cnc_deposition_scheme == DepositionScheme::one_to_one) 
+             l_cnc_deposition_scheme = 0;
+        else if (bmx::m_cnc_deposition_scheme == DepositionScheme::trilinear) 
+             l_cnc_deposition_scheme = 1;
+        else 
+           amrex::Abort("Dont know this depsoition scheme in calc_txfr_particle");
+
+        int l_vf_deposition_scheme;
+        if (bmx::m_vf_deposition_scheme == DepositionScheme::one_to_one) 
+             l_vf_deposition_scheme = 0;
+        else if (bmx::m_vf_deposition_scheme == DepositionScheme::trilinear) 
+             l_vf_deposition_scheme = 1;
         else 
            amrex::Abort("Dont know this depsoition scheme in calc_txfr_particle");
 
         int nloop = m_nloop;
         amrex::ParallelFor(np,
             [pstruct,interp_array,interp_varray,interp_narray,plo,dxi,grid_vol,dt,
-             nloop,l_k1,l_k2,l_k3,l_kr1,l_kr2,l_kr3,l_kg,l_deposition_scheme]
+             nloop,l_k1,l_k2,l_k3,l_kr1,l_kr2,l_kr3,l_kg,
+             l_cnc_deposition_scheme,l_vf_deposition_scheme]
             AMREX_GPU_DEVICE (int pid) noexcept
               {
               // Local array storing interpolated values
               GpuArray<Real, interp_ncomp> interp_loc;
 
+              // Array storing volume fraction
               GpuArray<Real, 1> interp_vloc;
 
+              // Array storing number of particles
               GpuArray<Real, 1> interp_nloc;
 
               BMXParticleContainer::ParticleType& p = pstruct[pid];
 
-              if (l_deposition_scheme == 0)
+              if (l_cnc_deposition_scheme == 0)
               {
                   one_to_one_interp(p.pos(), &interp_loc[0],
                                     interp_array, plo, dxi, interp_ncomp);
-                  one_to_one_interp(p.pos(), &interp_vloc[0],
-                                    interp_varray, plo, dxi, 1);
               }
-              else if (l_deposition_scheme == 1)
+              else if (l_cnc_deposition_scheme == 1)
               {
                   trilinear_interp(p.pos(), &interp_loc[0],
                                    interp_array, plo, dxi, interp_ncomp);
+              }
+              if (l_vf_deposition_scheme == 0)
+              {
+                  one_to_one_interp(p.pos(), &interp_vloc[0],
+                                    interp_varray, plo, dxi, 1);
+              }
+              else if (l_vf_deposition_scheme == 1)
+              {
                   trilinear_interp(p.pos(), &interp_vloc[0],
                                    interp_varray, plo, dxi, 1);
               }
               one_to_one_interp(p.pos(), &interp_nloc[0],
                   interp_narray, plo, dxi, 1);
 
+#ifndef AMREX_USE_GPU
+              //std::cout<<"Number of particles in grid cell: "<<interp_nloc[0]<<std::endl;
+#endif
 #ifdef NEW_CHEM
               Real *cell_par = &p.rdata(0);
               Real *p_vals = &p.rdata(realIdx::first_data);
               if (interp_nloc[0] == 0.0) amrex::Abort("Number of particles is Zero!");
+              printf("   fluid volume fraction    : %16.8e\n",interp_vloc[0]);
+              printf("   grid cell volume         : %16.8e\n",grid_vol);
+              printf("   fluid volume per particle: %16.8e\n",grid_vol*interp_vloc[0]/interp_nloc[0]);
+              printf("   time increment           : %16.8e\n",dt);
               xferMeshToParticleAndUpdateChem(grid_vol*interp_vloc[0]/interp_nloc[0], cell_par,
                                               &interp_loc[0], p_vals, dt, nloop,
                                               l_k1, l_k2, l_k3,

@@ -79,6 +79,7 @@ bmx::InitParams ()
     // Read in number of substeps in chemistry integration
     m_nloop = 4;
     pp.query("substeps",m_nloop);
+    printf("SUBSTEPS: %d\n",m_nloop);
 
     // We can still turn it off explicitly even if we passed chem_species inputs
     pp.query("advect_fluid_chem_species", advect_fluid_chem_species);
@@ -147,26 +148,48 @@ bmx::InitParams ()
   {
     ParmParse pp("bmx");
 
-    std::string deposition_scheme = "one_to_one";
-    pp.query("deposition_scheme", deposition_scheme);
+    std::string cnc_deposition_scheme = "one_to_one";
+    pp.query("cnc_deposition_scheme", cnc_deposition_scheme);
 
-    if (deposition_scheme.compare("one_to_one") == 0) {
-      m_deposition_scheme = DepositionScheme::one_to_one;
+    if (cnc_deposition_scheme.compare("one_to_one") == 0) {
+      m_cnc_deposition_scheme = DepositionScheme::one_to_one;
     }
-    else if (deposition_scheme.compare("trilinear") == 0) {
-      m_deposition_scheme = DepositionScheme::trilinear;
+    else if (cnc_deposition_scheme.compare("trilinear") == 0) {
+      m_cnc_deposition_scheme = DepositionScheme::trilinear;
     }
-    else if (deposition_scheme.compare("trilinear-dpvm-square") == 0) {
-      m_deposition_scheme = DepositionScheme::square_dpvm;
+    else if (cnc_deposition_scheme.compare("trilinear-dpvm-square") == 0) {
+      m_cnc_deposition_scheme = DepositionScheme::square_dpvm;
     }
-    else if (deposition_scheme.compare("true-dpvm") == 0) {
-      m_deposition_scheme = DepositionScheme::true_dpvm;
+    else if (cnc_deposition_scheme.compare("true-dpvm") == 0) {
+      m_cnc_deposition_scheme = DepositionScheme::true_dpvm;
     }
-    else if (deposition_scheme.compare("centroid") == 0) {
-      m_deposition_scheme = DepositionScheme::centroid;
+    else if (cnc_deposition_scheme.compare("centroid") == 0) {
+      m_cnc_deposition_scheme = DepositionScheme::centroid;
     }
     else {
-      amrex::Abort("Don't know this deposition_scheme!");
+      amrex::Abort("Don't know this deposition_scheme for concentrations!");
+    }
+
+    std::string vf_deposition_scheme = "one_to_one";
+    pp.query("vf_deposition_scheme", vf_deposition_scheme);
+
+    if (vf_deposition_scheme.compare("one_to_one") == 0) {
+      m_vf_deposition_scheme = DepositionScheme::one_to_one;
+    }
+    else if (vf_deposition_scheme.compare("trilinear") == 0) {
+      m_vf_deposition_scheme = DepositionScheme::trilinear;
+    }
+    else if (vf_deposition_scheme.compare("trilinear-dpvm-square") == 0) {
+      m_vf_deposition_scheme = DepositionScheme::square_dpvm;
+    }
+    else if (vf_deposition_scheme.compare("true-dpvm") == 0) {
+      m_vf_deposition_scheme = DepositionScheme::true_dpvm;
+    }
+    else if (vf_deposition_scheme.compare("centroid") == 0) {
+      m_vf_deposition_scheme = DepositionScheme::centroid;
+    }
+    else {
+      amrex::Abort("Don't know this deposition_scheme for volume fraction!");
     }
 
     m_deposition_scale_factor = 1.;
