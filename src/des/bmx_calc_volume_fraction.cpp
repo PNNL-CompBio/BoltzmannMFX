@@ -11,6 +11,7 @@ void bmx::bmx_calc_volume_fraction (bool adjust_X)
   int start_part_comp = realIdx::vol;
   int start_mesh_comp = 0;
   int        num_comp = 1;
+  const int nchem_species = FLUID::nchem_species;
 
   // Initialize to zero because the deposition routine will only change values
   // where there are particles (note this is the default) 
@@ -57,6 +58,30 @@ void bmx::bmx_calc_volume_fraction (bool adjust_X)
     // Now define this mf = (1 - particle_vol)
     vf.mult(-1.0, vf.nGrow());
     vf.plus( 1.0, vf.nGrow());
+
+#if 1
+    // Fix up volume fraction so that the minimum value is bounded
+    auto& ld = *m_leveldata[lev];
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+    for (MFIter mfi(*ld.vf_n,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
+      Box const& bx = mfi.tilebox();
+
+      Array4<Real> const& vf_n     = ld.vf_n->array(mfi);
+
+      ParallelFor(bx, nchem_species, [vf_n]
+          AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+          {
+          if (vf_n(i,j,k) != 1.0 && vf_n(i,j,k) < 0.1)
+          {
+            vf_n(i,j,k) = 0.1;
+          }
+          });
+    } // mfi
+#endif
  
     if (vf.min(0,0) < 0.0)
     {
@@ -72,8 +97,6 @@ void bmx::bmx_calc_volume_fraction (bool adjust_X)
     // solids volume fraction for periodic boundaries.
     vf.FillBoundary(gm.periodicity());
   }
-
-  const int nchem_species = FLUID::nchem_species;
 
   // Now adjust the concentrations to account for the change in vf
   if (adjust_X)

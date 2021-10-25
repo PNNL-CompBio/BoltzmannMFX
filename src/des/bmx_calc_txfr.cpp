@@ -295,10 +295,13 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
               Real *cell_par = &p.rdata(0);
               Real *p_vals = &p.rdata(realIdx::first_data);
               if (interp_nloc[0] == 0.0) amrex::Abort("Number of particles is Zero!");
+#if 0
               printf("   fluid volume fraction    : %16.8e\n",interp_vloc[0]);
               printf("   grid cell volume         : %16.8e\n",grid_vol);
+              printf("   number of particles/cell : %16.8f\n",interp_nloc[0]);
               printf("   fluid volume per particle: %16.8e\n",grid_vol*interp_vloc[0]/interp_nloc[0]);
               printf("   time increment           : %16.8e\n",dt);
+#endif
               xferMeshToParticleAndUpdateChem(grid_vol*interp_vloc[0]/interp_nloc[0], cell_par,
                                               &interp_loc[0], p_vals, dt, nloop,
                                               l_k1, l_k2, l_k3,

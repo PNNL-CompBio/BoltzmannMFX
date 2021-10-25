@@ -127,11 +127,13 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
   mB = fB*grid_vol;
   mC = fC*grid_vol;
 
+#if 0
   printf("   Loop size                     : %16d\n",nloop);
   printf("   Initial radius                : %16.8e\n",cell_par[realIdx::a_size]);
   printf("   Initial fluid concentration A : %16.8e\n",fA);
   printf("   Initial fluid concentration B : %16.8e\n",fB);
   printf("   Initial fluid concentration C : %16.8e\n",fC);
+#endif
 
 #ifndef AMREX_USE_GPU
     if (fA < 0.0) printf("   internal NEGATIVE fluid concentration A : %16.8e\n",fA);
@@ -436,9 +438,15 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
 
     orig_cell_vol = new_cell_vol;
   }
+#if 0
   printf("   Final mesh concentration A    : %16.8e\n",fA_tmp);
   printf("   Final mesh concentration B    : %16.8e\n",fB_tmp);
   printf("   Final mesh concentration C    : %16.8e\n",fC_tmp);
+  printf("   Final cell volume        :  %16.8e\n",new_cell_vol);
+  printf("   Final cell concentration A: %16.8e\n",cA);
+  printf("   Final cell concentration B: %16.8e\n",cB);
+  printf("   Final cell concentration C: %16.8e\n",cC);
+#endif
   if (is_negative) {
     std::cout << "Negative concentrations found. Aborting..." << std::endl;
     amrex::Abort("Negative concentrations found. Aborting...");
@@ -453,8 +461,10 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
   p_vals[0] = p_vals[3];
   p_vals[1] = p_vals[4];
   p_vals[2] = p_vals[5];
+#if 0
   printf("   Final concentration increment for A: %16.8e\n",p_vals[6]);
   printf("   Final concentration increment for B: %16.8e\n",p_vals[7]);
   printf("   Final concentration increment for C: %16.8e\n",p_vals[8]);
+#endif
 }
 

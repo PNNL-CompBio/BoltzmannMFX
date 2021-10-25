@@ -68,6 +68,8 @@ class bmx : public AmrCore
 
     void Regrid ();
 
+    void print_mesh(int location);
+
     void Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time);
 
     const Geometry get_geom_ref (int lev)
