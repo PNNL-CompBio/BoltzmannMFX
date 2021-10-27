@@ -12,9 +12,9 @@ amrex.fpe_trap_invalid = 1
 #! Fluid solver
 #!-----------------------------------------------------------//
 
-bmx.fixed_dt = 0.5
+bmx.fixed_dt = 1.0
 
-bmx.max_step = 80000
+bmx.max_step = 100000
 #bmx.max_step = 1
 
 dem.solve = bacteria
@@ -100,12 +100,12 @@ amr.par_ascii_file ="vis"
 amr.plot_int       =  200
 amr.plot_file      ="plt"
 
-amr.check_int      = 100
+amr.check_int      = -1
 amr.check_file     ="chk"
 
 #! Restart from checkpoint
 #!-----------------------------------------------------------//
-amr.restart   ="chk09700"
+#amr.restart   ="chk09700"
 
 #_______________________________________________________________________
 # Fluid model settings
@@ -118,15 +118,15 @@ fluid.surface_location = 0.004800
 #_______________________________________________________________________
 # Reaction model parameters
 #
-chem_species.max_vol = 1.0e-12
+chem_species.max_vol = 1.0e-12 # 9.5e-13 # 1.0e-12
 chem_species.k1 = 2.0e-5
 chem_species.kr1 = 2.0e-5
 chem_species.k2 = 0.4
 chem_species.kr2 = 0.06
 chem_species.k3 = 2.0e-5
 chem_species.kr3 = 2.0e-5
-chem_species.kg = 400.0
-bmx.substeps = 1
+chem_species.kg = 1000.0 # 400.0
+bmx.substeps = 4
 
 #_______________________________________________________________________
 # Cell force parameters
@@ -143,7 +143,7 @@ cell_force.wall_boundary_width = 1.0e-04
 #cell_force.wall_adhesion_stiffness = 1.0e6
 
 #Diffusion_type: 0 = explicit, 1 = C-N, 2 = implicit
-bmx.diffusion_type = 0
+bmx.diffusion_type = 2
 
 #Verbosity of diffusion solver
 diffusion.verbose = 2
