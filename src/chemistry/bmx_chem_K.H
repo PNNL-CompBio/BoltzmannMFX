@@ -108,9 +108,17 @@ setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void xferMeshToParticleAndUpdateChem(Real grid_vol,
     Real *cell_par, Real *mesh_vals, Real *p_vals, Real dt, int nloop,
-    Real k1, Real k2, Real k3, Real kr1, Real kr2, Real kr3,
-    Real kg)
+    Real *chempar)
 {
+  Real k1, k2, k3, kr1, kr2, kr3, kg;
+
+  k1 = chempar[0];
+  k2 = chempar[1];
+  k3 = chempar[2];
+  kr1 = chempar[3];
+  kr2 = chempar[4];
+  kr3 = chempar[5];
+  kg = chempar[6];
   // cell parameters
   Real orig_cell_vol  = cell_par[realIdx::vol];
 

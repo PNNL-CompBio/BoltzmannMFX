@@ -77,6 +77,9 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
 #ifdef NEW_CHEM
   BMXChemistry *bmxchem = BMXChemistry::instance();
+  std::vector<Real> chempar_vec;
+  bmxchem->getChemParams(chempar_vec);
+  Real *chempar = &chempar_vec[0];
 #endif
   //
   BL_PROFILE("bmx::bmx_calc_txfr_particle()");
@@ -250,8 +253,7 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
         int nloop = m_nloop;
         amrex::ParallelFor(np,
             [pstruct,interp_array,interp_varray,interp_narray,plo,dxi,grid_vol,dt,
-             nloop,l_k1,l_k2,l_k3,l_kr1,l_kr2,l_kr3,l_kg,
-             l_cnc_deposition_scheme,l_vf_deposition_scheme]
+             nloop,chempar,l_cnc_deposition_scheme,l_vf_deposition_scheme]
             AMREX_GPU_DEVICE (int pid) noexcept
               {
               // Local array storing interpolated values
@@ -303,9 +305,7 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
               printf("   time increment           : %16.8e\n",dt);
 #endif
               xferMeshToParticleAndUpdateChem(grid_vol*interp_vloc[0]/interp_nloc[0], cell_par,
-                                              &interp_loc[0], p_vals, dt, nloop,
-                                              l_k1, l_k2, l_k3,
-                                              l_kr1, l_kr2, l_kr3, l_kg);
+                                              &interp_loc[0], p_vals, dt, nloop, chempar);
 #endif
             });
       } // pti

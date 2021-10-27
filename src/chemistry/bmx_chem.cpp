@@ -162,3 +162,19 @@ int BMXChemistry::getIntData(int idx)
   return p_int_vals[idx];
 }
 
+/**
+ * Return a vector containing all chemical paramters needed to integrate
+ * chemistry
+ * @param chempar vector of parameters used in chemistry
+ */
+void BMXChemistry::getChemParams(std::vector<Real> &chempar)
+{
+  chempar.clear();
+  chempar.push_back(k1);
+  chempar.push_back(k2);
+  chempar.push_back(k3);
+  chempar.push_back(kr1);
+  chempar.push_back(kr2);
+  chempar.push_back(kr3);
+  chempar.push_back(kg);
+}

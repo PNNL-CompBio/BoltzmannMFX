@@ -136,6 +136,13 @@ class BMXChemistry
    */
   int getIntData(int idx);
 
+  /**
+   * Return a vector containing all chemical paramters needed to integrate
+   * chemistry
+   * @param chempar vector of parameters used in chemistry
+   */
+  void getChemParams(std::vector<Real> &chempar);
+
   // Hardwired variables for ABC model
   static Real k1, kr1;   // rate coefficients for species A into and out of biological cell
   static Real k2, kr2;   // rate coefficients for converting A into B and C inside biological cell

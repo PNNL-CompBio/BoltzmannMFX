@@ -75,10 +75,7 @@ void bmx::bmx_calc_volume_fraction (bool adjust_X)
       ParallelFor(bx, nchem_species, [vf_n]
           AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
           {
-          if (vf_n(i,j,k) != 1.0 && vf_n(i,j,k) < 0.1)
-          {
-            vf_n(i,j,k) = 0.1;
-          }
+            vf_n(i,j,k,n) = amrex::max(vf_n(i,j,k,n),0.1);
           });
     } // mfi
 #endif
