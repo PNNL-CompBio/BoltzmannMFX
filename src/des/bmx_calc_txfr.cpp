@@ -139,8 +139,7 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
       interp_nptr = new MultiFab(grids[lev], dmap[lev], 1, 1, MFInfo());
 
       // Copy 
-      MultiFab::Copy(*interp_nptr,temp_npart, 0, 0,
-                      temp_npart.nComp(), 1);
+      MultiFab::Copy(*interp_nptr,temp_npart, 0, 0, temp_npart.nComp(), 0);
       interp_nptr->FillBoundary(geom[lev].periodicity());
 
     }
