@@ -1,6 +1,8 @@
 #include <bmx.H>
 #include <bmx_fluid_parms.H>
 
+// Location is just a marker used to determine at which location in the code
+// this function is being called.
 void bmx::print_mesh(int location)
 {
 #if 0
@@ -43,6 +45,36 @@ void bmx::print_mesh(int location)
         std::cout << "RHS("<<location<<") " << X_rhs_arr(ix,iy,iz,1) << std::endl;
         std::cout << "RHS("<<location<<") " << X_rhs_arr(ix,iy,iz,2) << std::endl;
       }
+    } // mfi
+  } // lev
+#endif
+}
+
+void bmx::check_mesh_values()
+{
+#ifndef AMREX_USE_GPU
+  const int nchem_species = FLUID::nchem_species;
+  for (int lev = 1; lev <= finest_level; lev++)
+  {
+    auto& ld = *m_leveldata[lev];
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+    for (MFIter mfi(*ld.vf_n,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
+      Box const& bx = mfi.tilebox();
+
+      Array4<Real const> const& X_k_arr = ld.X_k->const_array(mfi);
+
+      ParallelFor(bx, nchem_species, [&X_k_arr]
+          AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+          {
+          if (X_k_arr(i,j,k,n) < 0.0)
+          {
+          printf("NEGATIVE Concentration X_k(%d,%d,%d,%d): %e\n",i,j,k,n,X_k_arr(i,j,k,n));
+          }
+          });
     } // mfi
   } // lev
 #endif
@@ -114,6 +146,7 @@ bmx::EvolveFluid (int nstep,
     // Deposit sources/sink from individual particles to grid
     bmx_calc_txfr_fluid(time, dt);
     print_mesh(1);
+    //check_mesh_values();
 
     // Calculate the fraction of each grid cell not occupied by biological cells -- this
     //   1) defines vf_n using the current particle locations

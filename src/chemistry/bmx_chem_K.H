@@ -255,9 +255,9 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol,
     }
 
 #ifndef AMREX_USE_GPU
-    if (cA < 0.0) printf("   Internal concentration A : %d %16.8e\n",cA);
-    if (cB < 0.0) printf("   Internal concentration B : %d %16.8e\n",cB);
-    if (cC < 0.0) printf("   Internal concentration C : %d %16.8e\n",cC);
+    if (cA < 0.0) printf("   Internal concentration A : %16.8e\n",cA);
+    if (cB < 0.0) printf("   Internal concentration B : %16.8e\n",cB);
+    if (cC < 0.0) printf("   Internal concentration C : %16.8e\n",cC);
     if (cA < 0.0) is_negative = true;
     if (cB < 0.0) is_negative = true;
     if (cC < 0.0) is_negative = true;

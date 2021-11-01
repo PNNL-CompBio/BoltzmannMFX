@@ -194,14 +194,6 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
       Real grid_vol = dx[0]*dx[1]*dx[2];
 
-      Real l_kg  = BMXChemistry::kg;
-      Real l_k1  = BMXChemistry::k1;
-      Real l_k2  = BMXChemistry::k2;
-      Real l_k3  = BMXChemistry::k3;
-      Real l_kr1 = BMXChemistry::kr1;
-      Real l_kr2 = BMXChemistry::kr2;
-      Real l_kr3 = BMXChemistry::kr3;
-
       if (m_verbose != 0) {
         for (BMXParIter pti(*pc, lev); pti.isValid(); ++pti)
         {
