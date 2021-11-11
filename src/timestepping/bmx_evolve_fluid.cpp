@@ -229,7 +229,32 @@ bmx::EvolveFluid (int nstep,
             });
         } // mfi
     } // lev
+
+    // Average down from fine to coarse to ensure consistency
+    for (int lev = finest_level; lev > 0; lev--)
+        average_down(*m_leveldata[lev]->X_k,*m_leveldata[lev-1]->X_k, 0, 1, refRatio(lev-1));
+
+    for (int lev = finest_level; lev >= 0; lev--)
+    {
+        auto& ld = *m_leveldata[lev];
+
+        amrex::Real x0max = ld.X_k->max(0);
+        amrex::Real x1max = ld.X_k->max(1);
+        amrex::Real x2max = ld.X_k->max(2);
+        amrex::Real x0min = ld.X_k->min(0);
+        amrex::Real x1min = ld.X_k->min(1);
+        amrex::Real x2min = ld.X_k->min(2);
+        amrex::Print() << "Max/min of species 0 at level " << lev << " " << x0max << " " << x0min << std::endl;
+        amrex::Print() << "Max/min of species 1 at level " << lev << " " << x1max << " " << x1min << std::endl;
+        amrex::Print() << "Max/min of species 2 at level " << lev << " " << x2max << " " << x2min << std::endl;
+
+        Real eps = 1.e-8;
+        if (x0max > 1.0+eps || x1max > 1.0+eps || x2max > 1.0+eps) amrex::Abort("Species greater than 1");
+        if (x0min < 0.0-eps || x1min < 0.0-eps || x2min < 0.0-eps) amrex::Abort("Species    less than 0");
+    } // lev
+
     print_mesh(6);
+
 
     // *************************************************************************************
     // If doing implicit diffusion...
