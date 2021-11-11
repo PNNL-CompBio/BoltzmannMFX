@@ -226,13 +226,19 @@ bmx::EvolveFluid (int nstep,
             {
                 X_k_n(i,j,k,n) += theta * l_dt * lap_X_arr(i,j,k,n) / vf_arr(i,j,k) 
                                                + X_RHS_arr(i,j,k,n) / (vf_arr(i,j,k) * grid_vol);
+                if (X_k_n(i,j,k) < 0.0) amrex::Print() << " LOW VAL OLD/NEW/LAP/RHS " << IntVect(i,j,k) << " " << n << " " <<
+                    X_k_n(i,j,k,n) - (theta * l_dt * lap_X_arr(i,j,k,n) / vf_arr(i,j,k) 
+                                              + X_RHS_arr(i,j,k,n) / (vf_arr(i,j,k) * grid_vol)) << " " << 
+                      X_k_n(i,j,k,n) << " " << l_dt * lap_X_arr(i,j,k,n) / vf_arr(i,j,k)  << " " <<
+                                               + X_RHS_arr(i,j,k,n) / (vf_arr(i,j,k) * grid_vol) << std::endl;
+
             });
         } // mfi
     } // lev
 
     // Average down from fine to coarse to ensure consistency
     for (int lev = finest_level; lev > 0; lev--)
-        average_down(*m_leveldata[lev]->X_k,*m_leveldata[lev-1]->X_k, 0, 1, refRatio(lev-1));
+        average_down(*m_leveldata[lev]->X_k,*m_leveldata[lev-1]->X_k, 0, nchem_species, refRatio(lev-1));
 
     for (int lev = finest_level; lev >= 0; lev--)
     {
