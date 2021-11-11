@@ -23,10 +23,6 @@ bmx::bmx_calc_txfr_fluid (Real /*time*/, Real /*dt*/)
   int start_mesh_comp = 0;
   int        num_comp = FLUID::nchem_species;
 
-  amrex::Print() << "TXFR: START PART COMP " << start_part_comp << std::endl;
-  amrex::Print() << "TXFR: START MESH COMP " << start_mesh_comp << std::endl;
-  amrex::Print() << "TXFR:  NUM  COMP " << num_comp << std::endl;
-
   // Initialize to zero because the deposition routine will only change values
   // where there are particles (note this is the default)
   bool zero_out_input = true;

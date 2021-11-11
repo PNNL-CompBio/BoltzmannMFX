@@ -342,7 +342,5 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 #pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
 #endif
 
-    amrex::Print() << "done. \n";
-
     BL_PROFILE_REGION_STOP("bmx_dem::EvolveParticles()");
 }
