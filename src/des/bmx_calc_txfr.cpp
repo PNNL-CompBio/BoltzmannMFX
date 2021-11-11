@@ -16,7 +16,6 @@
 void
 bmx::bmx_calc_txfr_fluid (Real /*time*/, Real /*dt*/)
 {
-  amrex::Print() << "Entering calc_txfr " << std::endl;
   BMXChemistry *bmxchem = BMXChemistry::instance();
   int inc_start = bmxchem->getIntData(intIdx::first_real_inc);
   int start_part_comp = realIdx::first_data + inc_start;
@@ -60,7 +59,6 @@ bmx::bmx_calc_txfr_fluid (Real /*time*/, Real /*dt*/)
   } else {
     amrex::Abort("Don't know this deposition_scheme for concentrations!");
   }
-  amrex::Print() << "Leaving calc_txfr " << std::endl;
 }
 
 /**
