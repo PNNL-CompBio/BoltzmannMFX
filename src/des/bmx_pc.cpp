@@ -19,18 +19,29 @@ BMXParticleContainer::BMXParticleContainer (AmrCore* amr_core)
 {
     ReadStaticParameters();
 
-    this->SetVerbose(0);
-    ParmParse pp("bmx");
-    int verbose = 0; 
-    pp.query("verbose",verbose);
-    if (verbose != 0) {
-      p_verbose = true;
-    } else {
-      p_verbose = false;
+    {
+      this->SetVerbose(0);
+      ParmParse pp("bmx");
+      int verbose = 0; 
+      pp.query("verbose",verbose);
+      if (verbose != 0) {
+        p_verbose = true;
+      } else {
+        p_verbose = false;
+      }
     }
 
     nlev         = amr_core->finestLevel()+1;
     finest_level = amr_core->finestLevel();
+    {
+      ParmParse pp("geometry");
+      amrex::Vector<Real> bmin, bmax;
+      pp.getarr("prob_lo",bmin);
+      pp.getarr("prob_hi",bmax);
+      bmx_xdim = bmax[0]-bmin[0];
+      bmx_ydim = bmax[1]-bmin[1];
+      bmx_zdim = bmax[2]-bmin[2];
+    }
 }
 
 void BMXParticleContainer::AllocData ()

@@ -129,6 +129,9 @@ public:
     int nlev;
     int finest_level;
 
+    // Dimensions of simulation volume
+    Real bmx_xdim, bmx_ydim, bmx_zdim;
+
     amrex::IntVect m_sorting_bin = amrex::IntVect::TheZeroVector();
 
     static int domain_bc[6];

@@ -57,6 +57,9 @@ void BMXParticleContainer::EvolveParticles (Real dt,
        subdt     = dt;
     }
 
+    Real loc_xdim = bmx_xdim;
+    Real loc_ydim = bmx_ydim;
+
     /****************************************************************************
      * Init temporary storage:                                                  *
      *   -> particle-particle, and particle-wall forces                         *
@@ -156,7 +159,8 @@ void BMXParticleContainer::EvolveParticles (Real dt,
             amrex::ParallelFor(nrp,
                 [nrp,pstruct,fc_ptr,nbor_data,
                  subdt,ntot,interaction,l_bndry_width,l_stiffness,
-                 l_z_bndry_width, l_z_stiffness, l_z_wall, l_z_gravity]
+                 l_z_bndry_width, l_z_stiffness, l_z_wall, l_z_gravity,
+                loc_xdim, loc_ydim]
               AMREX_GPU_DEVICE (int i) noexcept
               {
                   auto particle = pstruct[i];
@@ -172,6 +176,22 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                       Real dist_x = p2.pos(0) - pos1[0];
                       Real dist_y = p2.pos(1) - pos1[1];
                       Real dist_z = p2.pos(2) - pos1[2];
+
+                      printf("p1: %f %f %f\n",pos1[0],pos1[1],pos1[2]);
+                      printf("p2: %f %f %f\n",p2.pos(0),p2.pos(1),p2.pos(2));
+                      printf("d21: %f %f %f\n",dist_x,dist_y,dist_z);
+                      // Correct x and y displacements for periodic boundary
+                      // conditions
+                      if (dist_x > 0.5*loc_xdim) {
+                        dist_x -= loc_xdim;
+                      } else if (dist_x < -0.5*loc_xdim) {
+                        dist_x += loc_xdim;
+                      }
+                      if (dist_y > 0.5*loc_ydim) {
+                        dist_y -= loc_ydim;
+                      } else if (dist_y < -0.5*loc_ydim) {
+                        dist_y += loc_ydim;
+                      }
 
                       Real r2 = dist_x*dist_x +
                                 dist_y*dist_y +
