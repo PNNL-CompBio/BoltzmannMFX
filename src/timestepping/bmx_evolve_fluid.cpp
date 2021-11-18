@@ -73,6 +73,7 @@ void bmx::check_mesh_values()
           if (X_k_arr(i,j,k,n) < 0.0)
           {
           printf("NEGATIVE Concentration X_k(%d,%d,%d,%d): %e\n",i,j,k,n,X_k_arr(i,j,k,n));
+          amrex::Abort();
           }
           });
     } // mfi
@@ -145,8 +146,8 @@ bmx::EvolveFluid (int nstep,
 
     // Deposit sources/sink from individual particles to grid
     bmx_calc_txfr_fluid(time, dt);
+    check_mesh_values();
     print_mesh(1);
-    //check_mesh_values();
 
     // Calculate the fraction of each grid cell not occupied by biological cells -- this
     //   1) defines vf_n using the current particle locations

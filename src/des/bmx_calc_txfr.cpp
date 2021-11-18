@@ -289,7 +289,7 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
               printf("   fluid volume per particle: %16.8e\n",grid_vol*interp_vloc[0]/interp_nloc[0]);
               printf("   time increment           : %16.8e\n",dt);
 #endif
-              xferMeshToParticleAndUpdateChem(grid_vol*interp_vloc[0]/interp_nloc[0], cell_par,
+              xferMeshToParticleAndUpdateChem(grid_vol*interp_vloc[0], interp_nloc[0], cell_par,
                                               &interp_loc[0], p_vals, dt, nloop, chempar);
 #endif
             });
