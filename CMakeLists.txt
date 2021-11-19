@@ -152,3 +152,6 @@ endif ()
 if(BMX_CSG)
   target_link_libraries(bmxcore PRIVATE csg)
 endif()
+
+# Test cases
+add_subdirectory(exec)
