@@ -94,7 +94,7 @@ setenv OMP_NUM_THREADS 1
 
 Two test problems are currently exported to the build directory. They are located
 in BUILD/exec/nlev_large_test and BUILD/exec/nlev_real_test. The nlev_real_test
-problem is th the smaller of the two. To run these problems, simple cd into
+problem is the smaller of the two. To run these problems, simple cd into
 these directories and launch with the desired number of processors (and GPUs, if
 applicable). The input deck for both tests is input_real_nlev, so typing
 ```
@@ -102,7 +102,7 @@ mpirun -n 4 ../../bmx input_real_nlev
 ```
 should get the code to run. Both tests are set to run for 100000 steps, which is
 quite long. You can shorten the tests to run for a few seconds by setting the
-number of steps, which is the `bmx.max_step` step in the input file, to
+number of steps, which is the `bmx.max_step` parameter in the input file, to
 something like 10.
 
 The GPU code can be launched with a script such as
