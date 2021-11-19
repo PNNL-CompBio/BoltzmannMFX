@@ -1,5 +1,6 @@
 #include <bmx.H>
 #include <bmx_fluid_parms.H>
+#include <AMReX_Config.H>
 
 // Location is just a marker used to determine at which location in the code
 // this function is being called.
@@ -227,11 +228,13 @@ bmx::EvolveFluid (int nstep,
             {
                 X_k_n(i,j,k,n) += theta * l_dt * lap_X_arr(i,j,k,n) / vf_arr(i,j,k) 
                                                + X_RHS_arr(i,j,k,n) / (vf_arr(i,j,k) * grid_vol);
+#ifndef AMREX_USE_GPU
                 if (X_k_n(i,j,k) < 0.0) amrex::Print() << " LOW VAL OLD/NEW/LAP/RHS " << IntVect(i,j,k) << " " << n << " " <<
                     X_k_n(i,j,k,n) - (theta * l_dt * lap_X_arr(i,j,k,n) / vf_arr(i,j,k) 
                                               + X_RHS_arr(i,j,k,n) / (vf_arr(i,j,k) * grid_vol)) << " " << 
                       X_k_n(i,j,k,n) << " " << l_dt * lap_X_arr(i,j,k,n) / vf_arr(i,j,k)  << " " <<
                                                + X_RHS_arr(i,j,k,n) / (vf_arr(i,j,k) * grid_vol) << std::endl;
+#endif
 
             });
         } // mfi
@@ -290,10 +293,12 @@ bmx::EvolveFluid (int nstep,
                 {
                     if (X_k_n(i,j,k,n) < -1.e-12) 
                     {
+#ifndef AMREX_USE_GPU
                         std::cout << "Implicitly created negative fluid X_k at (i,j,k) " 
                                   << IntVect(i,j,k) << " at level  " << lev << " in component " << n << " " << X_k_n(i,j,k) << std::endl;
                         std::cout << "OLD WAS " << X_k_o(i,j,k,n) << std::endl;
                         std::cout << "RHS WAS " << X_RHS_arr(i,j,k,n) << std::endl;
+#endif
                         amrex::Abort();
                     } else {
                         X_k_n(i,j,k,n) = std::max(X_k_n(i,j,k,n),0.0);

@@ -132,10 +132,6 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
   fA = mesh_vals[0];
   fB = mesh_vals[1];
   fC = mesh_vals[2];
-  Real mA, mB, mC;
-  mA = fA*fluid_vol;
-  mB = fB*fluid_vol;
-  mC = fC*fluid_vol;
 
 #if 0
   printf("   Loop size                     : %16d\n",nloop);
@@ -267,7 +263,9 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
 
     if (fA_tmp < 0. || fB_tmp < 0. || fC_tmp < 0.) 
     {
+#ifndef AMREX_USE_GPU
       std::cout << "Negative F_tmp values at first update " << fA_tmp << " " << fB_tmp << " " << fC_tmp << std::endl;
+#endif
       amrex::Abort("Negative fluid concentration at first update");
     }
 
@@ -438,7 +436,9 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
 
     if (fA_tmp < 0. || fB_tmp < 0. || fC_tmp < 0.) 
     {
+#ifndef AMREX_USE_GPU
       std::cout << "Negative F_tmp values at second update " << fA_tmp << " " << fB_tmp << " " << fC_tmp << std::endl;
+#endif
       amrex::Abort("Negative fluid concentration at second update");
     }
 
@@ -463,7 +463,9 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
   printf("   Increment for concentration C : %16.8e grid_vol: %16.8e\n",p_vals[8],grid_vol);
 #endif
   if (is_negative) {
+#ifndef AMREX_USE_GPU
     std::cout << "Negative concentrations found. Aborting..." << std::endl;
+#endif
     amrex::Abort("Negative concentrations found. Aborting...");
   }
 
