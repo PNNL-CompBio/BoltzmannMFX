@@ -14,13 +14,19 @@ amrex.fpe_trap_invalid = 1
 
 bmx.fixed_dt = 1
 
-bmx.max_step = 40000
+bmx.max_step = 100000
 #bmx.max_step = 1
 
 dem.solve = bacteria
 bmx.particle_init_type = "AsciiFile"
 
 bmx.verbose = 0
+
+#
+#_______________________________________________________________________
+# Deposition scheme
+bmx.cnc_deposition_scheme = one_to_one # trilinear # one_to_one
+bmx.vf_deposition_scheme = one_to_one # trilinear # one_to_one
 
 #_______________________________________________________________________
 # Geometry / grids / tiles
@@ -31,14 +37,14 @@ amr.max_level = 1
 geometry.coord_sys   = 0                       # 0: Cartesian
 geometry.is_periodic = 1       1       0       # Is periodic in each direction?
 geometry.prob_lo     = 0.      0.      0.      # lo corner of physical domain
-geometry.prob_hi     = 0.002464  0.002464  0.002464     # hi corner of physical domain
+geometry.prob_hi     = 0.00320  0.00320  0.00320     # hi corner of physical domain
 
 # Number of grid cells in each direction at the coarsest level
 amr.n_cell =  16   16   16
 
 bmx.tag_region    = true
-bmx.tag_region_lo = 0. 0. 0.001694
-bmx.tag_region_hi = 0.002464 0.002464 0.002002
+bmx.tag_region_lo = 0. 0. 0.00200
+bmx.tag_region_hi = 0.00320 0.002464 0.00240
 #bmx.tag_region_lo = 0. 0. 0.0
 #bmx.tag_region_hi = 0.002464 0.002464 0.002464
 
@@ -109,8 +115,8 @@ amr.check_file     ="chk"
 fluid.solve = fluid
 fluid.chem_species      = A B C
 fluid.chem_species_diff = 6.0e-10 0.0 6.0e-10
-fluid.init_conc_species = 2.0e-5 0.0 2.0e-6
-fluid.surface_location = 0.001848
+fluid.init_conc_species = 6.0e-5 0.0 2.0e-6
+fluid.surface_location = 0.00220
 #_______________________________________________________________________
 # Reaction model parameters
 #
@@ -121,7 +127,8 @@ chem_species.k2 = 0.4
 chem_species.kr2 = 0.06
 chem_species.k3 = 2.0e-5
 chem_species.kr3 = 2.0e-5
-chem_species.kg = 35.0
+chem_species.kg = 1000.0
+bmx.substeps = 4
 
 #_______________________________________________________________________
 # Cell force parameters
