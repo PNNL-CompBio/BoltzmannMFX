@@ -9,6 +9,7 @@
 \begin{document}
 \newcommand{\dt}{\Delta t}
 \newcommand{\Fvec}{\overline{F}}
+\newcommand{\fvec}{\overline{f}}
 \newcommand{\rvec}{\overline{r}}
 \newcommand{\xvec}{\overline{x}}
 \newcommand{\Xvec}{\overline{X}}
@@ -16,6 +17,8 @@
 \newcommand{\Yvec}{\overline{Y}}
 \newcommand{\Gvec}{\overline{G}}
 \newcommand{\svec}{\overline{s}}
+\newcommand{\Tvec}{\overline{T}}
+\newcommand{\vvec}{\overline{v}}
 \newcommand{\Dmat}{\overline{\overline{D}}}
 \newcommand{\Rmat}{\overline{\overline{R}}}
 \newcommand{\Imat}{\overline{\overline{I}}}
@@ -611,6 +614,74 @@ defined by $g_y(\yvec)=0$.
 %\nabla_{\lambda_y}\Lag & = & (\yvec-\yvec_0)^T\cdot\Rmat_y^{T}\cdot\Dmat_y\cdot\Rmat_y\cdot(\yvec-\yvec_0)-1
 %\end{eqnarray*}
 
+\section{Two-Site Model for Filament Segment}
+A two-site model designed to represent a segment of filamentous fungi consists
+of two spheres that are held a fixed distance apart and are chosen to represent
+the hydrodynamic drag on the on the segment as forces from other segments push
+it around. Each sphere is subject to a force, $\fvec_1$, $\fvec_2$, resulting in
+a translational and rotational motion of the segment. For freely interacting
+spheres, with no rigid constraints, the motion of the spheres can be described
+by the matrix equation
+\[
+\left[\begin{array}{c}\vvec_1 \\ \vvec_2 \end{array}\right] =
+\left[\begin{array}{cc} \Dmat_{11} & \Dmat_{12} \\
+\Dmat_{21} & \Dmat_{22} \end{array}\right]
+\cdot\left[\begin{array}{c} \fvec_1 \\ \fvec_2 \end{array}\right]
+\]
+The $3\times 3$ matrices $\Dmat_{ij}$ are diffusion matrices for hydrodynamically
+interacting spheres. The details of these matrices can be found in Rotne and
+Prager\cite{RP}. The vectors $\vvec_1$ and $\vvec_2$ represent the represent the
+velocities of particles 1 and 2 that represent the filament segment.
+
+For our purposes, it is more convenient to express the equations of motion of the
+system in terms of net force and torque on the particle pair. To simplify this, we
+choose the two particles, separated by a distance $h$ to lie on the $x$-axis at
+positions $\rvec_1 = (h/2,0,0)$ and $\rvec_2 = (-h/2,0,0)$. The more general case
+can be derived by an appropriate rotation of the system. The torque $\Tvec$ and
+net force $\Fvec$ on the system can be written in terms of the forces $\fvec_1$
+and $\fvec_2$ and the positions $\rvec_1$ and $\rvec_2$ as
+\begin{eqnarray*}
+\Tvec & = & \rvec_1\times\fvec_1 + \rvec_2\times\fvec_2 \\
+\Fvec & = & \fvec_1 + \fvec_2
+\end{eqnarray*}
+Breaking these up into individual components gives the equations (for particles
+located at $\rvec_1$ and $\rvec_2$)
+\begin{eqnarray*}
+T_x & = & 0 \\
+T_y & = & \frac{h}{2}(f_{2z}-f_{1z}) \\
+T_z & = & \frac{h}{2}(f_{1y}-f_{2y}) \\
+F_x & = & f_{1x} + f_{2x} \\
+F_y & = & f_{1y} + f_{2y} \\
+F_z & = & f_{1z} + f_{2z}
+\end{eqnarray*}
+The equation for $F_x$ is actually a bit more complicated. The two particles
+cannot move relative to each other so an additional constraint would be
+\[
+f_{1x}-f_{2x} = 0
+\]
+indicating that there is no force pushing the two particles together. This could
+be considered as the result of a constraint force that acts to keep the two particles
+at a fixed distance. If the original $x$ components of the force acting on the two
+particles are considered as $f'_{1x}$ and $f'_{2x}$ and $F_x = f'_{1x} + f'_{2x}$
+then it is possible to use this value of $F_x$ and the two equations involving
+$f_{1x}$ and $f_{2x}$ to solve for $f_{1x}$ and $f_{2x}$.
+
+The equations for $\Tvec$ and $\Fvec$ can be inverted to solve for $\fvec_1$ and
+$\fvec_2$ in terms of $\Tvec$ and $\Fvec$. Writing this as a matrix equation gives
+\[
+\left[\begin{array}{c}f_{1x} \\ f_{1y} \\ f_{1z} \\ f_{2x} \\ f_{2y} \\ f_{2z}
+ \end{array}\right] =
+\left[\begin{array}{cccccc}
+\frac{1}{2} & 0 & 0 & 0 & 0 & 0 \\
+0 & \frac{1}{2} & 0 & 0 & 0 & \frac{1}{h} \\
+0 & 0 & \frac{1}{2} & 0 & -\frac{1}{h} & 0 \\
+\frac{1}{2} & 0 & 0 & 0 & 0 & 0 \\
+0 & \frac{1}{2} & 0 & 0 & 0 & -\frac{1}{h} \\
+0 & 0 & \frac{1}{2} & 0  &\frac{1}{h} & 0
+\end{array}\right]\cdot
+\left[\begin{array}{c} F_x \\ F_y \\ F_z \\ T_x \\ T_y \\ T_z
+\end{array}\right]
+\]
 \bibliographystyle{unsrt}
 \bibliography{bmx}
 \end{document}
