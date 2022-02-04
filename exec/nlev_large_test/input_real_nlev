@@ -32,19 +32,19 @@ bmx.vf_deposition_scheme = one_to_one # trilinear # one_to_one
 # Geometry / grids / tiles
 
 # Maximum level in hierarchy
-amr.max_level = 1
+amr.max_level = 2
 
 geometry.coord_sys   = 0                       # 0: Cartesian
 geometry.is_periodic = 1       1       0       # Is periodic in each direction?
 geometry.prob_lo     = 0.      0.      0.      # lo corner of physical domain
-geometry.prob_hi     = 0.00640  0.00640  0.00640     # hi corner of physical domain
+geometry.prob_hi     = 0.01280  0.01280  0.00640     # hi corner of physical domain
 
 # Number of grid cells in each direction at the coarsest level
-amr.n_cell =  32  32  32
+amr.n_cell =  32  32  16
 
 bmx.tag_region    = true
 bmx.tag_region_lo = 0. 0. 0.004400
-bmx.tag_region_hi = 0.00640 0.00640 0.00520
+bmx.tag_region_hi = 0.01280 0.01280 0.00520
 
 # Dont put any buffer region around the tagged cells
 amr.n_error_buf = 0
