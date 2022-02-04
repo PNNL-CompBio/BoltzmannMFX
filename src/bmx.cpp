@@ -56,6 +56,8 @@ bmx::bmx ()
     // constructor. No valid BoxArray and DistributionMapping have been defined.
     // But the arrays for them have been resized.
 
+    SetNProper(2);
+
     /****************************************************************************
      *                                                                          *
      * Initialize time steps                                                    *

@@ -32,7 +32,7 @@ bmx.vf_deposition_scheme = one_to_one # trilinear # one_to_one
 # Geometry / grids / tiles
 
 # Maximum level in hierarchy
-amr.max_level = 1
+amr.max_level = 2
 
 geometry.coord_sys   = 0                       # 0: Cartesian
 geometry.is_periodic = 1       1       0       # Is periodic in each direction?
