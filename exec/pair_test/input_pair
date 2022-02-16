@@ -73,7 +73,7 @@ amr.max_grid_size_z = 64
 fabarray.mfiter_tile_size = 1024 1024 1024
 
 # Particles: Maximum particle tile size
-particles.input_file = "abc_pair_input.dat"
+particles.input_file = "abc_pair_input.dat.close"
 particles.tile_size = 1024 1024 1024
 
 #_______________________________________________________________________

@@ -23,6 +23,12 @@ bmx.particle_init_type = "AsciiFile"
 
 bmx.verbose = 0
 
+#
+#_______________________________________________________________________
+# Deposition scheme
+bmx.cnc_deposition_scheme = trilinear
+bmx.vf_deposition_scheme = one_to_one
+
 #_______________________________________________________________________
 # Geometry / grids / tiles
 
