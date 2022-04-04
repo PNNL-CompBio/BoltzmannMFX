@@ -13,8 +13,8 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE
 Real 
 maxInteractionDistance(const Real *p1, const Real *p2, Real bndry_width)
 {
-  Real r1 = p1[realIdx::a_size];
-  Real r2 = p2[realIdx::a_size];
+  Real r1 = p1[realIdx::radius];
+  Real r2 = p2[realIdx::radius];
   return (r1+r2+bndry_width);
 }
 /**
@@ -30,7 +30,7 @@ void
 evaluateForce(const Real *r12, Real *par1, Real *par2, Real *frc,
               Real bndry_width, Real stiffness )
 {
-  Real rS = par1[realIdx::a_size] + par2[realIdx::a_size];
+  Real rS = par1[realIdx::radius] + par2[realIdx::radius];
   Real rA = rS + bndry_width;
   Real rx, ry, rz, rn;
   rx = r12[0];
@@ -68,7 +68,7 @@ evaluateSurfaceForce(const Real *pos, Real *par, Real *frc,
   frc[1] = 0.0;
   Real z = pos[2];
   Real dz = z - z_wall; 
-  Real rS = par[realIdx::a_size];
+  Real rS = par[realIdx::radius];
   Real rA = rS + z_bndry_width;
   if (dz > 0.0 && dz < rA) {
 #if 1

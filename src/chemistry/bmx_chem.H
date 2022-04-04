@@ -4,8 +4,8 @@
 #include <AMReX.H>
 #include <AMReX_REAL.H>
 
-#define MAX_CHEM_REAL_VAR 31
-#define MAX_CHEM_INT_VAR 5
+#define MAX_CHEM_REAL_VAR 29
+#define MAX_CHEM_INT_VAR 16
 
 using amrex::Real;
 
@@ -29,28 +29,26 @@ using amrex::Real;
 struct realIdx
 {
   enum { // Locations of real particle data stored in particle type
-    a_size,      // first ellipsoid dimension
-    b_size,      // second ellipsoid dimension
-    c_size,      // third ellipsoid dimension
-    psi,         // first Euler angle
-    theta,       // second Euler angle                             4
-    phi,         // third Euler angle
-    area,        // cell surface area
-    vol,         // cell volume
+    radius,      // radius of cylinder
+    c_length,    // length of cylinder
+    theta,       // polar angle
+    phi,         // azimuthal angle
+    area,        // segment surface area                                 5
+    vol,         // segment volume
     velx,        // x-component of linear velocity
-    vely,        // y-component of linear velocity                 9
+    vely,        // y-component of linear velocity
     velz,        // z-component of linear velocity
-    wx,          // x-component of angular velocity
+    wx,          // x-component of angular velocity                     10
     wy,          // y-component of angular velocity
     wz,          // z-component of angular velocity
-    fx,          // x-component of linear force                   14
+    fx,          // x-component of linear force
     fy,          // y-component of linear force
-    fz,          // z-component of linear force
+    fz,          // z-component of linear force                         15
     taux,        // x-component of torque
     tauy,        // y-component of torque
-    tauz,        // z-component of torque                         19
-    dadt,        // rate of change of the cell area
-    dvdt,        // rate of change of the cell volume
+    tauz,        // z-component of torque
+    dadt,        // rate of change of the segment area
+    dvdt,        // rate of change of the segment volume                20
     first_data,  // index of first value in uncharacterized block 22
     count        // total number of elements in this enumeration
   };
@@ -69,9 +67,28 @@ struct intIdx
     num_ints,       // Number unique integers in uncharacterized block of intger data
     real_tot,       // Total number reals (unique plus temporary values)
     int_tot,        // Total number of integers (unique plus temporary values)
-    first_real_inc, // Location of first value of concentration increments
+    first_real_inc, // Location of first value of concentration increments        5
+    cell_type,      // Enumeration to distinguish between different cell types
+    n_bnds,         // Number of segments bonded to this segment
+    seg1_id1,       // unique identifier of bonded segment 1
+    seg1_id2,       // original process of bonded segment 1
+    seg2_id1,       // unique identifier of bonded segment 2                     10
+    seg2_id2,       // original process of bonded segment 2
+    seg3_id1,       // unique identifier of bonded segment 3
+    seg3_id2,       // original process of bonded segment 3
+    site1,          // bonding site of segment 1
+    site2,          // bonding site of segment 2                                 15
+    site3,          // bonding site of segment 3                                 16
     first_data,     // index of first value of uncharacterized block
     count           // total number of elements in this enumeration
+  };
+};
+
+struct cellType
+{
+  enum { // Different cell types in simulation
+    YEAST = 0, // Spherical, unconnected cells
+    FUNGI      // Segment of filamentous fungi
   };
 };
 

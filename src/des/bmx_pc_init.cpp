@@ -56,10 +56,8 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
       ifs >> host_particles[i].pos(0);
       ifs >> host_particles[i].pos(1);
       ifs >> host_particles[i].pos(2);
-      ifs >> host_particles[i].rdata(realIdx::a_size);
-      ifs >> host_particles[i].rdata(realIdx::b_size);
-      ifs >> host_particles[i].rdata(realIdx::c_size);
-      ifs >> host_particles[i].rdata(realIdx::psi);
+      ifs >> host_particles[i].rdata(realIdx::radius);
+      ifs >> host_particles[i].rdata(realIdx::c_length);
       ifs >> host_particles[i].rdata(realIdx::theta);
       ifs >> host_particles[i].rdata(realIdx::phi);
       ifs >> host_particles[i].rdata(realIdx::area);
@@ -78,12 +76,7 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
       ifs >> host_particles[i].rdata(realIdx::tauz);
       ifs >> host_particles[i].rdata(realIdx::dadt);
       ifs >> host_particles[i].rdata(realIdx::dvdt);
-      /*
-      Real tmp[3];
-      tmp[0] = 2.0e-05;
-      tmp[1] = 0.0;
-      tmp[2] = 2.0e-06;
-      */
+      ifs >> host_particles[i].idata(intIdx::cell_type);
       for (int c=0; c<FLUID::nchem_species; c++) 
       {
        host_particles[i].rdata(realIdx::first_data+c) = init_conc[c];

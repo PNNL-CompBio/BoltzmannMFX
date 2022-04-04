@@ -44,12 +44,7 @@ setChildParameters(Real *p_real_orig, int *p_int_orig,
   p_real_child[realIdx::area] = area;
   p_real_orig[realIdx::dadt] = dadt;
   p_real_child[realIdx::dadt] = dadt;
-  p_real_orig[realIdx::a_size] = radius;
-  p_real_child[realIdx::a_size] = radius;
-  p_real_orig[realIdx::b_size] = radius;
-  p_real_child[realIdx::b_size] = radius;
-  p_real_orig[realIdx::c_size] = radius;
-  p_real_child[realIdx::c_size] = radius;
+  p_real_orig[realIdx::radius] = radius;
 }
 
 /**
@@ -76,7 +71,7 @@ setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
                      overlap, num_reals, num_ints);
 
   // Find new locations for split particles
-  Real radius = par_new[realIdx::a_size];
+  Real radius = par_new[realIdx::radius];
 #if 0
   Real theta = M_PI ; // * amrex::Random();
   Real phi = 2.0 * M_PI ; // * amrex::Random();
@@ -135,7 +130,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
 
 #if 0
   printf("   Loop size                     : %16d\n",nloop);
-  printf("   Initial radius                : %16.8e\n",cell_par[realIdx::a_size]);
+  printf("   Initial radius                : %16.8e\n",cell_par[realIdx::radius]);
   printf("   Initial fluid concentration A : %16.8e\n",fA);
   printf("   Initial fluid concentration B : %16.8e\n",fB);
   printf("   Initial fluid concentration C : %16.8e\n",fC);
@@ -338,9 +333,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     cell_par[realIdx::area] = 4.0*M_PI*radius*radius;
     new_cell_area = cell_par[realIdx::area];
     cell_par[realIdx::dadt] = 2.0*dvdt/radius;
-    cell_par[realIdx::a_size] = radius;
-    cell_par[realIdx::b_size] = radius;
-    cell_par[realIdx::c_size] = radius;
+    cell_par[realIdx::radius] = radius;
 
     // Adjust concentrations for change in volume
     Real ratio = orig_cell_vol/new_cell_vol;

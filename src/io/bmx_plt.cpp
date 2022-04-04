@@ -195,10 +195,8 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
         Vector<std::string>  int_comp_names;
 
 #ifdef NEW_CHEM
-        real_comp_names.push_back("a_axis");
-        real_comp_names.push_back("b_axis");
-        real_comp_names.push_back("c_axis");
-        real_comp_names.push_back("psi");
+        real_comp_names.push_back("radius");
+        real_comp_names.push_back("cylinder_length");
         real_comp_names.push_back("theta");
         real_comp_names.push_back("phi");
         real_comp_names.push_back("cell_surface_area");
@@ -230,6 +228,17 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
         int_comp_names.push_back("total_reals");
         int_comp_names.push_back("total_ints");
         int_comp_names.push_back("first_conc_inc");
+        int_comp_names.push_back("cell_type");
+        int_comp_names.push_back("number_bonds");
+        int_comp_names.push_back("unique_id_1");
+        int_comp_names.push_back("home_proc_1");
+        int_comp_names.push_back("unique_id_2");
+        int_comp_names.push_back("home_proc_2");
+        int_comp_names.push_back("unique_id_3");
+        int_comp_names.push_back("home_proc_3");
+        int_comp_names.push_back("site_1");
+        int_comp_names.push_back("site_2");
+        int_comp_names.push_back("site_3");
         for (i=intIdx::count-1; i<MAX_CHEM_INT_VAR; i++) {
           char c[2];
           c[1] = '\0';
