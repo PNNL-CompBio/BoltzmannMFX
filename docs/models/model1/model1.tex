@@ -131,7 +131,7 @@ on diffusion in beds of random packed spheres to develop a model for the extrace
 diffusion coefficient. The effective diffusion coefficient in a bed random packed spheres
 can be modeled by an equation of the form
 \[
-D_{eff} = \frac{\phi}{tau}D_0
+D_{eff} = \frac{\phi}{\tau}D_0
 \]
 where $\phi$ is the volume fraction of fluid (the volume fraction of spheres is $1-\phi$),
 $\tau$ is the tortuosity and $D_0$ is the diffusion coefficent in the unoccupied fluid. The
@@ -316,7 +316,7 @@ Note that the particle radii can increase over time, so even if two particles ar
 equilibrium at some time $t$, they may start pushing against each other at a later time $t'$ as they
 grow.
 
-Particle also interact with the surface of the growth medium using a similar potential. In this
+Particles also interact with the surface of the growth medium using a similar potential. In this
 the contribution to the force is only in the $z$-direction and is a function $H(z)$ of the height $z$ above
 the growth medium surface. The force has the form
 \begin{eqnarray*}
@@ -328,7 +328,7 @@ The parameter $\xi$ is the stiffness of the interaction, $Z_S$ is the equilibriu
 and $Z_A$ is the point at which all interaction with the surface ends. Between $Z_S<z<Z_A$, particles are
 attracted to the surface, while below $Z_S$ particles are repelled from the surface. Below the surface,
 particles experience a constant upward force. This force is designed primarily to prevent particles from
-getting accidently pushed down into the growth medium. Similar to the pair interaction, for particle $i$,
+getting accidentally pushed down into the growth medium. Similar to the pair interaction, for particle $i$,
 the parameter $Z_S$ is given by
 \[
 Z_S = R_i
@@ -724,6 +724,118 @@ the matrix equations
 \left[\begin{array}{c} v_{1x} \\ v_{1y} \\ v_{1z} \\ v_{2x} \\ v_{2y} \\ v_{2z}
 \end{array}\right]
 \]
+
+The final part of developing a complete picture of the behavior of filament
+segments is to come up with complete set of formulas for the diffusion tensors.
+From Rotne and Prager the diffusion tensor, the diffusion tensor for a pair of
+radius $a$ is
+\begin{eqnarray*}
+\Dmat_{ii} & = & \frac{kT}{6\pi\mu a}\Imat \\
+\Dmat_{ij} & = & \frac{kT}{8\pi\mu r_{ij}^3}\left[\left(\Imat r_{ij}^2 +\rvec_{ij}
+\rvec_{ij}\right) +\frac{2a^2}{r_{ij}^2}\left(\frac{1}{3}\Imat r_{ij}^2
+-\rvec_{ij}\rvec_{ij}\right)\right] \;\;\;\; \mbox{if}\;\; r_{ij} > 2a \\
+\Dmat_{ij} & = & \frac{kT}{6\pi\mu a}\left[\left(1-\frac{9}{32}\frac{r_{ij}}{a}\right)
++\frac{3}{32}\frac{\rvec_{ij}\rvec_{ij}}{ar_{ij}}\right] \;\;\;\; \mbox{if} \;\; r_{ij}<2a
+\end{eqnarray*}
+Assuming that the two particles lie at points $(h/2,0,0)$ and $(-h/2,0,0)$,
+the equations for the off-diagonal matrices reduce to
+\begin{eqnarray*}
+(\Dmat_{ij})_{xx,yy} & = & \frac{kT}{8\pi\mu h^3}\left[h^2+\frac{2}{3}a^2\right]
+ \;\;\;\;\mbox{if}\;\;h>2a \\
+(\Dmat_{ij})_{zz} & = & \frac{kT}{4\pi\mu h^3}\left[h^2-\frac{2}{3}a^2\right]
+ \;\;\;\;\mbox{if}\;\;h>2a \\
+(\Dmat_{ij})_{xx,yy} & = & \frac{kT}{6\pi\mu a}\left[1-\frac{9}{32}\frac{h}{a}\right]
+ \;\;\;\;\mbox{if}\;\;h<2a \\
+(\Dmat_{ij})_{zz} & = & \frac{kT}{6\pi\mu a}\left[1-\frac{3}{16}\frac{h}{a}\right]
+ \;\;\;\;\mbox{if}\;\;h<2a \\
+\end{eqnarray*}
+All other matrix elements are zero in this orientation. Note that these matrix
+elements are continuous at the contact value of $h=2a$. The only remaining detail
+is to choose a relation between the radius $a$ of the two particles representing
+the ends of the segment, the separation distance $h$ between the particles and
+the dimensions of the cylinder representing the fungi segment.
+
+\section{Creating a Bond List}
+To model filamentous fungi, it is necessary to maintain bonds between
+different linear segments. The end of one segment is bonded to the end of another
+segment so that some sort of fixed relation can be maintained (A is bonded to B),
+even if the two segments are hosted on different processors. The existing code
+base does not support a bond list that can be used to maintain bonds
+between different segments. In order to create a mechanism that allows us to
+established fixed relations between different segments, the following is assumed
+to be true
+\begin{list}{$\bullet$}{}
+\item Any segment B that is bonded to segment A is located within a finite
+distance of A and lies in the neighbor list of A (the neighbor list is based
+exclusively on position and is supported by the code)
+\item There is a finite maximum number of segments that can be bonded to a
+central segment (in our case the maximum is three)
+\item At most one bond can exist between two segments
+\item A unique identifier can be created for each new segment that is added to the
+system.
+\end{list}
+
+Each segment is assumed to have two sites available at each end of the segment for
+forming bonds. These sites are labeled 1 and 2. In addition, each segment has
+a counter equal to the number of other segments that are bonded to it and three
+variables that correspond to the unique identifiers of the segments that it is
+bonded to. There are an additional three variables that identify which site (1 or
+2) that the other segments are bonded to. It is assumed that site 1 bonds to site
+2 so the bonding site on the other segment can be inferred. It is assumed that if
+two sites are bonded then there is a pairwise interaction between the two sites
+that is sufficiently strong to keep the sites in close proximity to each other (e.g.
+a harmonic oscillator bond).
+
+Growth of the filamentous fungi by creating new segments can occur via two mechanisms
+\begin{list}{$\bullet$}{}
+\item Terminal budding, where a new segment appears at the unbounded end of a
+growing segment
+\item Side branch growth, where a new bud forms at one end of a segment that is
+already bonded to two segments at each end
+\end{list}
+The side branch growth mechanism encapsulates tip splitting, where two buds form
+at the non-bonded end of a growing segment. For tip splitting, the buds are assumed
+to form sequentially, although possibly close to each other in time.
+
+When a new segment is formed, the following steps occur
+\begin{list}{$\bullet$}{}
+\item A new segment is created from a parent segment at one end or the other of
+the parent
+\item The new segment is assigned a unique identifier. It is listed as bonded to
+the parent. If the new segment is generated at site 1 of the parent, then its
+bonding site is 2, otherwise its bonding site is 1. The bond counter is set to 1
+on the new segment
+\item The parent is modified to list the new segment as a bonding partner using
+its unique identifier and the bond counter is incremented by 1.
+\end{list}
+
+To keep track of the bonds, the following data is needed on each segment
+\begin{list}{$\bullet$}{}
+\item A bond counter representing the number of neighboring segments that are bonded
+to the segment
+\item a three element list containing the unique segment IDs of the bonded
+segments
+\item a three element list containing the site to which the neighboring segments
+are bonded
+\end{list}
+A bonding relation between a segment and its neighbors can be determined by
+extracting the unique segment ID of the neighbor and comparing it to the list 
+of segment IDs to which the segment is bonded. If there is a match, then the bonding
+site can be determined from the second list.
+
+Once this bonding information is in place, the actual interactions between segment
+pairs can be evaluated as follows.
+\begin{list}{$\bullet$}{}
+\item For each segment, a neighbor list is formed. The cutoff radius of the
+neighbor list is assumed to be sufficiently large that any segment that is bonded
+to the central segment will appear in the neighbor list.
+\item Each pair between the central segment and it neighbors is evaluated. The
+list of bonded identifiers on the central segment is compared to the identifier
+of the neighbor. If there is a match, the sites that are bonded are identified and
+the bonded interaction between the two segments is evaluated
+\item If there is no match, the non-bonded interaction between the two segments is
+evaluated
+\end{list}
 \bibliographystyle{unsrt}
 \bibliography{bmx}
 \end{document}
