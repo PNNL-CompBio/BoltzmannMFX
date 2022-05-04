@@ -34,7 +34,7 @@ BMXParticleContainer::split_particles ()
         amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE (int i) noexcept
         {
             BMXParticleContainer::ParticleType& p = pstruct[i];
-            if (checkSplit(&p.rdata(0), &p.rdata(realIdx::first_data), l_max_vol))
+            if (checkSplit(&p.rdata(0), p.idata(intIdx::cell_type), l_max_vol))
             {
                 do_split_p[i] = 1;
             }
@@ -97,6 +97,8 @@ BMXParticleContainer::split_particles ()
                 setNewCell(pos_orig, pos_new, par_orig,
                            par_new, ipar_orig, ipar_new,
                            l_overlap, l_num_reals, l_num_ints, engine);
+                ipar_new[intIdx::id] = p.id();
+                ipar_new[intIdx::cpu] = p.cpu();
 
                 //                std::printf("OLD VOLUME OUT = %f \n", par_orig[realIdx::vol]);
                 //                std::printf("NEW VOLUME OUT = %f \n", par_new[realIdx::vol]);

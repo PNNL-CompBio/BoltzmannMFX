@@ -5,7 +5,7 @@
 #include <AMReX_REAL.H>
 
 #define MAX_CHEM_REAL_VAR 29
-#define MAX_CHEM_INT_VAR 16
+#define MAX_CHEM_INT_VAR 18
 
 using amrex::Real;
 
@@ -78,7 +78,9 @@ struct intIdx
     seg3_id2,       // original process of bonded segment 3
     site1,          // bonding site of segment 1
     site2,          // bonding site of segment 2                                 15
-    site3,          // bonding site of segment 3                                 16
+    site3,          // bonding site of segment 3
+    id,             // unique identifier of segment
+    cpu,            // original process of segment                               18
     first_data,     // index of first value of uncharacterized block
     count           // total number of elements in this enumeration
   };
@@ -165,6 +167,9 @@ class BMXChemistry
   static Real k2, kr2;   // rate coefficients for converting A into B and C inside biological cell
   static Real k3, kr3;   // rate coefficients for species C into and out of biological cell
   static Real kg;        // cell growth coefficient
+
+  static Real radius_max;  // maximum value of cylinder radius for fungi segment
+  static Real length_max;  // maximum value of cylinder length for fungi segment
 
   // Fraction of overlap
   static Real p_overlap;

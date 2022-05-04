@@ -27,6 +27,8 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                    << " ... with fluid dt " << dt << std::endl;
 
     BMXCellInteraction *interaction = BMXCellInteraction::instance();
+    std::vector<Real> fpar_vec = interaction->getForceParams();
+    Real *fpar = &fpar_vec[0];
     /****************************************************************************
      * DEBUG flag toggles:                                                      *
      *   -> Print number of collisions                                          *
@@ -62,7 +64,8 @@ void BMXParticleContainer::EvolveParticles (Real dt,
      *   -> particle-particle, and particle-wall forces                         *
      *   -> particle-particle, and particle-wall torques                        *
      ***************************************************************************/
-    std::map<PairIndex, amrex::Gpu::DeviceVector<Real>> fc, pfor, wfor; // total force=particle+wall, particle force, wall force?
+    // total force=particle+wall, particle force, wall force, torque?
+    std::map<PairIndex, amrex::Gpu::DeviceVector<Real>> fc, pfor, wfor, torq;
 
     std::map<PairIndex, bool> tile_has_walls;
 
@@ -72,6 +75,7 @@ void BMXParticleContainer::EvolveParticles (Real dt,
         fc[index]   = amrex::Gpu::DeviceVector<Real>();
         pfor[index] = amrex::Gpu::DeviceVector<Real>();
         wfor[index] = amrex::Gpu::DeviceVector<Real>();
+        torq[index] = amrex::Gpu::DeviceVector<Real>();
     }
 
     /****************************************************************************
@@ -124,16 +128,18 @@ void BMXParticleContainer::EvolveParticles (Real dt,
             // these to be zero every time we start a new batch (i.e tile and
             // substep) of particles.
             fc[index].clear();
-            fc[index].resize(3*ntot, 0.0);
+            fc[index].resize(6*ntot, 0.0);
 
             Real* fc_ptr = fc[index].dataPtr();
 
-            // For debugging: keep track of particle-particle (pfor) and
-            // particle-wall (wfor) forces
+            // For debugging: keep track of particle-particle (pfor),
+            // particle-wall (wfor) forces and torques (torq)
             pfor[index].clear();
             wfor[index].clear();
+            torq[index].clear();
             pfor[index].resize(3*ntot, 0.0);
             wfor[index].resize(3*ntot, 0.0);
+            torq[index].resize(3*ntot, 0.0);
 
             /********************************************************************
              * Particle-Particle collision forces (and torques)                 *
@@ -145,18 +151,18 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 
             constexpr Real small_number = 1.0e-15;
 
+#if 0
             Real l_bndry_width   = BMXCellInteraction::p_bndry_width;
             Real l_stiffness     = BMXCellInteraction::p_stiffness;
             Real l_z_bndry_width = BMXCellInteraction::p_z_bndry_width;
             Real l_z_stiffness   = BMXCellInteraction::p_z_stiffness;
             Real l_z_wall        = BMXCellInteraction::p_z_wall;
             Real l_z_gravity     = BMXCellInteraction::p_z_gravity;
+#endif
 
             // now we loop over the neighbor list and compute the forces
             amrex::ParallelFor(nrp,
-                [nrp,pstruct,fc_ptr,nbor_data,
-                 subdt,ntot,interaction,l_bndry_width,l_stiffness,
-                 l_z_bndry_width, l_z_stiffness, l_z_wall, l_z_gravity]
+                [nrp,pstruct,fc_ptr,nbor_data,subdt,ntot,fpar]
               AMREX_GPU_DEVICE (int i) noexcept
               {
                   auto particle = pstruct[i];
@@ -180,7 +186,7 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                       RealVect diff(dist_x,dist_y,dist_z);
 
                       Real r_lm = maxInteractionDistance(&particle.rdata(0),&p2.rdata(0),
-                                                         l_bndry_width);
+                                                         fpar[0]);
 
                       AMREX_ASSERT_WITH_MESSAGE(
                           not (particle.id() == p2.id() and
@@ -193,29 +199,37 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 
                           Real dist_mag_inv = 1.e0/dist_mag;
 
-                          RealVect normal(0.);
-                          normal[0] = dist_x * dist_mag_inv;
-                          normal[1] = dist_y * dist_mag_inv;
-                          normal[2] = dist_z * dist_mag_inv;
+                       //   RealVect normal(0.);
+                       //   normal[0] = dist_x * dist_mag_inv;
+                       //   normal[1] = dist_y * dist_mag_inv;
+                       //   normal[2] = dist_z * dist_mag_inv;
 
-                          RealVect fn(0.);
-                          RealVect ft(0.);
+                          RealVect v1(0.);
+                          RealVect v2(0.);
+                          RealVect rot1(0.);
+                          RealVect rot2(0.);
 
-                          evaluateForce(&diff[0],&particle.rdata(0),&p2.rdata(0),&fn[0],
-                                        l_bndry_width, l_stiffness);
+                          evaluateForce(&diff[0],&particle.rdata(0),&p2.rdata(0), &particle.idata(0),
+                                        &p2.idata(0), &v1[0], &v2[0], &rot1[0], &rot2[0], fpar);
 #ifdef _OPENMP
 #pragma omp critical
                           {
 #endif
-                            amrex::Gpu::Atomic::Add(&fc_ptr[i         ], fn[0] + ft[0]);
-                            amrex::Gpu::Atomic::Add(&fc_ptr[i + ntot  ], fn[1] + ft[1]);
-                            amrex::Gpu::Atomic::Add(&fc_ptr[i + 2*ntot], fn[2] + ft[2]);
+                            amrex::Gpu::Atomic::Add(&fc_ptr[i         ], v1[0]);
+                            amrex::Gpu::Atomic::Add(&fc_ptr[i + ntot  ], v1[1]);
+                            amrex::Gpu::Atomic::Add(&fc_ptr[i + 2*ntot], v1[2]);
+                            amrex::Gpu::Atomic::Add(&fc_ptr[i + 3*ntot], rot1[0]);
+                            amrex::Gpu::Atomic::Add(&fc_ptr[i + 4*ntot], rot1[1]);
+                            amrex::Gpu::Atomic::Add(&fc_ptr[i + 5*ntot], rot1[2]);
 
                             if (j < nrp)
                             {
-                              amrex::Gpu::Atomic::Add(&fc_ptr[j         ], -(fn[0] + ft[0]));
-                              amrex::Gpu::Atomic::Add(&fc_ptr[j + ntot  ], -(fn[1] + ft[1]));
-                              amrex::Gpu::Atomic::Add(&fc_ptr[j + 2*ntot], -(fn[2] + ft[2]));
+                              amrex::Gpu::Atomic::Add(&fc_ptr[j         ], v2[0]);
+                              amrex::Gpu::Atomic::Add(&fc_ptr[j + ntot  ], v2[1]);
+                              amrex::Gpu::Atomic::Add(&fc_ptr[j + 2*ntot], v2[2]);
+                              amrex::Gpu::Atomic::Add(&fc_ptr[j + 3*ntot], rot2[0]);
+                              amrex::Gpu::Atomic::Add(&fc_ptr[j + 4*ntot], rot2[1]);
+                              amrex::Gpu::Atomic::Add(&fc_ptr[j + 5*ntot], rot2[2]);
                             }
 #ifdef _OPENMP
                           }
@@ -224,12 +238,12 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 
                       }
                   } // end of neighbor loop
-                  RealVect fw(0.);
-                  evaluateSurfaceForce(&pos1[0],&particle.rdata(0),&fw[0],l_z_bndry_width,l_z_stiffness,
-                                       l_z_wall, l_z_gravity );
-                  amrex::Gpu::Atomic::Add(&fc_ptr[i         ], fw[0]);
-                  amrex::Gpu::Atomic::Add(&fc_ptr[i + ntot  ], fw[1]);
-                  amrex::Gpu::Atomic::Add(&fc_ptr[i + 2*ntot], fw[2]);
+                  RealVect vcom(0.);
+                  RealVect vrot(0.);
+                  evaluateSurfaceForce(&pos1[0],&particle.rdata(0),&particle.idata(0),&vcom[0],&vrot[0],fpar);
+                  amrex::Gpu::Atomic::Add(&fc_ptr[i         ], vcom[0]);
+                  amrex::Gpu::Atomic::Add(&fc_ptr[i + ntot  ], vcom[1]);
+                  amrex::Gpu::Atomic::Add(&fc_ptr[i + 2*ntot], vcom[2]);
               }); // end of loop over particles
 
             amrex::Gpu::Device::synchronize();

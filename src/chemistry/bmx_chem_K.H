@@ -6,10 +6,14 @@
  */
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 bool 
-checkSplit(Real *p_par, Real* /*p_conc*/, Real max_vol)
+checkSplit(Real *p_par, int cell_type, Real max_vol)
 {
   bool ret = false;
-  if (p_par[realIdx::vol] > max_vol) ret = true;
+  if (cell_type == cellType::YEAST) {
+    if (p_par[realIdx::vol] > max_vol) ret = true;
+  } else if (cell_type == cellType::FUNGI) {
+    //TODO: Check fungi values
+  }
   return ret;
 }
 
@@ -24,7 +28,7 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void 
 setChildParameters(Real *p_real_orig, int *p_int_orig,
                    Real *p_real_child, int *p_int_child,
-                   Real /*overlap*/, int num_reals, int num_ints) 
+                   int num_reals, int num_ints) 
 {
   int i;
   int nreals = num_reals + realIdx::count-1;
@@ -33,18 +37,22 @@ setChildParameters(Real *p_real_orig, int *p_int_orig,
   for (i=0; i<nints; i++) p_int_child[i] = p_int_orig[i];
 
   // fix up values that need to be modified due to splitting
-  Real volume = p_real_orig[realIdx::vol]/2.0;
-  Real radius = pow((3.0*volume/(4.0*M_PI)),1.0/3.0);
-  Real area = 4.0*M_PI*radius*radius;
-  Real dvdt = p_real_orig[realIdx::dvdt];
-  Real dadt = 2.0*dvdt/radius;
-  p_real_orig[realIdx::vol] = volume;
-  p_real_child[realIdx::vol] = volume;
-  p_real_orig[realIdx::area] = area;
-  p_real_child[realIdx::area] = area;
-  p_real_orig[realIdx::dadt] = dadt;
-  p_real_child[realIdx::dadt] = dadt;
-  p_real_orig[realIdx::radius] = radius;
+  if (p_int_orig[intIdx::cell_type] == cellType::YEAST) {
+    Real volume = p_real_orig[realIdx::vol]/2.0;
+    Real radius = pow((3.0*volume/(4.0*M_PI)),1.0/3.0);
+    Real area = 4.0*M_PI*radius*radius;
+    Real dvdt = p_real_orig[realIdx::dvdt];
+    Real dadt = 2.0*dvdt/radius;
+    p_real_orig[realIdx::vol] = volume;
+    p_real_child[realIdx::vol] = volume;
+    p_real_orig[realIdx::area] = area;
+    p_real_child[realIdx::area] = area;
+    p_real_orig[realIdx::dadt] = dadt;
+    p_real_child[realIdx::dadt] = dadt;
+    p_real_orig[realIdx::radius] = radius;
+  } else if (p_int_orig[intIdx::cell_type] == cellType::FUNGI) {
+    //TODO: set values for fungi
+  }
 }
 
 /**
@@ -60,35 +68,39 @@ setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
            Real *par_new, int *ipar_orig, int *ipar_new,
            Real overlap, int num_reals, int num_ints, amrex::RandomEngine const& engine)
 {
-  Real x,y,z;
-  x = pos_orig[0];
-  y = pos_orig[1];
-  z = pos_orig[2];
-
   // Copy values from original particle and modify some values
   // as appropriate
   setChildParameters(par_orig, ipar_orig, par_new, ipar_new,
-                     overlap, num_reals, num_ints);
+      num_reals, num_ints);
 
-  // Find new locations for split particles
-  Real radius = par_new[realIdx::radius];
+  if (ipar_orig[intIdx::cell_type] == cellType::YEAST) {
+    Real x,y,z;
+    x = pos_orig[0];
+    y = pos_orig[1];
+    z = pos_orig[2];
+
+    // Find new locations for split particles
+    Real radius = par_new[realIdx::radius];
 #if 0
-  Real theta = M_PI ; // * amrex::Random();
-  Real phi = 2.0 * M_PI ; // * amrex::Random();
+    Real theta = M_PI ; // * amrex::Random();
+    Real phi = 2.0 * M_PI ; // * amrex::Random();
 #else
-  Real theta = M_PI * amrex::Random(engine);
-  Real phi = 2.0 * M_PI * amrex::Random(engine);
+    Real theta = M_PI * amrex::Random(engine);
+    Real phi = 2.0 * M_PI * amrex::Random(engine);
 #endif
-  Real nx = sin(theta)*cos(phi);
-  Real ny = sin(theta)*sin(phi);
-  Real nz = cos(theta);
-  Real scale = 1.0 - overlap;
-  pos_new[0] = x + scale*0.5*nx*radius;
-  pos_new[1] = y + scale*0.5*ny*radius;
-  pos_new[2] = z + scale*0.5*nz*radius;
-  pos_orig[0] = x - scale*0.5*nx*radius;
-  pos_orig[1] = y - scale*0.5*ny*radius;
-  pos_orig[2] = z - scale*0.5*nz*radius;
+    Real nx = sin(theta)*cos(phi);
+    Real ny = sin(theta)*sin(phi);
+    Real nz = cos(theta);
+    Real scale = 1.0 - overlap;
+    pos_new[0] = x + scale*0.5*nx*radius;
+    pos_new[1] = y + scale*0.5*ny*radius;
+    pos_new[2] = z + scale*0.5*nz*radius;
+    pos_orig[0] = x - scale*0.5*nx*radius;
+    pos_orig[1] = y - scale*0.5*ny*radius;
+    pos_orig[2] = z - scale*0.5*nz*radius;
+  } else if (ipar_orig[intIdx::cell_type] == cellType::FUNGI) {
+    //TODO: set fungi positions
+  }
 }
 
 /**
@@ -104,10 +116,13 @@ setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     Real *cell_par, Real *mesh_vals, Real *p_vals, Real dt, int nloop,
-    Real *chempar)
+    Real *chempar, int *cell_ipar)
 {
   Real k1, k2, k3, kr1, kr2, kr3, kg;
   Real fluid_vol = grid_vol/npart;
+  int cell_type =  cell_ipar[intIdx::cell_type];
+  bool is_tip = (cell_ipar[intIdx::n_bnds] <= 1);
+  Real radius_max, length_max;
 
   k1 = chempar[0];
   k2 = chempar[1];
@@ -116,8 +131,11 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
   kr2 = chempar[4];
   kr3 = chempar[5];
   kg = chempar[6];
+  radius_max = chempar[7];
+  length_max = chempar[8];
+
   // cell parameters
-  Real orig_cell_vol  = cell_par[realIdx::vol];
+  Real orig_cell_vol = cell_par[realIdx::vol];
 
   // ********************************************************************
   // Define original concentrations
@@ -321,19 +339,92 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     // ********************************************************************
     // Increment volume 
     // ********************************************************************
-    Real dvdt = std::max(kg*rB*orig_cell_vol,0.0);
 
-    cell_par[realIdx::dvdt] = dvdt; 
-    new_cell_vol += dtp*dvdt;
-    cell_par[realIdx::vol] = new_cell_vol; 
 
 
     // Update the cell area, change in area, and sizes
-    Real radius = pow((3.0*new_cell_vol/(4.0*M_PI)),1.0/3.0);
-    cell_par[realIdx::area] = 4.0*M_PI*radius*radius;
-    new_cell_area = cell_par[realIdx::area];
-    cell_par[realIdx::dadt] = 2.0*dvdt/radius;
-    cell_par[realIdx::radius] = radius;
+    if (cell_type == cellType::YEAST) {
+      // Yeast cells grow no matter what
+      Real dvdt = std::max(kg*rB*orig_cell_vol,0.0);
+
+      cell_par[realIdx::dvdt] = dvdt; 
+      new_cell_vol += dtp*dvdt;
+      cell_par[realIdx::vol] = new_cell_vol; 
+      // Calculate new surface area, volume and radius
+      Real radius = pow((3.0*new_cell_vol/(4.0*M_PI)),1.0/3.0);
+      cell_par[realIdx::area] = 4.0*M_PI*radius*radius;
+      new_cell_area = cell_par[realIdx::area];
+      cell_par[realIdx::dadt] = 2.0*dvdt/radius;
+      cell_par[realIdx::radius] = radius;
+    } else if (cell_type == cellType::FUNGI) {
+      // Fungi segments only grow if they are a growing tip
+      // or any of the segment dimensions are below maximum
+      // values
+      if (is_tip) {
+	Real dvdt = std::max(kg*rB*orig_cell_vol,0.0);
+	cell_par[realIdx::dvdt] = dvdt; 
+	new_cell_vol += dtp*dvdt;
+	cell_par[realIdx::vol] = new_cell_vol; 
+	Real radius, c_length, tau;
+	if (cell_par[realIdx::radius] < radius_max
+	    && cell_par[realIdx::c_length] < length_max) {
+	  // grow segment proportionally
+	  tau = pow(new_cell_vol/orig_cell_vol,1.0/3.0);
+	  radius = tau*cell_par[realIdx::radius];
+	  c_length = tau*cell_par[realIdx::c_length];
+	  Real dtdt = 1.0/(3.0*pow(new_cell_vol,2.0/3.0))*dvdt/pow(orig_cell_vol,1.0/3.0);
+	  Real drdt = dtdt*cell_par[realIdx::radius];
+	  Real dldt = dtdt*cell_par[realIdx::c_length];
+	  cell_par[realIdx::dadt] = 2.0*M_PI*(drdt*(radius+c_length)+radius*(drdt+dldt));
+	  if (cell_ipar[intIdx::n_bnds] == 0) {
+	    cell_par[realIdx::area] = 2.0*M_PI*radius*(radius+c_length);
+	  } else {
+	    // Only one end of the cylinder is exposed to external fluid
+	    cell_par[realIdx::area] = M_PI*radius*(radius+2.0*c_length);
+	  }
+	} else if (cell_par[realIdx::radius] < radius_max) {
+	  // increase radius only (this case probably never reached)
+	  tau = sqrt(new_cell_vol/orig_cell_vol);
+	  radius = tau*cell_par[realIdx::radius];
+	  c_length = cell_par[realIdx::c_length];
+	  Real dtdt = 1.0/(2.0*sqrt(new_cell_vol))*dvdt/sqrt(orig_cell_vol);
+	  Real drdt = dtdt*cell_par[realIdx::radius];
+	  cell_par[realIdx::dadt] = 2.0*M_PI*(2.0*radius+c_length)*drdt;
+	} else {
+	  // increase length
+	  tau = new_cell_vol/orig_cell_vol;
+	  radius = cell_par[realIdx::radius];
+	  c_length = tau*cell_par[realIdx::c_length];
+	  Real dldt = dvdt*cell_par[realIdx::c_length]/orig_cell_vol;
+	  cell_par[realIdx::dadt] =  2.0*M_PI*radius*dldt;
+	}
+	cell_par[realIdx::radius] = radius;
+	cell_par[realIdx::c_length] = c_length;
+      } else {
+	// Fungi segment can only grow radially
+	if (cell_par[realIdx::radius] < radius_max) {
+	  Real dvdt = std::max(kg*rB*orig_cell_vol,0.0);
+	  cell_par[realIdx::dvdt] = dvdt; 
+	  new_cell_vol += dtp*dvdt;
+	  cell_par[realIdx::vol] = new_cell_vol; 
+	  Real tau = sqrt(new_cell_vol/orig_cell_vol);
+	  Real radius = tau*cell_par[realIdx::radius];
+	  Real c_length = cell_par[realIdx::c_length];
+	  Real dtdt = 1.0/(2.0*sqrt(new_cell_vol))*dvdt/sqrt(orig_cell_vol);
+	  Real drdt = dtdt*cell_par[realIdx::radius];
+	  cell_par[realIdx::radius] = radius;
+	  cell_par[realIdx::c_length] = c_length;
+	  // Both end caps of cylinder are hidden from fluid
+	  cell_par[realIdx::area] = 2.0*M_PI*radius*c_length;
+	  cell_par[realIdx::dadt] = 2.0*M_PI*(2.0*radius+c_length)*drdt;
+	} else {
+	  // Cell volume doesn't change, reset everything to original values
+	  cell_par[realIdx::dvdt] = 0.0; 
+	  cell_par[realIdx::vol] = orig_cell_vol; 
+	  cell_par[realIdx::dadt] = 0.0;
+	}
+      }
+    }
 
     // Adjust concentrations for change in volume
     Real ratio = orig_cell_vol/new_cell_vol;

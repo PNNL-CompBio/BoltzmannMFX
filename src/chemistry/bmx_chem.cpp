@@ -10,6 +10,8 @@ amrex::Real BMXChemistry::kr1 = 0.0;
 amrex::Real BMXChemistry::kr2 = 0.0;
 amrex::Real BMXChemistry::kr3 = 0.0;
 amrex::Real BMXChemistry::kg = 0.0;
+amrex::Real BMXChemistry::radius_max = 0.0;
+amrex::Real BMXChemistry::length_max = 0.0;
 amrex::Real BMXChemistry::p_overlap = 0.0;
 
 int BMXChemistry::p_num_reals = 0;
@@ -81,6 +83,8 @@ void BMXChemistry::setParams(const char *file)
   pp.get("k3",k3);
   pp.get("kr3",kr3);
   pp.get("kg",kg);
+  pp.get("maximum_segment_length",length_max);
+  pp.get("maximum_segment_radius",radius_max);
   p_overlap = 0.2;
   /* figure out cutoff for neighbor list */
   Real vol = SPECIES::max_vol;
@@ -88,6 +92,8 @@ void BMXChemistry::setParams(const char *file)
   ParmParse ppF("cell_force");
   Real width;
   ppF.get("boundary_width",width);
+  // TODO: Come up with correct neighborhood value base on what types of cells
+  //       are being simulated
   DEM::neighborhood = 1.1*(2.0*radius+width);
   ParmParse ppV("bmx");
   int verbose = 0;
@@ -177,4 +183,6 @@ void BMXChemistry::getChemParams(std::vector<Real> &chempar)
   chempar.push_back(kr2);
   chempar.push_back(kr3);
   chempar.push_back(kg);
+  chempar.push_back(radius_max);
+  chempar.push_back(length_max);
 }

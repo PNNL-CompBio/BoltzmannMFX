@@ -239,6 +239,8 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
         int_comp_names.push_back("site_1");
         int_comp_names.push_back("site_2");
         int_comp_names.push_back("site_3");
+        int_comp_names.push_back("unique_id");
+        int_comp_names.push_back("home_cpu");
         for (i=intIdx::count-1; i<MAX_CHEM_INT_VAR; i++) {
           char c[2];
           c[1] = '\0';
