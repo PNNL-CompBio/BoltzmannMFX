@@ -162,6 +162,32 @@ bmx::ComputeAndPrintSums()
                                                  C_in_fluid + C_in_particles << std::endl;
 
 }
+void
+bmx::compute_grad_X(int lev, Real time, MultiFab& gradx_X_k, MultiFab& grady_X_k, MultiFab& gradz_X_k) 
+{
+    fillpatch_Xk(get_X_k(), time);
+
+    auto const dxInv = geom[lev].InvCellSizeArray();
+ 
+    MultiFab* X_k = get_X_k()[lev];
+    for (MFIter mfi(*X_k,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
+        Box const& bx = mfi.tilebox();
+
+        const Array4<const Real>  X_k_arr = X_k->const_array(mfi);
+        const Array4<      Real> gx_k_arr = gradx_X_k.array(mfi);
+        const Array4<      Real> gy_k_arr = grady_X_k.array(mfi);
+        const Array4<      Real> gz_k_arr = gradz_X_k.array(mfi);
+
+        ParallelFor(bx, FLUID::nchem_species, [=]
+          AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+          {
+              gx_k_arr(i,j,k,n) = (X_k_arr(i+1,j,k,n) - X_k_arr(i-1,j,k,n)) * 0.5 * dxInv[0];
+              gy_k_arr(i,j,k,n) = (X_k_arr(i,j+1,k,n) - X_k_arr(i,j-1,k,n)) * 0.5 * dxInv[1];
+              gz_k_arr(i,j,k,n) = (X_k_arr(i,j,k+1,n) - X_k_arr(i,j,k-1,n)) * 0.5 * dxInv[2];
+          });
+    }
+}
 
 void
 bmx::avgDown (int crse_lev, const MultiFab& S_fine, MultiFab& S_crse)

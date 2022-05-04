@@ -183,7 +183,6 @@ class bmx : public AmrCore
 
     std::map< std::string, Gpu::DeviceVector<int> > m_X_k_bc_types;
 
-  protected:
     void FillPatchChemSpecies (int lev, Real time, MultiFab & mf, int icomp, int ncomp,
                                const Vector<BCRec> & bcr);
     void FillPatchChemCoeffs (int lev, Real time, MultiFab & mf, int icomp, int ncomp,
@@ -198,7 +197,8 @@ class bmx : public AmrCore
     void GetDataVolFrac    (int lev, Real time, Vector<MultiFab *> & data, int icomp,
                             Vector<Real> & datatime);
 
-  protected:
+    void compute_grad_X (int lev, Real time, MultiFab& gradx_X_k, MultiFab& grady_X_k, MultiFab& gradz_X_k);
+
     void AllocateArrays (int lev);
 
     void RegridArrays (int lev);
@@ -361,6 +361,7 @@ class bmx : public AmrCore
     int plt_D_k    = 0;
     int plt_vf     = 1;
     int plt_np     = 1;
+    int plt_grad_X = 0;
 
     // Total number of variables to write in plot file
     int pltVarCount = 0;

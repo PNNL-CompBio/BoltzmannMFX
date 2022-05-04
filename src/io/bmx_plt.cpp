@@ -25,14 +25,16 @@ bmx::InitIOPltData ()
         ParmParse pp("amr");
 
         pp.query("plt_X",     plt_X_k   );
+        pp.query("plt_grad_X",plt_grad_X);
         pp.query("plt_D",     plt_D_k   );
         pp.query("plt_vf",    plt_vf    );
         pp.query("plt_np",    plt_np    );
  
-        if( plt_X_k == 1)  pltVarCount += FLUID::nchem_species;
-        if( plt_D_k == 1)  pltVarCount += FLUID::nchem_species;
-        if( plt_np  == 1)  pltVarCount += 1;
-        if( plt_vf  == 1)  pltVarCount += 1;
+        if( plt_X_k    == 1)  pltVarCount += FLUID::nchem_species;
+        if( plt_grad_X == 1)  pltVarCount += AMREX_SPACEDIM * FLUID::nchem_species;
+        if( plt_D_k    == 1)  pltVarCount += FLUID::nchem_species;
+        if( plt_np     == 1)  pltVarCount += 1;
+        if( plt_vf     == 1)  pltVarCount += 1;
     }
 }
 
@@ -76,6 +78,18 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
       if(plt_np == 1)
           pltFldNames.push_back("particle_count");
 
+      // Gradient of species in fluid
+      if(FLUID::solve_chem_species and plt_grad_X == 1)
+      {
+        for(std::string specie: FLUID::chem_species)
+          pltFldNames.push_back("gx_"+specie);
+        for(std::string specie: FLUID::chem_species)
+          pltFldNames.push_back("gy_"+specie);
+        for(std::string specie: FLUID::chem_species)
+          pltFldNames.push_back("gz_"+specie);
+      }
+
+
       for (int lev = 0; lev <= finestLevel(); ++lev)
       {
         // Multifab to hold all the variables -- there can be only one!!!!
@@ -113,6 +127,23 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
              MultiFab::Copy(*mf[lev], temp_dat, 0, lc, 1, 0);
              lc += 1;
         }
+
+        if(FLUID::solve_chem_species and plt_grad_X == 1)
+        {
+             MultiFab gx(grids[lev], dmap[lev], FLUID::nchem_species, 0);
+             MultiFab gy(grids[lev], dmap[lev], FLUID::nchem_species, 0);
+             MultiFab gz(grids[lev], dmap[lev], FLUID::nchem_species, 0);
+
+             compute_grad_X(lev, time, gx, gy, gz);
+
+             MultiFab::Copy(*mf[lev], gx, 0, lc, FLUID::nchem_species, 0);
+             lc += FLUID::nchem_species;
+             MultiFab::Copy(*mf[lev], gy, 0, lc, FLUID::nchem_species, 0);
+             lc += FLUID::nchem_species;
+             MultiFab::Copy(*mf[lev], gz, 0, lc, FLUID::nchem_species, 0);
+             lc += FLUID::nchem_species;
+        }
+
       } // lev
 
       Vector<const MultiFab*> mf2(finestLevel()+1);
