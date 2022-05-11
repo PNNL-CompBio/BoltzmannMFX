@@ -4,8 +4,12 @@
 #include <AMReX.H>
 #include <AMReX_REAL.H>
 
-#define MAX_CHEM_REAL_VAR 29
-#define MAX_CHEM_INT_VAR 18
+/**
+ * These two values need to be coordinated with the number of variables
+ * defined in the realIdx and intIdx enumerations, plus the number of
+ * variables in the undefined blocks */
+#define MAX_CHEM_REAL_VAR 32
+#define MAX_CHEM_INT_VAR 20
 
 using amrex::Real;
 
@@ -29,12 +33,12 @@ using amrex::Real;
 struct realIdx
 {
   enum { // Locations of real particle data stored in particle type
-    radius,      // radius of cylinder
+    radius,      // radius of particle or cylinder
     c_length,    // length of cylinder
     theta,       // polar angle
     phi,         // azimuthal angle
-    area,        // segment surface area                                 5
-    vol,         // segment volume
+    area,        // surface area of sphere or segment                   5
+    vol,         // volume of sphere or segment
     velx,        // x-component of linear velocity
     vely,        // y-component of linear velocity
     velz,        // z-component of linear velocity
@@ -47,8 +51,11 @@ struct realIdx
     taux,        // x-component of torque
     tauy,        // y-component of torque
     tauz,        // z-component of torque
-    dadt,        // rate of change of the segment area
-    dvdt,        // rate of change of the segment volume                20
+    gx,          // x-component of chemical gradient
+    gy,          // y-component of chemical gradient                    20
+    gz,          // z-component of chemical gradient
+    dadt,        // rate of change of the area
+    dvdt,        // rate of change of the volume                        23
     first_data,  // index of first value in uncharacterized block 22
     count        // total number of elements in this enumeration
   };
@@ -79,8 +86,10 @@ struct intIdx
     site1,          // bonding site of segment 1
     site2,          // bonding site of segment 2                                 15
     site3,          // bonding site of segment 3
+    position,       // identify tip, second position, interior segment
+    growth_dir,     // growth direction (away from site 1, site 2 or both)
     id,             // unique identifier of segment
-    cpu,            // original process of segment                               18
+    cpu,            // original process of segment                               20
     first_data,     // index of first value of uncharacterized block
     count           // total number of elements in this enumeration
   };
@@ -93,6 +102,17 @@ struct cellType
     FUNGI      // Segment of filamentous fungi
   };
 };
+
+struct siteLocation
+{
+  enum { // Different locations of fungi segments
+    TIP = 0,   // Growth tip filament
+    SECOND_1,  // Segment behind growth tip, tip is bound to site 1
+    SECOND_2,  // Segment behind growth tip, tip is bound to site 2
+    INTERIOR   // 
+  };
+};
+
 
 class BMXChemistry
 {

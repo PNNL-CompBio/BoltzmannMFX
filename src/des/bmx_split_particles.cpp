@@ -6,11 +6,14 @@
 
 /**
  * @brief this function splits particles if some criterion is met
+ * @param time current time at which split occurs
  */
 void
-BMXParticleContainer::split_particles ()
+BMXParticleContainer::split_particles (Real time)
 {
   Real l_max_vol  = SPECIES::max_vol; 
+  Real l_max_len  = SPECIES::max_len; 
+  Real l_max_rad  = SPECIES::max_rad; 
   Real l_overlap  = BMXChemistry::p_overlap;
   int l_num_reals = BMXChemistry::p_num_reals;
   int l_num_ints  = BMXChemistry::p_num_ints;
@@ -31,10 +34,12 @@ BMXParticleContainer::split_particles ()
         // whether each particle will be split
         Gpu::DeviceVector<unsigned int> do_split(np+1, 0);
         auto do_split_p = do_split.data();
-        amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE (int i) noexcept
+        amrex::ParallelForRNG( np, [=] AMREX_GPU_DEVICE (int i,
+              amrex::RandomEngine const& engine) noexcept
         {
             BMXParticleContainer::ParticleType& p = pstruct[i];
-            if (checkSplit(&p.rdata(0), p.idata(intIdx::cell_type), l_max_vol))
+            if (checkSplit(&p.rdata(0), &p.idata(0), l_max_vol,
+                  l_max_len, l_max_rad, engine))
             {
                 do_split_p[i] = 1;
             }
@@ -94,9 +99,15 @@ BMXParticleContainer::split_particles ()
 
                 // Set parameters on new particle base on values from
                 // original particle
-                setNewCell(pos_orig, pos_new, par_orig,
-                           par_new, ipar_orig, ipar_new,
-                           l_overlap, l_num_reals, l_num_ints, engine);
+                if (ipar_orig[intIdx::cell_type] == cellType::YEAST) {
+                  setNewCell(pos_orig, pos_new, par_orig,
+                             par_new, ipar_orig, ipar_new,
+                             l_overlap, l_num_reals, l_num_ints, engine);
+                } else {
+                  setNewSegment(pos_orig, pos_new, par_orig,
+                                par_new, ipar_orig, ipar_new,
+                                l_num_reals, l_num_ints, engine);
+                }
                 ipar_new[intIdx::id] = p.id();
                 ipar_new[intIdx::cpu] = p.cpu();
 

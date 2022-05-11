@@ -31,12 +31,19 @@ namespace SPECIES
   // Maximum cell volume
   amrex::Real max_vol;
 
+  // Maximum segment length
+  amrex::Real max_len;
+
+  // Maximum segment radius
+  amrex::Real max_rad;
 
   void Initialize ()
   {
     amrex::ParmParse pp("chem_species");
 
     pp.get("max_vol", max_vol);
+    pp.get("max_seg_length", max_len);
+    pp.get("max_seg_radius", max_rad);
 
     if (pp.contains("solve"))
     {

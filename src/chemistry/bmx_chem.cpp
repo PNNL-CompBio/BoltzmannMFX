@@ -83,8 +83,6 @@ void BMXChemistry::setParams(const char *file)
   pp.get("k3",k3);
   pp.get("kr3",kr3);
   pp.get("kg",kg);
-  pp.get("maximum_segment_length",length_max);
-  pp.get("maximum_segment_radius",radius_max);
   p_overlap = 0.2;
   /* figure out cutoff for neighbor list */
   Real vol = SPECIES::max_vol;

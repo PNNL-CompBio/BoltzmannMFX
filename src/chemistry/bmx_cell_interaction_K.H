@@ -358,7 +358,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     Real area = par1[realIdx::area];
     area /= 2.0;
     Real arad = sqrt(area/(4.0*M_PI));
-    // Start by assuming the cylinder is oriented along the x-axis
+    // Assume the cylinder is oriented along the x-axis
     Real dii[3][3];
     Real dij[3][3];
     for (i=0; i<3; i++) {
@@ -417,7 +417,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     area = par2[realIdx::area];
     area /= 2.0;
     arad = sqrt(area/(4.0*M_PI));
-    // Start by assuming the cylinder is oriented along the x-axis
+    // Assume the cylinder is oriented along the x-axis
     for (i=0; i<3; i++) {
       for (j=0; j<3; j++) {
 	if (i==j) {
@@ -633,13 +633,13 @@ evaluateSurfaceForce(const Real *pos, Real *par, int *ipar, Real *vel, Real *rot
       }
     }
     if (c_length > 2.0*arad) {
-      dij[0][0] = (c_length*c_length+2.0*arad*arad/3.0)/(8.0*M_PI*pow(c_length,3));
-      dij[1][1] = dij[0][0];
-      dij[2][2] = (c_length*c_length-2.0*arad*arad/3.0)/(4.0*M_PI*pow(c_length,3));
+      dij[0][0] = (c_length*c_length-2.0*arad*arad/3.0)/(4.0*M_PI*pow(c_length,3));
+      dij[1][1] = (c_length*c_length+2.0*arad*arad/3.0)/(8.0*M_PI*pow(c_length,3));
+      dij[2][2] = dij[1][1];
     } else {
-      dij[0][0] = (1.0-9.0*c_length/(32.0*arad))/(6.0*arad);
-      dij[1][1] = dij[0][0];
-      dij[2][2] = (1.0-3.0*c_length/(16.0*arad))/(6.0*arad);
+      dij[0][0] = (1.0-3.0*c_length/(16.0*arad))/(6.0*M_PI*arad);
+      dij[1][1] = (1.0-9.0*c_length/(32.0*arad))/(6.0*M_PI*arad);
+      dij[2][2] = dij[1][1];
     }
     // Reorient dij so that it reflects the correct direction (dii is diagonal
     // so it doesn't change under reorientation). Note the transpose of the

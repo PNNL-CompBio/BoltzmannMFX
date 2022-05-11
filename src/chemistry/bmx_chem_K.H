@@ -1,18 +1,39 @@
 /**
  * Check to see if particle meets criteria for splitting
- * @param p_par particle parameters
- * @param p_conc species concentrations
+ * @param p_par real particle parameters
+ * @param p_ipar integer particle parameters
+ * @param max_vol maximum volume for YEAST splitting
+ * @param max_len maximum segment length for splitting of FUNGI
+ * @param max_rad maximum radius of FUNGI segments
+ * @param engine object for implementing random number generator
  * @return true if particle should split
  */
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 bool 
-checkSplit(Real *p_par, int cell_type, Real max_vol)
+checkSplit(Real *p_par, int *p_ipar, Real max_vol, Real max_len,
+    Real max_rad, amrex::RandomEngine const& engine)
 {
   bool ret = false;
+  int cell_type = p_ipar[intIdx::cell_type];
   if (cell_type == cellType::YEAST) {
     if (p_par[realIdx::vol] > max_vol) ret = true;
   } else if (cell_type == cellType::FUNGI) {
     //TODO: Check fungi values
+    int position = p_ipar[intIdx::position];
+    if (position == siteLocation::TIP) {
+      // Only consider splitting if segment cannot grow radially
+      if (p_par[realIdx::radius] >= max_rad) {
+	// If segment is a growth tip then split if segment is greater than
+	// or equal to maximum length
+	if (p_par[realIdx::c_length] >= max_len) {
+	  ret = true;
+	}
+      }
+    } else if (position == siteLocation::SECOND_1 &&
+               position == siteLocation::SECOND_2) {
+      // Segment is immediately behind the growth tip. Generate side
+      // branch with some probability
+    }
   }
   return ret;
 }
@@ -61,6 +82,9 @@ setChildParameters(Real *p_real_orig, int *p_int_orig,
  * @param pos_orig, pos_new positions of original and new particles
  * @param par_orig, par_new real parameter values of original and new particles
  * @param ipar_orig, ipar_new integer parameter values of original and new particles
+ * @param overlap degree of overlap of new and old cell
+ * @param num_reals, num_ints number of real and integer parameters
+ * @param engine object for implementing random number generator
  */
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void 
@@ -81,13 +105,8 @@ setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
 
     // Find new locations for split particles
     Real radius = par_new[realIdx::radius];
-#if 0
-    Real theta = M_PI ; // * amrex::Random();
-    Real phi = 2.0 * M_PI ; // * amrex::Random();
-#else
     Real theta = M_PI * amrex::Random(engine);
     Real phi = 2.0 * M_PI * amrex::Random(engine);
-#endif
     Real nx = sin(theta)*cos(phi);
     Real ny = sin(theta)*sin(phi);
     Real nz = cos(theta);
@@ -100,7 +119,26 @@ setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
     pos_orig[2] = z - scale*0.5*nz*radius;
   } else if (ipar_orig[intIdx::cell_type] == cellType::FUNGI) {
     //TODO: set fungi positions
+
   }
+}
+
+/**
+ * Create positions and parameter values for new segment pair. This consist
+ * of the original segment and a new segment
+ * @param pos_orig, pos_new positions of original and new segments
+ * @param par_orig, par_new real parameter values of original and new segments
+ * @param ipar_orig, ipar_new integer parameter values of original and new segments
+ * @param num_reals, num_ints number of real and integer parameters
+ * @param gx, gy, gz components of gradient for chemical species
+ * @param engine object for implementing random number generator
+ */
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void 
+setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
+              Real *par_new, int *ipar_orig, int *ipar_new, int l_num_reals,
+	      int l_num_ints, amrex::RandomEngine const& engine)
+{
 }
 
 /**
@@ -112,6 +150,8 @@ setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
  * @param p_vals values of concentrations in particles
  * @param dt time step interval
  * @param nloop number of subintervals to use for chemistry
+ * @param chempar vector containing chemistry parameters
+ * @param cell_ipar point to integer cell parameter values
  */
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,

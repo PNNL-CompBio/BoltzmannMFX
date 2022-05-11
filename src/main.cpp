@@ -206,23 +206,26 @@ int main (int argc, char* argv[])
 
     // Initialize internals from ParamParse database
     bmx.InitParams();
+    printf("Got to 1\n");
 
     // Initialize memory for data-array internals
     bmx.ResizeArrays();
+    printf("Got to 2\n");
 
     // Initialize derived internals
     bmx.Init(time);
 
     // Read in chemistry parameters. Currently hardwiring these so file
     // name is set to arbitrary string
-#ifdef NEW_CHEM
     SPECIES::Initialize();
     amrex::Print() << "Volume threshold for cell division:  " << SPECIES::max_vol << std::endl;
+    amrex::Print() << "Length threshold for segment division:  " << SPECIES::max_len << std::endl;
+    amrex::Print() << "Maximum segment radius:  " << SPECIES::max_rad << std::endl;
     BMXChemistry *bmxchem = BMXChemistry::instance();
     bmxchem->setParams("NullFile");
     BMXCellInteraction *interaction = BMXCellInteraction::instance();
     interaction->setParams("NullFile");
-#endif
+    printf("Got to 3\n");
 
     // Either init from scratch or from the checkpoint file
     int restart_flag = 0;
@@ -235,11 +238,13 @@ int main (int argc, char* argv[])
         restart_flag = 1;
         bmx.Restart(restart_file, &nstep, &dt, &time);
     }
+    printf("Got to 4\n");
 
     if (FLUID::solve) {
         bmx.bmx_init_solvers();
     }
 
+    printf("Got to 5\n");
     // This checks if we want to regrid
     if (regrid_int > -1 && nstep%regrid_int == 0)
     {
@@ -247,8 +252,10 @@ int main (int argc, char* argv[])
         bmx.Regrid();
     }
 
+    printf("Got to 6\n");
     bmx.PostInit(dt, time, restart_flag, stop_time);
 
+    printf("Got to 7\n");
     Real end_init = ParallelDescriptor::second() - strt_time;
     ParallelDescriptor::ReduceRealMax(end_init, ParallelDescriptor::IOProcessorNumber());
 
@@ -261,12 +268,14 @@ int main (int argc, char* argv[])
     // only if FLUID::solve = T
     Real prev_dt = dt;
 
+    printf("Got to 8\n");
     // Write checkpoint and plotfiles with the initial data
     if ( (restart_file.empty() || plotfile_on_restart) &&
          (bmx::plot_int > 0 || bmx::plot_per_exact > 0 || bmx::plot_per_approx > 0) )
     {
        bmx.WritePlotFile(plot_file, nstep, time);
     }
+    printf("Got to 9\n");
 
     // We automatically write checkpoint files with the initial data
     //    if check_int > 0

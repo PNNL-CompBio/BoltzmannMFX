@@ -102,6 +102,16 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
     pc->Increment(temp_npart, lev);
     MultiFab* interp_nptr;
 
+    // Follow npart to add gradient data
+    MultiFab temp_gx(grids[lev], dmap[lev], 1, 0);
+    MultiFab temp_gy(grids[lev], dmap[lev], 1, 0);
+    MultiFab temp_gz(grids[lev], dmap[lev], 1, 0);
+    compute_grad_X(lev,time,temp_gx,temp_gy,temp_gz);
+    MultiFab* interp_gxptr;
+    MultiFab* interp_gyptr;
+    MultiFab* interp_gzptr;
+
+
 #ifdef NEW_CHEM
     const int interp_ng    = 1;    // Only one layer needed for interpolation
     //const int interp_ncomp = bmxchem->getIntData(intIdx::num_reals);
@@ -135,6 +145,27 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
       // Copy 
       MultiFab::Copy(*interp_nptr,temp_npart, 0, 0, temp_npart.nComp(), 0);
       interp_nptr->FillBoundary(geom[lev].periodicity());
+
+      // Store gx for interpolation
+      interp_gxptr = new MultiFab(grids[lev], dmap[lev], 1, 1, MFInfo());
+
+      // Copy 
+      MultiFab::Copy(*interp_gxptr,temp_gx, 0, 0, temp_gx.nComp(), 0);
+      interp_gxptr->FillBoundary(geom[lev].periodicity());
+
+      // Store gy for interpolation
+      interp_gyptr = new MultiFab(grids[lev], dmap[lev], 1, 1, MFInfo());
+
+      // Copy 
+      MultiFab::Copy(*interp_gyptr,temp_gy, 0, 0, temp_gy.nComp(), 0);
+      interp_gyptr->FillBoundary(geom[lev].periodicity());
+
+      // Store gz for interpolation
+      interp_gzptr = new MultiFab(grids[lev], dmap[lev], 1, 1, MFInfo());
+
+      // Copy 
+      MultiFab::Copy(*interp_gzptr,temp_gz, 0, 0, temp_gz.nComp(), 0);
+      interp_gzptr->FillBoundary(geom[lev].periodicity());
 
     }
     else
@@ -171,6 +202,23 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
                                 1, 1);
 
       interp_nptr->FillBoundary(geom[lev].periodicity());
+
+      // Gradient gx,gy,gz for interpolation
+      interp_gxptr = new MultiFab(pba, pdm, 1, 1, MFInfo());
+      interp_gyptr = new MultiFab(pba, pdm, 1, 1, MFInfo());
+      interp_gzptr = new MultiFab(pba, pdm, 1, 1, MFInfo());
+
+      // Copy 
+      interp_gxptr->ParallelCopy(temp_gx, 0, 0,
+                                temp_gx.nComp(), 1, 1);
+      interp_gyptr->ParallelCopy(temp_gy, 0, 0,
+                                temp_gy.nComp(), 1, 1);
+      interp_gzptr->ParallelCopy(temp_gz, 0, 0,
+                                temp_gz.nComp(), 1, 1);
+
+      interp_gxptr->FillBoundary(geom[lev].periodicity());
+      interp_gyptr->FillBoundary(geom[lev].periodicity());
+      interp_gzptr->FillBoundary(geom[lev].periodicity());
     }
 
 #ifdef _OPENMP
@@ -219,6 +267,12 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
         const auto& interp_narray = interp_nptr->array(pti);
 
+        const auto& interp_gxarray = interp_gxptr->array(pti);
+        const auto& interp_gyarray = interp_gyptr->array(pti);
+        const auto& interp_gzarray = interp_gzptr->array(pti);
+        
+        /* Add interp_garray for gradients */
+
         int l_cnc_deposition_scheme;
         if (bmx::m_cnc_deposition_scheme == DepositionScheme::one_to_one) 
              l_cnc_deposition_scheme = 0;
@@ -250,6 +304,11 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
               // Array storing number of particles
               GpuArray<Real, 1> interp_nloc;
 
+              // Arrays storing chemical gradient
+              GpuArray<Real, 1> interp_gxloc;
+              GpuArray<Real, 1> interp_gyloc;
+              GpuArray<Real, 1> interp_gzloc;
+
               BMXParticleContainer::ParticleType& p = pstruct[pid];
 
               if (l_cnc_deposition_scheme == 0)
@@ -280,6 +339,13 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 #endif
 #ifdef NEW_CHEM
               Real *cell_par = &p.rdata(0);
+
+              // Store chemical gradient data here. It will be used in particle
+              // splitting routine
+              cell_par[realIdx::gx] = interp_gxloc[0];
+              cell_par[realIdx::gy] = interp_gyloc[0];
+              cell_par[realIdx::gz] = interp_gzloc[0];
+
               Real *p_vals = &p.rdata(realIdx::first_data);
               int *cell_ipar = &p.idata(0);
               if (interp_nloc[0] == 0.0) amrex::Abort("Number of particles is Zero!");

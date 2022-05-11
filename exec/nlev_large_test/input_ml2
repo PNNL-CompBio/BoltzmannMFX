@@ -119,6 +119,8 @@ fluid.surface_location = 0.004800
 # Reaction model parameters
 #
 chem_species.max_vol = 1.0e-12 # 9.5e-13 # 1.0e-12
+chem_species.max_seg_length = 35.0e-4 # 9.5e-13 # 1.0e-12
+chem_species.max_seg_radius = 2.5e-4 # 9.5e-13 # 1.0e-12
 chem_species.k1 = 2.0e-5
 chem_species.kr1 = 2.0e-5
 chem_species.k2 = 0.4
@@ -137,6 +139,8 @@ cell_force.wall_stiffness = 1.0e6
 cell_force.boundary_width = 5.0e-5
 cell_force.wall_boundary_width = 1.0e-04
 
+cell_force.bond_strength = 5.0
+cell_force.bond_cutoff = 1.0e-4
 #cell_force.repulsion_stiffness = 1.0e7 # 5.0e6
 #cell_force.adhesion_stiffness = 1.0e6
 #cell_force.wall_repulsion_stiffness = 1.0e7 # 5.0e6

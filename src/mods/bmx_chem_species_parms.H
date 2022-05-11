@@ -39,6 +39,12 @@ namespace SPECIES
   // Maximum cell volume
   extern amrex::Real max_vol;
 
+  // Maximum segment length
+  extern amrex::Real max_len;
+
+  // Maximum segment radius
+  extern amrex::Real max_rad;
+
   struct SPECIES_t {
     // Constructor
     SPECIES_t() :
