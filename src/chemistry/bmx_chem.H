@@ -27,8 +27,8 @@ using amrex::Real;
  * force on the center of mass and a torque. The cell is also characterized by a
  * volume V. The cell has linear velocity and angular velocity and the cell
  * volume is also growing or shrinking with some rate. For spherical cells,
- * a=b=c=radius and the Euler angles, rotation velocity and torques are all
- * zero.
+ * a=b=c=radius and the orientation angles, rotation velocity and torques are
+ * all zero.
  */
 struct realIdx
 {

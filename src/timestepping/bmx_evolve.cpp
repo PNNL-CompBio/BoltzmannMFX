@@ -19,11 +19,13 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
      ***************************************************************************/
     Real start_fluid = ParallelDescriptor::second();
     BL_PROFILE_VAR("FLUID SOLVE",fluidSolve);
+    printf("(Evolve) Got to 1\n");
     if (FLUID::solve)
     {
        EvolveFluid(nstep,dt,prev_dt,time,stop_time,drag_timing);
        prev_dt = dt;
     }
+    printf("(Evolve) Got to 2\n");
     BL_PROFILE_VAR_STOP(fluidSolve);
 
     Real end_fluid = ParallelDescriptor::second() - start_fluid - drag_timing;

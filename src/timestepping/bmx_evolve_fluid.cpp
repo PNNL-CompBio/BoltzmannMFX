@@ -95,6 +95,7 @@ bmx::EvolveFluid (int nstep,
 
     amrex::Print() << "\n ============   NEW TIME STEP   ============ \n";
 
+    printf("(EvolveFluid) Got to 1\n");
     // Extrapolate boundary values 
     for (int lev = 0; lev <= finest_level; lev++)
     {
@@ -141,20 +142,24 @@ bmx::EvolveFluid (int nstep,
       MultiFab& vf_o = *m_leveldata[lev]->vf_o;
       MultiFab::Copy(vf_o, vf_n, 0, 0, 1, vf_n.nGrow());
     }
+    printf("(EvolveFluid) Got to 2\n");
 
     // Interpolate chem_species to particle locations
     bmx_calc_txfr_particle(time, dt);
+    printf("(EvolveFluid) Got to 3\n");
 
     // Deposit sources/sink from individual particles to grid
     bmx_calc_txfr_fluid(time, dt);
     check_mesh_values();
     print_mesh(1);
+    printf("(EvolveFluid) Got to 4\n");
 
     // Calculate the fraction of each grid cell not occupied by biological cells -- this
     //   1) defines vf_n using the current particle locations
     //   2) updates X_k on the grid to allow for the change in vf
     bmx_calc_volume_fraction();
     print_mesh(2);
+    printf("(EvolveFluid) Got to 5\n");
 
     // Average down from fine to coarse to ensure consistency
     for (int lev = finest_level; lev > 0; lev--)
@@ -176,6 +181,7 @@ bmx::EvolveFluid (int nstep,
     fillpatch_Xk(get_X_k_old(), new_time);
     fillpatch_Dk(get_D_k(), new_time);
     print_mesh(4);
+    printf("(EvolveFluid) Got to 6\n");
 
     // *************************************************************************************
     // Compute explicit diffusive terms
@@ -207,6 +213,7 @@ bmx::EvolveFluid (int nstep,
     if (m_diff_type == DiffusionType::Implicit) theta = 0.0;
     if (m_diff_type == DiffusionType::Crank_Nicolson) theta = 0.5;
 
+    printf("(EvolveFluid) Got to 7\n");
     for (int lev = 0; lev <= finest_level; lev++)
     {
         Real grid_vol = (geom[lev].CellSize(0))*(geom[lev].CellSize(1))*(geom[lev].CellSize(2));
@@ -244,6 +251,7 @@ bmx::EvolveFluid (int nstep,
     for (int lev = finest_level; lev > 0; lev--)
         average_down(*m_leveldata[lev]->X_k,*m_leveldata[lev-1]->X_k, 0, nchem_species, refRatio(lev-1));
 
+    printf("(EvolveFluid) Got to 8\n");
     for (int lev = finest_level; lev >= 0; lev--)
     {
         auto& ld = *m_leveldata[lev];
@@ -308,6 +316,7 @@ bmx::EvolveFluid (int nstep,
         }
     }
     print_mesh(7);
+    printf("(EvolveFluid) Got to 9\n");
 
     for (int lev = 0; lev <= finest_level; lev++)
     {

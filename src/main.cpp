@@ -206,11 +206,9 @@ int main (int argc, char* argv[])
 
     // Initialize internals from ParamParse database
     bmx.InitParams();
-    printf("Got to 1\n");
 
     // Initialize memory for data-array internals
     bmx.ResizeArrays();
-    printf("Got to 2\n");
 
     // Initialize derived internals
     bmx.Init(time);
@@ -225,7 +223,6 @@ int main (int argc, char* argv[])
     bmxchem->setParams("NullFile");
     BMXCellInteraction *interaction = BMXCellInteraction::instance();
     interaction->setParams("NullFile");
-    printf("Got to 3\n");
 
     // Either init from scratch or from the checkpoint file
     int restart_flag = 0;
@@ -238,13 +235,11 @@ int main (int argc, char* argv[])
         restart_flag = 1;
         bmx.Restart(restart_file, &nstep, &dt, &time);
     }
-    printf("Got to 4\n");
 
     if (FLUID::solve) {
         bmx.bmx_init_solvers();
     }
 
-    printf("Got to 5\n");
     // This checks if we want to regrid
     if (regrid_int > -1 && nstep%regrid_int == 0)
     {
@@ -252,10 +247,8 @@ int main (int argc, char* argv[])
         bmx.Regrid();
     }
 
-    printf("Got to 6\n");
     bmx.PostInit(dt, time, restart_flag, stop_time);
 
-    printf("Got to 7\n");
     Real end_init = ParallelDescriptor::second() - strt_time;
     ParallelDescriptor::ReduceRealMax(end_init, ParallelDescriptor::IOProcessorNumber());
 
@@ -268,14 +261,12 @@ int main (int argc, char* argv[])
     // only if FLUID::solve = T
     Real prev_dt = dt;
 
-    printf("Got to 8\n");
     // Write checkpoint and plotfiles with the initial data
     if ( (restart_file.empty() || plotfile_on_restart) &&
          (bmx::plot_int > 0 || bmx::plot_per_exact > 0 || bmx::plot_per_approx > 0) )
     {
        bmx.WritePlotFile(plot_file, nstep, time);
     }
-    printf("Got to 9\n");
 
     // We automatically write checkpoint files with the initial data
     //    if check_int > 0
@@ -324,10 +315,12 @@ int main (int argc, char* argv[])
                    bmx.Regrid();
                 }
 
+    printf("Got to 1\n");
                 // This is probably the key routine to understand if we want to
                 // customize code for new models The routine is defined in
                 // timestepping/bmx_evolve.cpp
                 bmx.Evolve(nstep, dt, prev_dt, time, stop_time);
+    printf("Got to 2\n");
 
                 Real end_step = ParallelDescriptor::second() - strt_step;
                 ParallelDescriptor::ReduceRealMax(end_step, ParallelDescriptor::IOProcessorNumber());
@@ -337,7 +330,9 @@ int main (int argc, char* argv[])
                 time += prev_dt;
                 nstep++;
 
+    printf("Got to 3\n");
                 writeNow(nstep, time, prev_dt, bmx);
+    printf("Got to 4\n");
 
                 // Mechanism to terminate BMX normally.
                 do_not_evolve =  ( ( (stop_time >= 0.) && (time+0.1*dt >= stop_time) ) ||
