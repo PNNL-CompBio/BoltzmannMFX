@@ -1,0 +1,158 @@
+# Miscellaneous parameters
+#_______________________________________________________________________
+
+# Random number seed
+bmx.seed = 21893
+
+#_______________________________________________________________________
+# Solver settings
+
+amrex.fpe_trap_invalid = 1
+
+#! Fluid solver
+#!-----------------------------------------------------------//
+
+bmx.fixed_dt = 1.0
+
+bmx.max_step = 1301000
+#bmx.max_step = 1
+
+dem.solve = bacteria
+bmx.particle_init_type = "AsciiFile"
+
+bmx.verbose = 0
+
+#
+#_______________________________________________________________________
+# Deposition scheme
+bmx.cnc_deposition_scheme = one_to_one # trilinear # one_to_one
+bmx.vf_deposition_scheme = one_to_one # trilinear # one_to_one
+
+#_______________________________________________________________________
+# Geometry / grids / tiles
+
+# Maximum level in hierarchy
+amr.max_level = 0
+
+geometry.coord_sys   = 0                       # 0: Cartesian
+geometry.is_periodic = 1       1       0       # Is periodic in each direction?
+geometry.prob_lo     = 0.      0.      0.      # lo corner of physical domain
+geometry.prob_hi     = 0.05120  0.05120  0.00060     # hi corner of physical domain
+
+# Number of grid cells in each direction at the coarsest level
+amr.n_cell =  512  512  6
+
+bmx.tag_region    = true
+bmx.tag_region_lo = 0. 0. 0.000000
+bmx.tag_region_hi = 0.05120 0.05120 0.000600
+
+# Dont put any buffer region around the tagged cells
+amr.n_error_buf = 0
+
+# Just require grid to be coarsenable by 2
+amr.blocking_factor = 2
+
+#! Grids
+#!-----------------------------------------------------------//
+# Maximum allowable size of each fluid subdomain in the problem domain;
+
+# Fluid
+amr.max_grid_size_x = 64
+amr.max_grid_size_y = 64
+amr.max_grid_size_z = 64
+
+# Particles (not with KDTree)
+#particles.max_grid_size_x =   32
+#particles.max_grid_size_y =   32
+#particles.max_grid_size_z =   32
+
+#! Tiles
+#!-----------------------------------------------------------//
+
+# Fluid: Maximum tile size within each grid
+fabarray.mfiter_tile_size = 1024 1024 1024
+
+# Particles: Maximum particle tile size
+particles.input_file = "abc_real_input2.dat"
+particles.tile_size = 1024 1024 1024
+
+#_______________________________________________________________________
+# Particle load balancing
+#bmx.load_balance_type = "KnapSack"
+
+amr.dual_grid          = 0
+amr.regrid_int         = -1
+
+#! KnapSack settings
+#!-----------------------------------------------------------//
+#default is "RunTimeCosts"; options include RunTimeCosts or NumParticles
+#this option is only relevant if load_balance_type = KnapSack
+
+#bmx.knapsack_weight_type = "NumParticles"
+#bmx.knapsack_weight_type = "RunTimeCosts"
+
+#_______________________________________________________________________
+# IO / Checkpointing
+
+amr.par_ascii_int  = -1
+amr.par_ascii_file ="vis"
+
+amr.plot_int       =  200
+amr.plot_file      ="plt"
+
+amr.check_int      = 10000
+amr.check_file     ="chk"
+
+#! Restart from checkpoint
+#!-----------------------------------------------------------//
+amr.restart   ="chk1300000"
+
+#_______________________________________________________________________
+# Fluid model settings
+#
+fluid.solve = fluid
+fluid.chem_species      = A B C
+fluid.chem_species_diff = 6.0e-10 0.0 6.0e-10
+fluid.init_conc_species = 2.0e-5 0.0 2.0e-6
+fluid.surface_location = 0.000100
+#_______________________________________________________________________
+# Reaction model parameters
+#
+chem_species.max_vol = 1.0e-12 # 9.5e-13 # 1.0e-12
+chem_species.k1 = 2.0e-5
+chem_species.kr1 = 2.0e-5
+chem_species.k2 = 0.4
+chem_species.kr2 = 0.06
+chem_species.k3 = 2.0e-5
+chem_species.kr3 = 2.0e-5
+chem_species.kg = 1000.0 # 400.0
+bmx.substeps = 4
+
+#_______________________________________________________________________
+# Cell force parameters
+#
+cell_force.stiffness = 1.0e6
+cell_force.wall_stiffness = 1.0e6
+
+cell_force.boundary_width = 5.0e-5
+cell_force.wall_boundary_width = 1.0e-04
+
+#cell_force.repulsion_stiffness = 1.0e7 # 5.0e6
+#cell_force.adhesion_stiffness = 1.0e6
+#cell_force.wall_repulsion_stiffness = 1.0e7 # 5.0e6
+#cell_force.wall_adhesion_stiffness = 1.0e6
+
+#Diffusion_type: 0 = explicit, 1 = C-N, 2 = implicit
+bmx.diffusion_type = 2
+
+#Verbosity of diffusion solver
+diffusion.verbose = 2
+
+#What goes into the plotfile?
+amr.plt_X = 1
+amr.plt_D = 1
+
+#_______________________________________________________________________
+# DEM model settings
+#
+
