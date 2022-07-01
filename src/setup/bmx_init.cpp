@@ -79,7 +79,7 @@ bmx::InitParams ()
     // Read in number of substeps in chemistry integration
     m_nloop = 4;
     pp.query("substeps",m_nloop);
-    printf("SUBSTEPS: %d\n",m_nloop);
+    amrex::Print() << "SUBSTEPS: " <<m_nloop<<std::endl;
 
     // We can still turn it off explicitly even if we passed chem_species inputs
     pp.query("advect_fluid_chem_species", advect_fluid_chem_species);

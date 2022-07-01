@@ -57,26 +57,29 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
       ifs >> host_particles[i].pos(1);
       ifs >> host_particles[i].pos(2);
       ifs >> host_particles[i].rdata(realIdx::radius);
-      ifs >> host_particles[i].rdata(realIdx::c_length);
+      ifs >> host_particles[i].rdata(realIdx::c_length);   // 5
       ifs >> host_particles[i].rdata(realIdx::theta);
       ifs >> host_particles[i].rdata(realIdx::phi);
       ifs >> host_particles[i].rdata(realIdx::area);
       ifs >> host_particles[i].rdata(realIdx::vol);
-      ifs >> host_particles[i].rdata(realIdx::velx);
+      ifs >> host_particles[i].rdata(realIdx::velx);       // 10
       ifs >> host_particles[i].rdata(realIdx::vely);
       ifs >> host_particles[i].rdata(realIdx::velz);
       ifs >> host_particles[i].rdata(realIdx::wx);
       ifs >> host_particles[i].rdata(realIdx::wy);
-      ifs >> host_particles[i].rdata(realIdx::wz);
+      ifs >> host_particles[i].rdata(realIdx::wz);         // 15
       ifs >> host_particles[i].rdata(realIdx::fx);
       ifs >> host_particles[i].rdata(realIdx::fy);
       ifs >> host_particles[i].rdata(realIdx::fz);
       ifs >> host_particles[i].rdata(realIdx::taux);
-      ifs >> host_particles[i].rdata(realIdx::tauy);
+      ifs >> host_particles[i].rdata(realIdx::tauy);       // 20
       ifs >> host_particles[i].rdata(realIdx::tauz);
-      ifs >> host_particles[i].rdata(realIdx::dadt);
+      ifs >> host_particles[i].rdata(realIdx::gx);
+      ifs >> host_particles[i].rdata(realIdx::gy);
+      ifs >> host_particles[i].rdata(realIdx::gz);
+      ifs >> host_particles[i].rdata(realIdx::dadt);       // 25
       ifs >> host_particles[i].rdata(realIdx::dvdt);
-      ifs >> host_particles[i].idata(intIdx::cell_type);
+      ifs >> host_particles[i].idata(intIdx::cell_type);   // 27
       for (int c=0; c<FLUID::nchem_species; c++) 
       {
        host_particles[i].rdata(realIdx::first_data+c) = init_conc[c];

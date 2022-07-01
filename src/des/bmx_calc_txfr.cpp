@@ -77,10 +77,10 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 #endif
   //
   BL_PROFILE("bmx::bmx_calc_txfr_particle()");
+  int me = ParallelDescriptor::MyProc();
 
   bmx_set_chem_species_bcs(time, get_X_k(), get_D_k());
 
-  printf("(bmx_calc_txfr_particle) Got to 1\n");
   long nparticles = 0;
   for (int lev = 0; lev <= finest_level; lev++)
   {
@@ -103,14 +103,11 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
     pc->Increment(temp_npart, lev);
     MultiFab* interp_nptr;
 
-  printf("(bmx_calc_txfr_particle) Got to 2\n");
     // Follow npart to add gradient data
-    MultiFab temp_gx(grids[lev], dmap[lev], FLUID::nchem_species, 0);
-    MultiFab temp_gy(grids[lev], dmap[lev], FLUID::nchem_species, 0);
-    MultiFab temp_gz(grids[lev], dmap[lev], FLUID::nchem_species, 0);
-  printf("(bmx_calc_txfr_particle) Got to 3\n");
+    MultiFab temp_gx(grids[lev], dmap[lev], FLUID::nchem_species, 1);
+    MultiFab temp_gy(grids[lev], dmap[lev], FLUID::nchem_species, 1);
+    MultiFab temp_gz(grids[lev], dmap[lev], FLUID::nchem_species, 1);
     compute_grad_X(lev,time,temp_gx,temp_gy,temp_gz);
-  printf("(bmx_calc_txfr_particle) Got to 4\n");
     MultiFab* interp_gxptr;
     MultiFab* interp_gyptr;
     MultiFab* interp_gzptr;
@@ -125,24 +122,18 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
       amrex::Abort("We are not interpolating the right number of components in calc_txfr_particle");
 #endif
 
-  printf("(bmx_calc_txfr_particle) Got to 5\n");
     if (OnSameGrids)
     {
-  printf("(bmx_calc_txfr_particle) OnSameGrids\n");
       // Store X_k for interpolation
       interp_ptr = new MultiFab(grids[lev], dmap[lev], interp_ncomp, interp_ng, MFInfo());
-  printf("(bmx_calc_txfr_particle) Got to 5a\n");
 
       // Copy 
       MultiFab::Copy(*interp_ptr,*m_leveldata[lev]->X_k, 0, 0,
                       m_leveldata[lev]->X_k->nComp(), interp_ng);
-  printf("(bmx_calc_txfr_particle) Got to 5b\n");
       interp_ptr->FillBoundary(geom[lev].periodicity());
-  printf("(bmx_calc_txfr_particle) Got to 5c\n");
 
       // Store vf_n for interpolation
       interp_vptr = new MultiFab(grids[lev], dmap[lev], 1, 1, MFInfo());
-  printf("(bmx_calc_txfr_particle) Got to 6\n");
 
       // Copy 
       MultiFab::Copy(*interp_vptr,*m_leveldata[lev]->vf_n, 0, 0,
@@ -151,42 +142,35 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
       // Store n_part for interpolation
       interp_nptr = new MultiFab(grids[lev], dmap[lev], 1, 1, MFInfo());
-  printf("(bmx_calc_txfr_particle) Got to 7\n");
 
       // Copy 
       MultiFab::Copy(*interp_nptr,temp_npart, 0, 0, temp_npart.nComp(), 0);
       interp_nptr->FillBoundary(geom[lev].periodicity());
 
-  printf("(bmx_calc_txfr_particle) Got to 8\n");
       // Store gx for interpolation
-      interp_gxptr = new MultiFab(grids[lev], dmap[lev], 1, 1, MFInfo());
-  printf("(bmx_calc_txfr_particle) Got to 9\n");
+      interp_gxptr = new MultiFab(grids[lev], dmap[lev], interp_ncomp, interp_ng, MFInfo());
 
       // Copy 
-      MultiFab::Copy(*interp_gxptr,temp_gx, 0, 0, temp_gx.nComp(), 0);
-  printf("(bmx_calc_txfr_particle) Got to 9a\n");
+      MultiFab::Copy(*interp_gxptr,temp_gx, 0, 0, temp_gx.nComp(), interp_ng);
       interp_gxptr->FillBoundary(geom[lev].periodicity());
-  printf("(bmx_calc_txfr_particle) Got to 10\n");
 
       // Store gy for interpolation
-      interp_gyptr = new MultiFab(grids[lev], dmap[lev], 1, 1, MFInfo());
+      interp_gyptr = new MultiFab(grids[lev], dmap[lev], interp_ncomp, interp_ng, MFInfo());
 
       // Copy 
-      MultiFab::Copy(*interp_gyptr,temp_gy, 0, 0, temp_gy.nComp(), 0);
+      MultiFab::Copy(*interp_gyptr,temp_gy, 0, 0, temp_gy.nComp(), interp_ng);
       interp_gyptr->FillBoundary(geom[lev].periodicity());
 
       // Store gz for interpolation
-      interp_gzptr = new MultiFab(grids[lev], dmap[lev], 1, 1, MFInfo());
+      interp_gzptr = new MultiFab(grids[lev], dmap[lev], interp_ncomp, interp_ng, MFInfo());
 
       // Copy 
-      MultiFab::Copy(*interp_gzptr,temp_gz, 0, 0, temp_gz.nComp(), 0);
+      MultiFab::Copy(*interp_gzptr,temp_gz, 0, 0, temp_gz.nComp(), interp_ng);
       interp_gzptr->FillBoundary(geom[lev].periodicity());
-  printf("(bmx_calc_txfr_particle) Got to 11\n");
 
     }
     else
     {
-  printf("(bmx_calc_txfr_particle) not OnSameGrids\n");
       const BoxArray&            pba = pc->ParticleBoxArray(lev);
       const DistributionMapping& pdm = pc->ParticleDistributionMap(lev);
 
@@ -220,28 +204,23 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
       interp_nptr->FillBoundary(geom[lev].periodicity());
 
-  printf("(bmx_calc_txfr_particle) Got to 12\n");
       // Gradient gx,gy,gz for interpolation
-      interp_gxptr = new MultiFab(pba, pdm, 1, 1, MFInfo());
-      interp_gyptr = new MultiFab(pba, pdm, 1, 1, MFInfo());
-      interp_gzptr = new MultiFab(pba, pdm, 1, 1, MFInfo());
-  printf("(bmx_calc_txfr_particle) Got to 13\n");
+      interp_gxptr = new MultiFab(pba, pdm, interp_ncomp, interp_ng, MFInfo());
+      interp_gyptr = new MultiFab(pba, pdm, interp_ncomp, interp_ng, MFInfo());
+      interp_gzptr = new MultiFab(pba, pdm, interp_ncomp, interp_ng, MFInfo());
 
       // Copy 
       interp_gxptr->ParallelCopy(temp_gx, 0, 0,
-                                temp_gx.nComp(), 1, 1);
+                                temp_gx.nComp(), interp_ng, interp_ng);
       interp_gyptr->ParallelCopy(temp_gy, 0, 0,
-                                temp_gy.nComp(), 1, 1);
+                                temp_gy.nComp(), interp_ng, interp_ng);
       interp_gzptr->ParallelCopy(temp_gz, 0, 0,
-                                temp_gz.nComp(), 1, 1);
-  printf("(bmx_calc_txfr_particle) Got to 14\n");
+                                temp_gz.nComp(), interp_ng, interp_ng);
 
       interp_gxptr->FillBoundary(geom[lev].periodicity());
       interp_gyptr->FillBoundary(geom[lev].periodicity());
       interp_gzptr->FillBoundary(geom[lev].periodicity());
-  printf("(bmx_calc_txfr_particle) Got to 15\n");
     }
-  printf("(bmx_calc_txfr_particle) Got to 16\n");
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -275,7 +254,6 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
           }
         }
       }
-  printf("(bmx_calc_txfr_particle) Got to 17\n");
 
       for (BMXParIter pti(*pc, lev); pti.isValid(); ++pti)
       {
@@ -302,7 +280,7 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
         else if (bmx::m_cnc_deposition_scheme == DepositionScheme::trilinear) 
              l_cnc_deposition_scheme = 1;
         else 
-           amrex::Abort("Dont know this depsoition scheme in calc_txfr_particle");
+           amrex::Abort("Dont know this deposition scheme in calc_txfr_particle");
 
         int l_vf_deposition_scheme;
         if (bmx::m_vf_deposition_scheme == DepositionScheme::one_to_one) 
@@ -310,9 +288,8 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
         else if (bmx::m_vf_deposition_scheme == DepositionScheme::trilinear) 
              l_vf_deposition_scheme = 1;
         else 
-           amrex::Abort("Dont know this depsoition scheme in calc_txfr_particle");
+           amrex::Abort("Dont know this deposition scheme in calc_txfr_particle");
 
-  printf("(bmx_calc_txfr_particle) Got to 18\n");
         int nloop = m_nloop;
         amrex::ParallelFor(np,
             [pstruct,interp_array,interp_varray,interp_narray,plo,dxi,grid_vol,dt,
@@ -380,15 +357,12 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
               printf("   fluid volume per particle: %16.8e\n",grid_vol*interp_vloc[0]/interp_nloc[0]);
               printf("   time increment           : %16.8e\n",dt);
 #endif
-  printf("(bmx_calc_txfr_particle) Got to 19\n");
               xferMeshToParticleAndUpdateChem(grid_vol*interp_vloc[0], interp_nloc[0], cell_par,
                                               &interp_loc[0], p_vals, dt, nloop, chempar, cell_ipar);
-  printf("(bmx_calc_txfr_particle) Got to 20\n");
 #endif
             });
       } // pti
     } // omp region
-  printf("(bmx_calc_txfr_particle) Got to 21\n");
 
     delete interp_ptr;
     delete interp_vptr;

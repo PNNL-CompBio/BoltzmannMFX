@@ -56,7 +56,7 @@ struct realIdx
     gz,          // z-component of chemical gradient
     dadt,        // rate of change of the area
     dvdt,        // rate of change of the volume                        23
-    first_data,  // index of first value in uncharacterized block 22
+    first_data,  // index of first value in uncharacterized block
     count        // total number of elements in this enumeration
   };
 };

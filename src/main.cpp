@@ -315,12 +315,10 @@ int main (int argc, char* argv[])
                    bmx.Regrid();
                 }
 
-    printf("Got to 1\n");
                 // This is probably the key routine to understand if we want to
                 // customize code for new models The routine is defined in
                 // timestepping/bmx_evolve.cpp
                 bmx.Evolve(nstep, dt, prev_dt, time, stop_time);
-    printf("Got to 2\n");
 
                 Real end_step = ParallelDescriptor::second() - strt_step;
                 ParallelDescriptor::ReduceRealMax(end_step, ParallelDescriptor::IOProcessorNumber());
@@ -330,9 +328,7 @@ int main (int argc, char* argv[])
                 time += prev_dt;
                 nstep++;
 
-    printf("Got to 3\n");
                 writeNow(nstep, time, prev_dt, bmx);
-    printf("Got to 4\n");
 
                 // Mechanism to terminate BMX normally.
                 do_not_evolve =  ( ( (stop_time >= 0.) && (time+0.1*dt >= stop_time) ) ||
