@@ -77,7 +77,6 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 #endif
   //
   BL_PROFILE("bmx::bmx_calc_txfr_particle()");
-  int me = ParallelDescriptor::MyProc();
 
   bmx_set_chem_species_bcs(time, get_X_k(), get_D_k());
 
@@ -103,6 +102,8 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
     pc->Increment(temp_npart, lev);
     MultiFab* interp_nptr;
 
+    BL_PROFILE_REGION_START("bmx::bmx_calc_txfr_particle::Gradient");
+    BL_PROFILE("bmx::bmx_calc_txfr_particle::Gradient");
     // Follow npart to add gradient data
     MultiFab temp_gx(grids[lev], dmap[lev], FLUID::nchem_species, 1);
     MultiFab temp_gy(grids[lev], dmap[lev], FLUID::nchem_species, 1);
@@ -221,7 +222,10 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
       interp_gyptr->FillBoundary(geom[lev].periodicity());
       interp_gzptr->FillBoundary(geom[lev].periodicity());
     }
+    BL_PROFILE_REGION_STOP("bmx::bmx_calc_txfr_particle::Gradient");
 
+    BL_PROFILE_REGION_START("bmx::bmx_calc_txfr_particle::Particles");
+    BL_PROFILE("bmx::bmx_calc_txfr_particle::Particles");
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -363,10 +367,14 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
             });
       } // pti
     } // omp region
+    BL_PROFILE_REGION_STOP("bmx::bmx_calc_txfr_particle::Particles");
 
     delete interp_ptr;
     delete interp_vptr;
     delete interp_nptr;
+    delete interp_gxptr;
+    delete interp_gyptr;
+    delete interp_gzptr;
 
   } // lev
   amrex::Print() << "TOTAL PARTICLES "<<nparticles<<std::endl;
