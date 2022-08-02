@@ -42,6 +42,9 @@ namespace SPECIES
   // Maximum segment length
   extern amrex::Real max_len;
 
+  // Post split length
+  extern amrex::Real split_len;
+
   // Maximum segment radius
   extern amrex::Real max_rad;
 

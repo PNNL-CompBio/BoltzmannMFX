@@ -34,6 +34,9 @@ namespace SPECIES
   // Maximum segment length
   amrex::Real max_len;
 
+  // Post-split length
+  amrex::Real split_len;
+
   // Maximum segment radius
   amrex::Real max_rad;
 
@@ -42,8 +45,12 @@ namespace SPECIES
     amrex::ParmParse pp("chem_species");
 
     pp.get("max_vol", max_vol);
-    pp.get("max_seg_length", max_len);
-    pp.get("max_seg_radius", max_rad);
+    max_len = 0.0035;
+    pp.query("max_seg_length", max_len);
+    split_len = 0.0030;
+    pp.query("seg_split_length", split_len);
+    max_rad = 0.00025;
+    pp.query("max_seg_radius", max_rad);
 
     if (pp.contains("solve"))
     {

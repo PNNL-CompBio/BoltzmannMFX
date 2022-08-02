@@ -120,12 +120,12 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     Real ny = st*sp;
     Real nz = ct;
     // Find interaction centers on segment i
-    xi1 = nx*c_length;
-    yi1 = ny*c_length;
-    zi1 = nz*c_length;
-    xi2 = nx*c_length;
-    yi2 = ny*c_length;
-    zi2 = nz*c_length;
+    xi1 = 0.5*nx*c_length;
+    yi1 = 0.5*ny*c_length;
+    zi1 = 0.5*nz*c_length;
+    xi2 = -0.5*nx*c_length;
+    yi2 = -0.5*ny*c_length;
+    zi2 = -0.5*nz*c_length;
     // Construct rotation matrices for this segment (for later use)
     Real rot_i[3][3];
     rot_i[0][0] = cp*st;
@@ -161,12 +161,12 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     rot_j[2][2] = st;
 
     // find interaction centers on segment j
-    xj1 = r12[0] + nx*c_length;
-    yj1 = r12[1] + ny*c_length;
-    zj1 = r12[2] + nz*c_length;
-    xj2 = r12[0] - nx*c_length;
-    yj2 = r12[1] - ny*c_length;
-    zj2 = r12[2] - nz*c_length;
+    xj1 = r12[0] + 0.5*nx*c_length;
+    yj1 = r12[1] + 0.5*ny*c_length;
+    zj1 = r12[2] + 0.5*nz*c_length;
+    xj2 = r12[0] - 0.5*nx*c_length;
+    yj2 = r12[1] - 0.5*ny*c_length;
+    zj2 = r12[2] - 0.5*nz*c_length;
 
     // Only two possibilities for bonded interactions
     // since only sites 1 and 2 form bonds. Ignore possible 1-1 and 2-2
@@ -321,6 +321,10 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     Real ry_i = yi1-yi2;
     Real rz_i = zi1-zi2;
     r = sqrt(rx_i*rx_i+ry_i*ry_i+rz_i*rz_i);
+    if (r < 1.0e-10) {
+      printf("rx_i: %f ry_i: %f rz_i: %f r: %f\n",rx_i,ry_i,rz_i,r);
+      printf("xi1: %f yi1: %f zi1: %f xi2: %f yi2: %f zi2: %f\n",xi1,yi1,zi1,xi2,yi2,zi2);
+    }
     nx = rx_i/r;
     ny = ry_i/r;
     nz = rz_i/r;
@@ -328,17 +332,19 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     Real fy = f1_s1[1]-f1_s2[1];
     Real fz = f1_s1[2]-f1_s2[2];
     Real fn = fx*nx + fy*ny + fz*nz;
-    f1_s1[0] = fx-0.5*fn*nx;
-    f1_s1[1] = fy-0.5*fn*ny;
-    f1_s1[2] = fz-0.5*fn*nz;
-    f1_s2[0] = fx+0.5*fn*nx;
-    f1_s2[1] = fy+0.5*fn*ny;
-    f1_s2[2] = fz+0.5*fn*nz;
+    f1_s1[0] -= 0.5*fn*nx;
+    f1_s1[1] -= 0.5*fn*ny;
+    f1_s1[2] -= 0.5*fn*nz;
+    f1_s2[0] += 0.5*fn*nx;
+    f1_s2[1] += 0.5*fn*ny;
+    f1_s2[2] += 0.5*fn*nz;
 
     Real rx_j = xj1-xj2;
     Real ry_j = yj1-yj2;
     Real rz_j = zj1-zj2;
     r = sqrt(rx_j*rx_j+ry_j*ry_j+rz_j*rz_j);
+    if (r < 1.0e-10) 
+      printf("rx_j: %f ry_j: %f rz_j: %f r: %f\n",rx_j,ry_j,rz_j,r);
     nx = rx_j/r;
     ny = ry_j/r;
     nz = rz_j/r;
@@ -346,12 +352,12 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     fy = f2_s1[1]-f2_s2[1];
     fz = f2_s1[2]-f2_s2[2];
     fn = fx*nx + fy*ny + fz*nz;
-    f2_s1[0] = fx-0.5*fn*nx;
-    f2_s1[1] = fy-0.5*fn*ny;
-    f2_s1[2] = fz-0.5*fn*nz;
-    f2_s2[0] = fx+0.5*fn*nx;
-    f2_s2[1] = fy+0.5*fn*ny;
-    f2_s2[2] = fz+0.5*fn*nz;
+    f2_s1[0] -= 0.5*fn*nx;
+    f2_s1[1] -= 0.5*fn*ny;
+    f2_s1[2] -= 0.5*fn*nz;
+    f2_s2[0] += 0.5*fn*nx;
+    f2_s2[1] += 0.5*fn*ny;
+    f2_s2[2] += 0.5*fn*nz;
 
     // Calculate friction tensor for segment i. Start by calculating
     // size of spheres with same exposed surface as cylinder
@@ -551,13 +557,16 @@ evaluateSurfaceForce(const Real *pos, Real *par, int *ipar, Real *vel, Real *rot
     Real nx = st*cp;
     Real ny = st*sp;
     Real nz = ct;
+    if (pos[2] < 0.00478) {
+      printf("POS_Z: %e NX: %f NY: %f NZ: %f THETA: %f PHI: %f\n",pos[2],nx,ny,nz,theta,phi);
+    }
     // Find interaction centers on segment
-    x1 = nx*c_length;
-    y1 = ny*c_length;
-    z1 = nz*c_length;
-    x2 = nx*c_length;
-    y2 = ny*c_length;
-    z2 = nz*c_length;
+    x1 = pos[0] + 0.5*nx*c_length;
+    y1 = pos[1] + 0.5*ny*c_length;
+    z1 = pos[2] + 0.5*nz*c_length;
+    x2 = pos[0] - 0.5*nx*c_length;
+    y2 = pos[1] - 0.5*ny*c_length;
+    z2 = pos[2] - 0.5*nz*c_length;
     // Construct rotation matrices for this segment (for later use)
     Real rot[3][3];
     rot[0][0] = cp*st;
@@ -576,24 +585,30 @@ evaluateSurfaceForce(const Real *pos, Real *par, int *ipar, Real *vel, Real *rot
     Real rA = rS + z_bndry_width;
     if (dz > 0.0 && dz < rA) {
       f_s1[2] = -z_stiffness*(dz-rA)*(dz-rA)*(dz-rS);
-    } else if (dz <= 0) {
+    } else if (dz <= 0.0) {
       f_s1[2] = z_stiffness*rA*rA*rS;
     } else {
       f_s1[2] = 0.0;
     }
     f_s1[2] -= z_gravity*z_stiffness*rA*rA*rS;
-    z = z1;
+    if (pos[2] < 0.00478) {
+      printf("POS_Z1: %e DZ: %f fz1: %e\n",z1,dz,f_s1[2]);
+    }
+    z = z2;
     dz = z - z_wall; 
     rS = par[realIdx::radius];
     rA = rS + z_bndry_width;
     if (dz > 0.0 && dz < rA) {
       f_s2[2] = -z_stiffness*(dz-rA)*(dz-rA)*(dz-rS);
-    } else if (dz <= 0) {
+    } else if (dz <= 0.0) {
       f_s2[2] = z_stiffness*rA*rA*rS;
     } else {
       f_s2[2] = 0.0;
     }
     f_s2[2] -= z_gravity*z_stiffness*rA*rA*rS;
+    if (pos[2] < 0.00478) {
+      printf("POS_Z2: %e DZ: %f fz2: %e\n",z2,dz,f_s2[2]);
+    }
 
     // Subtract out the part of force that is moving sites together
     // and evaluate velocity of CM and rotational velocity
@@ -601,6 +616,9 @@ evaluateSurfaceForce(const Real *pos, Real *par, int *ipar, Real *vel, Real *rot
     Real ry = y1-y2;
     Real rz = z1-z2;
     Real r = sqrt(rx*rx+ry*ry+rz*rz);
+    if (r == 0) {
+      printf("Separation is zero\n");
+    }
     nx = rx/r;
     ny = ry/r;
     nz = rz/r;
@@ -608,12 +626,12 @@ evaluateSurfaceForce(const Real *pos, Real *par, int *ipar, Real *vel, Real *rot
     Real fy = f_s1[1]-f_s2[1];
     Real fz = f_s1[2]-f_s2[2];
     Real fn = fx*nx + fy*ny + fz*nz;
-    f_s1[0] = fx-0.5*fn*nx;
-    f_s1[1] = fy-0.5*fn*ny;
-    f_s1[2] = fz-0.5*fn*nz;
-    f_s2[0] = fx+0.5*fn*nx;
-    f_s2[1] = fy+0.5*fn*ny;
-    f_s2[2] = fz+0.5*fn*nz;
+    f_s1[0] -= 0.5*fn*nx;
+    f_s1[1] -= 0.5*fn*ny;
+    f_s1[2] -= 0.5*fn*nz;
+    f_s2[0] += 0.5*fn*nx;
+    f_s2[1] += 0.5*fn*ny;
+    f_s2[2] += 0.5*fn*nz;
     // Calculate friction tensor for segment. Start by calculating
     // size of spheres with same exposed surface as cylinder
     Real area = par[realIdx::area];
@@ -676,6 +694,9 @@ evaluateSurfaceForce(const Real *pos, Real *par, int *ipar, Real *vel, Real *rot
     vel[0] = 0.5*(v_1[0]+v_2[0]);
     vel[1] = 0.5*(v_1[1]+v_2[1]);
     vel[2] = 0.5*(v_1[2]+v_2[2]);
+    if (pos[2] < 0.00478) {
+      printf("VELOCITY_Z: %e Z: %f fz1: %e fz2: %e\n",vel[2],pos[2],f_s1[2],f_s2[2]);
+    }
 
     rotv[0] = 0.5*(ry*v_1[2]-rz*v_1[1]);
     rotv[1] = 0.5*(rz*v_1[0]-rx*v_1[2]);

@@ -294,9 +294,21 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                 particle.rdata(realIdx::wy) = 0.0;
                 particle.rdata(realIdx::wz) = 0.0;
 
+#if 0
                 ppos[0] += subdt * particle.rdata(realIdx::velx);
                 ppos[1] += subdt * particle.rdata(realIdx::vely);
                 ppos[2] += subdt * particle.rdata(realIdx::velz);
+#else
+                Real dx = subdt * particle.rdata(realIdx::velx);
+                Real dy = subdt * particle.rdata(realIdx::vely);
+                Real dz = subdt * particle.rdata(realIdx::velz);
+                ppos[0] += dx;
+                ppos[1] += dy;
+                ppos[2] += dz;
+                if (fabs(dx) > 0.0005 || fabs(dy) > 0.0005 || fabs(dz) > 0.0005) {
+                  printf("JUMP DX: %f DY: %f DZ: %f\n",dx,dy,dz);
+                }
+#endif
 
                 particle.pos(0) = ppos[0];
                 particle.pos(1) = ppos[1];
@@ -306,8 +318,10 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                 if (verbose) {
                   char sbuf[128];
                   int p_id = particle.id();
-                  sprintf(sbuf,"particle: %d position: %14.8f %14.8f %14.8f volume: %16.8e",p_id,particle.pos(0),
-                      particle.pos(1),particle.pos(2), particle.rdata(realIdx::vol));
+                  sprintf(sbuf,"particle: %d position: %14.8f %14.8f %14.8f"
+                      " volume: %16.8e length: %14.8f",p_id,particle.pos(0),
+                      particle.pos(1),particle.pos(2), particle.rdata(realIdx::vol),
+                      particle.rdata(realIdx::c_length));
                   std::cout << sbuf << std::endl;
                 }
 #endif

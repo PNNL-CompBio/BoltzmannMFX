@@ -26,6 +26,7 @@ checkSplit(Real *p_par, int *p_ipar, Real max_vol, Real max_len,
 	// If segment is a growth tip then split if segment is greater than
 	// or equal to maximum length
 	if (p_par[realIdx::c_length] >= max_len) {
+	  printf("LENGTH: %16.8f\n",p_par[realIdx::c_length]);
 	  ret = true;
 	}
       }
@@ -47,33 +48,16 @@ checkSplit(Real *p_par, int *p_ipar, Real max_vol, Real max_len,
  */
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void 
-setChildParameters(Real *p_real_orig, int *p_int_orig,
+copyChildParameters(Real *p_real_orig, int *p_int_orig,
                    Real *p_real_child, int *p_int_child,
                    int num_reals, int num_ints) 
 {
   int i;
   int nreals = num_reals + realIdx::count-1;
   int nints  = num_ints  +  intIdx::count-1;
+  // Copy all values to child, fix up details below
   for (i=0; i<nreals; i++) p_real_child[i] = p_real_orig[i];
   for (i=0; i<nints; i++) p_int_child[i] = p_int_orig[i];
-
-  // fix up values that need to be modified due to splitting
-  if (p_int_orig[intIdx::cell_type] == cellType::YEAST) {
-    Real volume = p_real_orig[realIdx::vol]/2.0;
-    Real radius = pow((3.0*volume/(4.0*M_PI)),1.0/3.0);
-    Real area = 4.0*M_PI*radius*radius;
-    Real dvdt = p_real_orig[realIdx::dvdt];
-    Real dadt = 2.0*dvdt/radius;
-    p_real_orig[realIdx::vol] = volume;
-    p_real_child[realIdx::vol] = volume;
-    p_real_orig[realIdx::area] = area;
-    p_real_child[realIdx::area] = area;
-    p_real_orig[realIdx::dadt] = dadt;
-    p_real_child[realIdx::dadt] = dadt;
-    p_real_orig[realIdx::radius] = radius;
-  } else if (p_int_orig[intIdx::cell_type] == cellType::FUNGI) {
-    //TODO: set values for fungi
-  }
 }
 
 /**
@@ -90,11 +74,11 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void 
 setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
            Real *par_new, int *ipar_orig, int *ipar_new,
-           Real overlap, int num_reals, int num_ints, amrex::RandomEngine const& engine)
+           Real overlap, int num_reals, int num_ints,
+	   amrex::RandomEngine const& engine)
 {
-  // Copy values from original particle and modify some values
-  // as appropriate
-  setChildParameters(par_orig, ipar_orig, par_new, ipar_new,
+  // Copy values from original particle to child
+  copyChildParameters(par_orig, ipar_orig, par_new, ipar_new,
       num_reals, num_ints);
 
   if (ipar_orig[intIdx::cell_type] == cellType::YEAST) {
@@ -105,7 +89,8 @@ setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
 
     // Find new locations for split particles
     Real radius = par_new[realIdx::radius];
-    Real theta = M_PI * amrex::Random(engine);
+    Real theta = 2.0 * amrex::Random(engine) - 1.0;
+    theta = acos(theta);
     Real phi = 2.0 * M_PI * amrex::Random(engine);
     Real nx = sin(theta)*cos(phi);
     Real ny = sin(theta)*sin(phi);
@@ -117,9 +102,23 @@ setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
     pos_orig[0] = x - scale*0.5*nx*radius;
     pos_orig[1] = y - scale*0.5*ny*radius;
     pos_orig[2] = z - scale*0.5*nz*radius;
-  } else if (ipar_orig[intIdx::cell_type] == cellType::FUNGI) {
-    //TODO: set fungi positions
 
+    // Fix up some parameters to reflect split
+    Real volume = par_orig[realIdx::vol]/2.0;
+    radius = pow((3.0*volume/(4.0*M_PI)),1.0/3.0);
+    Real area = 4.0*M_PI*radius*radius;
+    Real dvdt = par_orig[realIdx::dvdt];
+    Real dadt = 2.0*dvdt/radius;
+    par_orig[realIdx::vol] = volume;
+    par_new[realIdx::vol] = volume;
+    par_orig[realIdx::area] = area;
+    par_new[realIdx::area] = area;
+    par_orig[realIdx::dadt] = dadt;
+    par_new[realIdx::dadt] = dadt;
+    par_orig[realIdx::radius] = radius;
+    par_new[realIdx::radius] = radius;
+  } else if (ipar_orig[intIdx::cell_type] == cellType::FUNGI) {
+    // Fungi split handled in setNewSegment
   }
 }
 
@@ -130,15 +129,269 @@ setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
  * @param par_orig, par_new real parameter values of original and new segments
  * @param ipar_orig, ipar_new integer parameter values of original and new segments
  * @param num_reals, num_ints number of real and integer parameters
- * @param gx, gy, gz components of gradient for chemical species
+ * @param split_len length of parent segment after split
+ * @param id, cpu ID and cpu of new segment
  * @param engine object for implementing random number generator
  */
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void 
 setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
-              Real *par_new, int *ipar_orig, int *ipar_new, int l_num_reals,
-	      int l_num_ints, amrex::RandomEngine const& engine)
+              Real *par_new, int *ipar_orig, int *ipar_new, int num_reals,
+	      int num_ints, Real split_len, int id, int cpu,
+	      amrex::RandomEngine const& engine)
 {
+  // Copy values from original particle to child
+  copyChildParameters(par_orig, ipar_orig, par_new, ipar_new,
+      num_reals, num_ints);
+
+  // Get chemical gradient
+  Real gx = par_orig[realIdx::gx];
+  Real gy = par_orig[realIdx::gy];
+  Real gz = par_orig[realIdx::gz];
+
+  //Check out if this is an interior or terminal segment
+  int nbnd = ipar_orig[intIdx::n_bnds];
+  if (nbnd == 0) {
+    // Isolated segment
+    Real x_orig = pos_orig[0];
+    Real y_orig = pos_orig[1];
+    Real z_orig = pos_orig[2];
+    Real c_length = par_orig[realIdx::c_length];
+    // Find orientation of segment
+    Real theta = par_orig[realIdx::theta];
+    Real phi = par_orig[realIdx::phi];
+    Real ct = cos(theta);
+    Real st = sin(theta);
+    Real cp = cos(phi);
+    Real sp = sin(phi);
+    Real nx = st*cp;
+    Real ny = st*sp;
+    Real nz = ct;
+    // Calculate location of new segment centers
+    pos_orig[0] = x_orig + 0.25*c_length*nx;
+    pos_orig[1] = y_orig + 0.25*c_length*ny;
+    pos_orig[2] = z_orig + 0.25*c_length*nz;
+    pos_new[0] = x_orig - 0.25*c_length*nx;
+    pos_new[1] = y_orig - 0.25*c_length*ny;
+    pos_new[2] = z_orig - 0.25*c_length*nz;
+    par_orig[realIdx::c_length] = 0.5*c_length;
+    par_new[realIdx::c_length] = 0.5*c_length;
+    // Fix up topology of new and old segment
+    //        1-----------2 parent
+    //            /    \
+    //           /      \
+    //(child) 1----2  1----2 (parent)
+    ipar_orig[intIdx::n_bnds] = 1;
+    ipar_orig[intIdx::seg1_id1] = id;
+    ipar_orig[intIdx::seg1_id2] = cpu;
+    // Growth is towards site 2
+    ipar_orig[intIdx::site1] = 1;
+    ipar_orig[intIdx::position] = siteLocation::TIP;
+    ipar_orig[intIdx::growth_dir] = 1;
+
+    ipar_new[intIdx::n_bnds] = 1;
+    ipar_new[intIdx::seg1_id1] = ipar_orig[intIdx::id];
+    ipar_new[intIdx::seg1_id2] = ipar_orig[intIdx::cpu];
+    ipar_new[intIdx::site1] = 2;
+    ipar_new[intIdx::position] = siteLocation::TIP;
+    // Growth is towards site 1
+    ipar_new[intIdx::growth_dir] = 0;
+    ipar_new[intIdx::id] = id;
+    ipar_new[intIdx::cpu] = cpu;
+  } else if (nbnd == 1) {
+    // Terminal segment
+    // Find direction of chemical gradient
+    Real gx = par_orig[realIdx::gx];
+    Real gy = par_orig[realIdx::gy];
+    Real gz = par_orig[realIdx::gz];
+    Real gn = sqrt(gx*gx+gy*gy+gz*gz);
+    // Find out which end is bonded to a segment
+    int bsite = ipar_orig[intIdx::site1];
+    // Find orientation of existing segment
+    Real theta = par_orig[realIdx::theta];
+    Real phi = par_orig[realIdx::phi];
+    printf("THETA: %f PHI: %f GX: %e GY: %e GZ: %e GN: %e\n",theta,phi,gx,gy,gz,gn);
+    Real ct = cos(theta);
+    Real st = sin(theta);
+    Real cp = cos(phi);
+    Real sp = sin(phi);
+    Real nx = st*cp;
+    Real ny = st*sp;
+    Real nz = ct;
+    if (gn == 0.0) {
+      gx = nx;
+      gy = ny;
+      gz = nz;
+      gn = 1.0;
+    }
+    // create unit vector in direction of chemical gradient
+    gx = gx/gn;
+    gy = gy/gn;
+    gz = gz/gn;
+    Real gtheta = acos(gz);
+    Real gst = sin(gtheta);
+    Real gct = cos(gtheta);
+    Real gphi = 0.0;
+    Real gcp = cos(gphi);
+    Real gsp = sin(gphi);
+    if (gst != 0.0) {
+      gphi = acos(gx/gst);
+      if (gy < 0.0) gphi = 2.0 * M_PI - theta;
+    }
+    // Find matrix that rotates x-axis to gradient direction
+    Real rotx[3][3];
+    rotx[0][0] = gcp*gst;
+    rotx[0][1] = -gsp;
+    rotx[0][2] = -gcp*gct;
+    rotx[1][0] = gsp*gst;
+    rotx[1][1] = gcp;
+    rotx[1][2] = -gsp*gct;
+    rotx[2][0] = gct;
+    rotx[2][1] = 0.0;
+    rotx[2][2] = gst;
+    // Choose a direction for the new segment from a distribution of directions
+    // around the x-axis
+    Real rtheta = 0.1 * amrex::Random(engine);
+    rtheta = acos(rtheta);
+    Real rphi = 2.0 * M_PI * amrex::Random(engine);
+    Real rct = cos(rtheta);
+    Real rst = sin(rtheta);
+    Real rcp = cos(rphi);
+    Real rsp = sin(rphi);
+    Real rx = rct;
+    Real ry = rst*rsp;
+    Real rz = rst*rcp;
+    // Rotate random vector so that it is approximately oriented in the direction
+    // of chemical gradient
+    Real gnx = rotx[0][0]*rx+rotx[0][1]*ry+rotx[0][2]*rz;
+    Real gny = rotx[1][0]*rx+rotx[1][1]*ry+rotx[1][2]*rz;
+    Real gnz = rotx[2][0]*rx+rotx[2][1]*ry+rotx[2][2]*rz;
+      printf("RTHETA: %f RPHI: %f GX: %f GY: %f GZ: %f NX: %f NY: %f NZ: %f\n",
+	  rtheta,rphi,gnx,gny,gnz,nx,ny,nz);
+    // Now have orientation of old segment (nx,ny,nz) and new segment
+    // (gnx,gny,gnz). Finish constructing new configuration.
+    Real x = pos_orig[0];
+    Real y = pos_orig[1];
+    Real z = pos_orig[2];
+    Real c_length = par_orig[realIdx::c_length];
+    Real x1, y1, z1, x2, y2, z2;
+    if (bsite == 1) {
+      x1 = x - 0.5*c_length*nx;
+      y1 = y - 0.5*c_length*ny;
+      z1 = z - 0.5*c_length*nz;
+      x2 = x1 + split_len*nx;
+      y2 = y1 + split_len*ny;
+      z2 = z1 + split_len*nz;
+      pos_orig[0] = 0.5*(x1+x2);
+      pos_orig[1] = 0.5*(y1+y2);
+      pos_orig[2] = 0.5*(z1+z2);
+      par_orig[realIdx::c_length] = split_len;
+      ipar_orig[intIdx::growth_dir] = 0;
+      ipar_orig[intIdx::site2] = 2;
+      ipar_orig[intIdx::position] = siteLocation::SECOND_2;
+      Real seg_len = c_length-split_len;
+      // find location of Site 2 on new segment (site 1 on new segment equals
+      // site 2 of old segment)
+      Real ax = x2 + gnx*seg_len;
+      Real ay = y2 + gny*seg_len;
+      Real az = z2 + gnz*seg_len;
+      pos_new[0] = 0.5*(x2 + ax);
+      pos_new[1] = 0.5*(y2 + ay);
+      pos_new[2] = 0.5*(z2 + az);
+      par_new[realIdx::c_length] = seg_len;
+      gtheta = acos(gnz);
+      gst = sin(gtheta);
+      gphi = 0.0;
+      if (gst != 0.0) {
+	gphi = acos(gnx/gst);
+	if (gny < 0.0) gphi = 2.0 * M_PI - gtheta;
+      }
+      printf("SITE: %d GTHETA: %f GPHI: %f\n",bsite,gtheta,gphi);
+      par_new[realIdx::theta] = gtheta;
+      par_new[realIdx::phi] = gphi;
+      ipar_new[intIdx::site1] = 1;
+      ipar_new[intIdx::position] = siteLocation::TIP;
+    } else {
+      x2 = x + 0.5*c_length*nx;
+      y2 = y + 0.5*c_length*ny;
+      z2 = z + 0.5*c_length*nz;
+      x1 = x2 - split_len*nx;
+      y1 = y2 - split_len*ny;
+      z1 = z2 - split_len*nz;
+      pos_orig[0] = 0.5*(x1+x2);
+      pos_orig[1] = 0.5*(y1+y2);
+      pos_orig[2] = 0.5*(z1+z2);
+      par_orig[realIdx::c_length] = split_len;
+      ipar_orig[intIdx::growth_dir] = 1;
+      ipar_orig[intIdx::site2] = 1;
+      ipar_orig[intIdx::position] = siteLocation::SECOND_1;
+      Real seg_len = c_length-split_len;
+      // find location of Site 1 on new segment (site 2 on new segment equals
+      // site 1 of old segment)
+      Real ax = x1 + gnx*seg_len;
+      Real ay = y1 + gny*seg_len;
+      Real az = z1 + gnz*seg_len;
+      pos_new[0] = 0.5*(x1 + ax);
+      pos_new[1] = 0.5*(y1 + ay);
+      pos_new[2] = 0.5*(z1 + az);
+      par_new[realIdx::c_length] = seg_len;
+      gtheta = acos(gnz);
+      gst = sin(gtheta);
+      gphi = 0.0;
+      if (gst != 0.0) {
+	gphi = acos(gnx/gst);
+	if (gny < 0.0) gphi = 2.0 * M_PI - gtheta;
+      }
+      printf("SITE: %d GTHETA: %f GPHI: %f\n",bsite,gtheta,gphi);
+      par_new[realIdx::theta] = gtheta;
+      par_new[realIdx::phi] = gphi;
+      ipar_new[intIdx::site1] = 2;
+      ipar_new[intIdx::position] = siteLocation::TIP;
+    }
+    printf("PARENT LENGTH: %e\n",par_orig[realIdx::c_length]);
+    printf("CHILD LENGTH: %e\n",par_new[realIdx::c_length]);
+    ipar_orig[intIdx::n_bnds] = 2; 
+    ipar_orig[intIdx::seg2_id1] = id;
+    ipar_orig[intIdx::seg2_id2] = cpu;
+    ipar_new[intIdx::n_bnds] = 1; 
+    ipar_new[intIdx::seg1_id1] = ipar_orig[intIdx::id];
+    ipar_new[intIdx::seg1_id2] = ipar_orig[intIdx::cpu];
+  } else if (nbnd == 2) {
+    // Interior segment just behind growth tip
+    if (ipar_orig[intIdx::position] == siteLocation::SECOND_1
+	|| ipar_orig[intIdx::position] == siteLocation::SECOND_2) {
+    }
+  }
+  // Recalculate area and volume
+  Real clen = par_orig[realIdx::c_length];
+  Real rad = par_orig[realIdx::radius];
+  par_orig[realIdx::vol] = M_PI*rad*rad*clen;
+  par_orig[realIdx::area] = 2.0*M_PI*rad*clen+2.0*M_PI*rad*rad;
+  clen = par_new[realIdx::c_length];
+  rad = par_new[realIdx::radius];
+  par_new[realIdx::vol] = M_PI*rad*rad*clen;
+  par_new[realIdx::area] = 2.0*M_PI*rad*clen+2.0*M_PI*rad*rad;
+
+}
+
+/**
+ * Transfer mesh values to internal concentrations and evaluate chemistry
+ * @param grid_vol fluid volume in grid cell that contains biological cell
+ * @param npart number of particles in grid cell
+ * @param cell_par pointer to cell parameter values
+ * @param mesh_vals values of concentrations on mesh
+ * @param p_vals values of concentrations in particles
+ * @param dt time step interval
+ * @param nloop number of subintervals to use for chemistry
+ * @param chempar vector containing chemistry parameters
+ * @param cell_ipar point to integer cell parameter values
+  } else if (nbnd == 2) {
+    // Interior segment just behind growth tip
+    if (ipar_orig[intIdx::position] == siteLocation::SECOND_1
+	|| ipar_orig[intIdx::position] == siteLocation::SECOND_2) {
+    }
+  }
+
 }
 
 /**

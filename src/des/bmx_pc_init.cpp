@@ -28,7 +28,7 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
     int np = -1;
     ifs >> np >> std::ws;
 
-    amrex::Print() << "Now reading " << np << " particles from particle_input.dat" << std::endl;
+    amrex::Print() << "Now reading " << np << " particles from " << file << std::endl;
 
     // Issue an error if nparticles = 0 is specified
     if ( np == -1 ){

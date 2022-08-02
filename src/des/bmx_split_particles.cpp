@@ -104,9 +104,11 @@ BMXParticleContainer::split_particles (Real time)
                              par_new, ipar_orig, ipar_new,
                              l_overlap, l_num_reals, l_num_ints, engine);
                 } else {
+                  Real split_len = SPECIES::split_len;
                   setNewSegment(pos_orig, pos_new, par_orig,
                                 par_new, ipar_orig, ipar_new,
-                                l_num_reals, l_num_ints, engine);
+                                l_num_reals, l_num_ints, split_len,
+                                p.id(), p.cpu(), engine);
                 }
                 ipar_new[intIdx::id] = p.id();
                 ipar_new[intIdx::cpu] = p.cpu();

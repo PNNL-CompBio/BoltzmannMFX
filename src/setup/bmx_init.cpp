@@ -405,14 +405,10 @@ void bmx::InitLevelData (Real /*time*/)
 
       if (particle_init_type == "AsciiFile")
       {
-        amrex::Print() << "Reading particles from particle_input.dat ..." << std::endl;
-#ifdef NEW_CHEM
         std::string filename;
         pp.query("input_file",filename);
+        amrex::Print() << "Reading particles from "<<filename<<" ..." << std::endl;
         pc->InitParticlesAscii(filename);
-#else
-        pc->InitParticlesAscii("particle_input.dat");
-#endif
 
       } else { 
 
