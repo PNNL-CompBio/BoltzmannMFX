@@ -97,6 +97,8 @@ public:
 
     void InitParticlesAscii (const std::string& file);
 
+    void WriteToAscii (const std::string& file,int nstep,amrex::Real time);
+
     void printParticles ();
 
     Real computeParticleVolume () const;

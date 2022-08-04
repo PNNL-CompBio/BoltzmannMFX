@@ -39,6 +39,12 @@ bmx::InitIOPltData ()
 }
 
 void
+bmx::WriteAsciiVTK (const std::string& vtk_file, int nstep, Real time) const
+{
+    pc->WriteToAscii(vtk_file, nstep, time);
+}
+
+void
 bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
 {
     // If we've already written this plotfile, don't do it again!
@@ -46,6 +52,9 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
 
     // Now set last_plt to nstep ...
     last_plt = nstep;
+
+    std::string vtk_ascii_file = "vtkfile";
+    WriteAsciiVTK(vtk_ascii_file,nstep,time);
 
     BL_PROFILE("bmx::WritePlotFile()");
 

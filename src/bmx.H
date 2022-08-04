@@ -62,6 +62,8 @@ class bmx : public AmrCore
 
     void Restart (std::string& restart_chkfile, int* nstep, Real* dt, Real* time);
 
+    void WriteAsciiVTK (const std::string & name, int nstep, amrex::Real time) const;
+
     void WriteParticleAscii (std::string& par_ascii_file_name, int nstep = 0) const;
 
     void ComputeAndPrintSums ();

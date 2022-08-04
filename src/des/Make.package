@@ -5,6 +5,7 @@ CEXE_sources += bmx_pc.cpp
 CEXE_sources += bmx_pc.cpp
 CEXE_sources += bmx_pc_init.cpp
 CEXE_sources += bmx_pc_interaction.cpp
+CEXE_sources += bmx_pc_write.cpp
 CEXE_sources += bmx_calc_txfr.cpp
 CEXE_sources += bmx_calc_volume_fraction.cpp
 CEXE_sources += bmx_split_particles.cpp
