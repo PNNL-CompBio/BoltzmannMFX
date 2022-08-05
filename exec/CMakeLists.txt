@@ -1,3 +1,4 @@
 add_subdirectory(nlev_large_test)
 add_subdirectory(nlev_real_test)
 add_subdirectory(fungi)
+add_subdirectory(wall_test)
