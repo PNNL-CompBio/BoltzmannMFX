@@ -14,7 +14,7 @@ amrex.fpe_trap_invalid = 1
 
 bmx.fixed_dt = 1.0
 
-bmx.max_step = 30000
+bmx.max_step = 100000
 #bmx.max_step = 1
 
 dem.solve = bacteria
@@ -37,14 +37,14 @@ amr.max_level = 2
 geometry.coord_sys   = 0                       # 0: Cartesian
 geometry.is_periodic = 1       1       0       # Is periodic in each direction?
 geometry.prob_lo     = 0.      0.      0.      # lo corner of physical domain
-geometry.prob_hi     = 0.01280  0.01280  0.00640     # hi corner of physical domain
+geometry.prob_hi     = 0.1280  0.1280  0.0640     # hi corner of physical domain
 
 # Number of grid cells in each direction at the coarsest level
 amr.n_cell =  16  16  8
 
 bmx.tag_region    = true
-bmx.tag_region_lo = 0. 0. 0.004000
-bmx.tag_region_hi = 0.01280 0.01280 0.00520
+bmx.tag_region_lo = 0. 0. 0.04000
+bmx.tag_region_hi = 0.1280 0.1280 0.0520
 
 # Dont put any buffer region around the tagged cells
 amr.n_error_buf = 2
@@ -105,7 +105,7 @@ amr.check_file     ="chk"
 
 #! Restart from checkpoint
 #!-----------------------------------------------------------//
-#amr.restart   ="chk30000"
+#amr.restart   ="chk05300"
 
 #_______________________________________________________________________
 # Fluid model settings
@@ -114,34 +114,41 @@ fluid.solve = fluid
 fluid.chem_species      = A B C
 fluid.chem_species_diff = 6.0e-10 0.0 6.0e-10
 fluid.init_conc_species = 2.0e-5 0.0 2.0e-6
-fluid.surface_location = 0.004800
+fluid.surface_location = 0.04800
 #_______________________________________________________________________
 # Reaction model parameters
 #
-chem_species.max_vol = 6.872e-13 # 9.5e-13 # 1.0e-12
-chem_species.seg_split_length = 30.0e-5 # 9.5e-13 # 1.0e-12
-chem_species.max_seg_length = 35.0e-5 # 9.5e-13 # 1.0e-12
-chem_species.max_seg_radius = 2.5e-5 # 9.5e-13 # 1.0e-12
+chem_species.max_vol = 6.872e-10 # 9.5e-13 # 1.0e-12
+chem_species.seg_split_length = 30.0e-4 # 9.5e-13 # 1.0e-12
+chem_species.max_seg_length = 35.0e-4 # 9.5e-13 # 1.0e-12
+chem_species.max_seg_radius = 2.5e-4 # 9.5e-13 # 1.0e-12
 chem_species.k1 = 2.0e-5
 chem_species.kr1 = 2.0e-5
 chem_species.k2 = 0.4
 chem_species.kr2 = 0.06
 chem_species.k3 = 2.0e-5
 chem_species.kr3 = 2.0e-5
-chem_species.kg = 1000.0 # 400.0
+chem_species.kg = 4000.0 # 400.0
 bmx.substeps = 4
 
 #_______________________________________________________________________
 # Cell force parameters
 #
-cell_force.stiffness = 1.0e6
-cell_force.wall_stiffness = 1.0e5
+cell_force.stiffness = 0.0 #1.0e6
+cell_force.wall_stiffness = 0.0 #1.0e5
 
-cell_force.boundary_width = 5.0e-5
+cell_force.boundary_width = 1.0e-4
 cell_force.wall_boundary_width = 1.0e-04
+
+cell_force.neighbor_width = 1.0e-2 #set range of neighbor list
 
 cell_force.bond_strength = 5.0
 cell_force.bond_cutoff = 1.0e-4
+
+cell_force.viscous_drag = 20.0
+
+cell_force.gravity = 0.01
+
 #cell_force.repulsion_stiffness = 1.0e7 # 5.0e6
 #cell_force.adhesion_stiffness = 1.0e6
 #cell_force.wall_repulsion_stiffness = 1.0e7 # 5.0e6
@@ -156,6 +163,7 @@ diffusion.verbose = 2
 #What goes into the plotfile?
 amr.plt_X = 1
 amr.plt_D = 1
+amr.plt_grad_X = 1
 
 #_______________________________________________________________________
 # DEM model settings

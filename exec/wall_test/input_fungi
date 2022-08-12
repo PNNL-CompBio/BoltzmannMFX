@@ -127,7 +127,7 @@ chem_species.kr1 = 0.0
 chem_species.k2 = 0.0
 chem_species.kr2 = 0.0
 chem_species.k3 = 0.0
-chem_species.kr3 = 0.0e
+chem_species.kr3 = 0.0
 chem_species.kg = 0.0 # 400.0
 bmx.substeps = 4
 
@@ -140,8 +140,12 @@ cell_force.wall_stiffness = 1.0e5
 cell_force.boundary_width = 5.0e-5
 cell_force.wall_boundary_width = 1.0e-04
 
+cell_force.neighbor_width = 1.0e-2 #set range of neighbor list
+
 cell_force.bond_strength = 5.0
 cell_force.bond_cutoff = 1.0e-4
+
+cell_force.viscous_drag = 20.0
 #cell_force.repulsion_stiffness = 1.0e7 # 5.0e6
 #cell_force.adhesion_stiffness = 1.0e6
 #cell_force.wall_repulsion_stiffness = 1.0e7 # 5.0e6
