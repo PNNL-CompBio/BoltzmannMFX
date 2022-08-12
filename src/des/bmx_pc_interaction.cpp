@@ -183,10 +183,13 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                                 dist_y*dist_y +
                                 dist_z*dist_z;
 
+                      printf("SEPARATION: %f\n",sqrt(r2));
                       RealVect diff(dist_x,dist_y,dist_z);
 
                       Real r_lm = maxInteractionDistance(&particle.rdata(0),&p2.rdata(0),
+                                                         &particle.idata(0),&p2.idata(0),
                                                          fpar[0]);
+                      printf("R_LM: %f\n",r_lm);
 
                       AMREX_ASSERT_WITH_MESSAGE(
                           not (particle.id() == p2.id() and
@@ -211,6 +214,10 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 
                           evaluateForce(&diff[0],&particle.rdata(0),&p2.rdata(0), &particle.idata(0),
                                         &p2.idata(0), &v1[0], &v2[0], &rot1[0], &rot2[0], fpar);
+                          printf("w1x: %e w1y: %e w1z: %e w2x: %e w2y: %e w2z: %e\n",
+                              rot1[0],rot1[1],rot1[2],rot2[0],rot2[1],rot2[2]);
+                          printf("v1x: %e r1x: %e v2x: %e r2x: %e\n",
+                              v1[0],pos1[0],v2[0],p2.pos(0));
 #ifdef _OPENMP
 #pragma omp critical
                           {
@@ -244,6 +251,9 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                   amrex::Gpu::Atomic::Add(&fc_ptr[i         ], vcom[0]);
                   amrex::Gpu::Atomic::Add(&fc_ptr[i + ntot  ], vcom[1]);
                   amrex::Gpu::Atomic::Add(&fc_ptr[i + 2*ntot], vcom[2]);
+                  amrex::Gpu::Atomic::Add(&fc_ptr[i + 3*ntot], vrot[0]);
+                  amrex::Gpu::Atomic::Add(&fc_ptr[i + 4*ntot], vrot[1]);
+                  amrex::Gpu::Atomic::Add(&fc_ptr[i + 5*ntot], vrot[2]);
               }); // end of loop over particles
 
             amrex::Gpu::Device::synchronize();
@@ -290,14 +300,24 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                 particle.rdata(realIdx::vely) = fc_ptr[i+ntot];
                 particle.rdata(realIdx::velz) = fc_ptr[i+2*ntot];
 
-                particle.rdata(realIdx::wx) = 0.0;
-                particle.rdata(realIdx::wy) = 0.0;
-                particle.rdata(realIdx::wz) = 0.0;
+                particle.rdata(realIdx::wx) = fc_ptr[i+3*ntot];
+                particle.rdata(realIdx::wy) = fc_ptr[i+4*ntot];
+                particle.rdata(realIdx::wz) = fc_ptr[i+5*ntot];
 
-#if 0
+#if 1
+                printf("PARTICLE RX: %e RY: %e RZ: %e\n",ppos[0],ppos[1],ppos[2]);
+                printf("PARTICLE VX: %e VY: %e VZ: %e DT: %e\n",
+                    particle.rdata(realIdx::velx),
+                    particle.rdata(realIdx::vely),particle.rdata(realIdx::velz),
+                    subdt);
+                printf("PARTICLE WX: %e WY: %e WZ: %e\n",
+                    particle.rdata(realIdx::wx),
+                    particle.rdata(realIdx::wy),particle.rdata(realIdx::wz));
                 ppos[0] += subdt * particle.rdata(realIdx::velx);
                 ppos[1] += subdt * particle.rdata(realIdx::vely);
                 ppos[2] += subdt * particle.rdata(realIdx::velz);
+                printf("PARTICLE POST RX: %e RY: %e RZ: %e\n",
+                    ppos[0],ppos[1],ppos[2]);
 #else
                 Real dx = subdt * particle.rdata(realIdx::velx);
                 Real dy = subdt * particle.rdata(realIdx::vely);
@@ -309,10 +329,130 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                   printf("JUMP DX: %f DY: %f DZ: %f\n",dx,dy,dz);
                 }
 #endif
+                // Modify orientation based on angular momentum
+                if (particle.idata(intIdx::cell_type) == cellType::FUNGI) {
+                  Real theta = particle.rdata(realIdx::theta);
+                  Real phi = particle.rdata(realIdx::phi);
+                  Real cp = cos(phi);
+                  Real sp = sin(phi);
+                  Real ct = cos(theta);
+                  Real st = sin(theta);
+                  Real x = sp*st;
+                  Real y = cp*st;
+                  Real z = ct;
+                  // construct matrix to rotate x-axis to segment orientation
+                  Real rot[3][3];
+                  rot[0][0] = cp*st;
+                  rot[0][1] = -sp;
+                  rot[0][2] = -cp*ct;
+                  rot[1][0] = sp*st;
+                  rot[1][1] = cp;
+                  rot[1][2] = -sp*ct;
+                  rot[2][0] = ct;
+                  rot[2][1] = 0.0;
+                  rot[2][2] = st;
+                  // get angular momentum
+                  Real lm[3];
+                  lm[0] = particle.rdata(realIdx::wx);
+                  lm[1] = particle.rdata(realIdx::wy);
+                  lm[2] = particle.rdata(realIdx::wz);
+                  // transform angular momentum using inverse rotation
+                  // and calculate rotational velocity
+                  Real om[3];
+                  int i, j;
+                  for (i=0; i<3; i++) {
+                    om[i] = 0.0;
+                    for (j=0; j<3; j++) {
+                      om[i] += rot[j][i]*lm[j];
+                    }
+                  }
+                  Real clen = particle.rdata(realIdx::c_length);
+                  //DBG printf("Omega_x: %e Omega_y: %e Omega_z: %e\n",om[0],om[1],om[2]);
+                  om[0] = 0.0;
+                  om[1] *= 2.0/(clen*clen);
+                  om[2] *= 2.0/(clen*clen);
+                  // Find rotation angle of angular momentum with respect to
+                  // z-axis
+                  Real on = sqrt(om[1]*om[1]+om[2]*om[2]);
+                  if (on > 0.0) {
+                    om[1] /= on;
+                    om[2] /= on;
+                  }
+                  // Construct matrix to rotate system about x-axis so that rotational
+                  // velocity is along z-axis. Cosine of the angle theta with
+                  // the z-axis is just om[2] and sine of theta is om[1]
+                  //DBG printf("Omega2_x: %e Omega2_y: %e Omega2_z: %e ON: %e\n",om[0],om[1],om[2],on);
+                  ct = om[2];
+                  st = om[1];
+                  Real orot[3][3];
+                  orot[0][0] = 1.0;
+                  orot[0][1] = 0.0;
+                  orot[0][2] = 0.0;
+                  orot[1][0] = 0.0;
+                  orot[1][1] = ct;
+                  orot[1][2] = -st;
+                  orot[2][0] = 0.0;
+                  orot[2][1] = st;
+                  orot[2][2] = ct;
+#if 0
+                  printf("o11: %f o12: %f o13: %f\n",orot[0][0],orot[0][1],orot[0][2]);
+                  printf("o21: %f o22: %f o23: %f\n",orot[1][0],orot[1][1],orot[1][2]);
+                  printf("o31: %f o32: %f o33: %f\n",orot[2][0],orot[2][1],orot[2][2]);
+                  Real dtmp[3];
+                  for (i=0; i<3; i++) {
+                    dtmp[i] = 0.0;
+                    for (j=0; j<3; j++) {
+                      dtmp[i] += orot[i][j]*om[j];
+                    }
+                  }
+                  printf("Op_x: %e Op_y: %e Op_z: %e\n",dtmp[0],dtmp[1],dtmp[2]);
+#endif
+                  // Cylinder is currently aligned along x-axis, so this
+                  // rotation has no effect on it. Calculate how much system
+                  // rotates about the z-axis in 1 time step and then calculate
+                  // how much x-axis is rotated
+                  Real dtheta = on*subdt;
+                  Real ndir[3]; 
+                  ndir[0] = cos(dtheta);
+                  ndir[1] = sin(dtheta);
+                  ndir[2] = 0.0;
+                  // apply inverse of orot to ndir (inverse is equal to
+                  // transpose)
+                  for (i=0; i<3; i++) {
+                    om[i] = 0.0;
+                    for (j=0; j<3; j++) {
+                      om[i] += orot[j][i]*ndir[j];
+                    }
+                  }
+              //DBG    printf("Dtheta: %f om_x: %f om_y: %f om_z: %f\n",dtheta,om[0],om[1],om[2]);
+
+                  // apply rot to new direction to recover final orientation
+                  for (i=0; i<3; i++) {
+                    ndir[i] = 0.0;
+                    for (j=0; j<3; j++) {
+                      ndir[i] += rot[i][j]*om[j];
+                    }
+                  }
+              //DBG    printf("NEW ORIENTATION NX: %e NY: %e NZ: %e\n",ndir[0],ndir[1],ndir[2]);
+                  // get orientation angles
+                  theta = acos(ndir[2]);
+                  on = sqrt(ndir[0]*ndir[0]+ndir[1]*ndir[1]);
+                  if (on > 0.0) {
+                    ndir[0] /= on;
+                  }
+                  phi = acos(ndir[0]);
+                  if (ndir[2] < 0.0) {
+                    phi = 2.0*M_PI-phi;
+                  }
+                  particle.rdata(realIdx::theta) = theta;
+                  particle.rdata(realIdx::phi) = phi;
+                }
 
                 particle.pos(0) = ppos[0];
                 particle.pos(1) = ppos[1];
                 particle.pos(2) = ppos[2];
+                printf("PARTICLE FINAL RX: %e RY: %e RZ: %e\n",
+                    particle.pos(0),particle.pos(1),particle.pos(2));
 
 #if !defined(AMREX_USE_GPU)
                 if (verbose) {

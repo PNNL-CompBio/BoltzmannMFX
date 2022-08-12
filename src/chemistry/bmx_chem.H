@@ -87,7 +87,7 @@ struct intIdx
     site2,          // bonding site of segment 2                                 15
     site3,          // bonding site of segment 3
     position,       // identify tip, second position, interior segment
-    growth_dir,     // growth direction (away from site 1 (0), site 2 (1) or both (2))
+    growth_dir,     // growth direction (direction 12 (0), direction 21(1) or both (2))
     id,             // unique identifier of segment
     cpu,            // original process of segment                               20
     first_data,     // index of first value of uncharacterized block

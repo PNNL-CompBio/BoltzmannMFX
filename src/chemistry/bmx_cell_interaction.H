@@ -68,6 +68,8 @@ class BMXCellInteraction
 
   static Real p_bond_cutoff;   // cutoff radius for detecting a bond
 
+  static Real p_viscosity;     // drag parameter for segments
+
   static std::vector<Real> p_force_params;  // vector containing all force params
 
   private:

@@ -109,6 +109,9 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
     MultiFab temp_gy(grids[lev], dmap[lev], FLUID::nchem_species, 1);
     MultiFab temp_gz(grids[lev], dmap[lev], FLUID::nchem_species, 1);
     compute_grad_X(lev,time,temp_gx,temp_gy,temp_gz);
+    amrex::Print() << "NORM OF GX: " << temp_gx.norm0() << std::endl;
+    amrex::Print() << "NORM OF GY: " << temp_gy.norm0() << std::endl;
+    amrex::Print() << "NORM OF GZ: " << temp_gz.norm0() << std::endl;
     MultiFab* interp_gxptr;
     MultiFab* interp_gyptr;
     MultiFab* interp_gzptr;
@@ -350,6 +353,8 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
               cell_par[realIdx::gx] = interp_gxloc[0];
               cell_par[realIdx::gy] = interp_gyloc[0];
               cell_par[realIdx::gz] = interp_gzloc[0];
+            //  printf("GXLOC: %e GYLOC: %e GZLOC: %e\n",interp_gxloc[0],
+            //      interp_gyloc[0], interp_gzloc[0]);
 
               Real *p_vals = &p.rdata(realIdx::first_data);
               int *cell_ipar = &p.idata(0);

@@ -23,12 +23,12 @@ checkSplit(Real *p_par, int *p_ipar, Real max_vol, Real max_len,
     if (position == siteLocation::TIP) {
       // Only consider splitting if segment cannot grow radially
       if (p_par[realIdx::radius] >= max_rad) {
-	// If segment is a growth tip then split if segment is greater than
-	// or equal to maximum length
-	if (p_par[realIdx::c_length] >= max_len) {
-	  printf("LENGTH: %16.8f\n",p_par[realIdx::c_length]);
-	  ret = true;
-	}
+        // If segment is a growth tip then split if segment is greater than
+        // or equal to maximum length
+        if (p_par[realIdx::c_length] >= max_len) {
+          printf("LENGTH: %16.8f\n",p_par[realIdx::c_length]);
+          ret = true;
+        }
       }
     } else if (position == siteLocation::SECOND_1 &&
                position == siteLocation::SECOND_2) {
@@ -75,7 +75,7 @@ void
 setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
            Real *par_new, int *ipar_orig, int *ipar_new,
            Real overlap, int num_reals, int num_ints,
-	   amrex::RandomEngine const& engine)
+           amrex::RandomEngine const& engine)
 {
   // Copy values from original particle to child
   copyChildParameters(par_orig, ipar_orig, par_new, ipar_new,
@@ -137,8 +137,8 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void 
 setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
               Real *par_new, int *ipar_orig, int *ipar_new, int num_reals,
-	      int num_ints, Real split_len, int id, int cpu,
-	      amrex::RandomEngine const& engine)
+              int num_ints, Real split_len, int id, int cpu,
+              amrex::RandomEngine const& engine)
 {
   // Copy values from original particle to child
   copyChildParameters(par_orig, ipar_orig, par_new, ipar_new,
@@ -187,7 +187,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     // Growth is towards site 2
     ipar_orig[intIdx::site1] = 1;
     ipar_orig[intIdx::position] = siteLocation::TIP;
-    ipar_orig[intIdx::growth_dir] = 1;
+    ipar_orig[intIdx::growth_dir] = 0;
 
     ipar_new[intIdx::n_bnds] = 1;
     ipar_new[intIdx::seg1_id1] = ipar_orig[intIdx::id];
@@ -195,7 +195,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     ipar_new[intIdx::site1] = 2;
     ipar_new[intIdx::position] = siteLocation::TIP;
     // Growth is towards site 1
-    ipar_new[intIdx::growth_dir] = 0;
+    ipar_new[intIdx::growth_dir] = 1;
     ipar_new[intIdx::id] = id;
     ipar_new[intIdx::cpu] = cpu;
   } else if (nbnd == 1) {
@@ -210,7 +210,6 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     // Find orientation of existing segment
     Real theta = par_orig[realIdx::theta];
     Real phi = par_orig[realIdx::phi];
-    printf("THETA: %f PHI: %f GX: %e GY: %e GZ: %e GN: %e\n",theta,phi,gx,gy,gz,gn);
     Real ct = cos(theta);
     Real st = sin(theta);
     Real cp = cos(phi);
@@ -219,25 +218,34 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     Real ny = st*sp;
     Real nz = ct;
     if (gn == 0.0) {
-      gx = nx;
-      gy = ny;
-      gz = nz;
+      if (ipar_orig[intIdx::growth_dir] == 0) {
+        gx = nx;
+        gy = ny;
+        gz = nz;
+//      printf("DIR 0 THETA: %f PHI: %f GX: %e GY: %e GZ: %e GN: %e\n",theta,phi,gx,gy,gz,gn);
+      } else {
+        gx = -nx;
+        gy = -ny;
+        gz = -nz;
+//      printf("DIR 1 THETA: %f PHI: %f GX: %e GY: %e GZ: %e GN: %e\n",theta,phi,gx,gy,gz,gn);
+      }
       gn = 1.0;
     }
     // create unit vector in direction of chemical gradient
     gx = gx/gn;
     gy = gy/gn;
     gz = gz/gn;
+//    printf("THETA: %f PHI: %f GX: %e GY: %e GZ: %e GN: %e\n",theta,phi,gx,gy,gz,gn);
     Real gtheta = acos(gz);
     Real gst = sin(gtheta);
     Real gct = cos(gtheta);
     Real gphi = 0.0;
-    Real gcp = cos(gphi);
-    Real gsp = sin(gphi);
     if (gst != 0.0) {
       gphi = acos(gx/gst);
-      if (gy < 0.0) gphi = 2.0 * M_PI - theta;
+      if (gy < 0.0) gphi = 2.0 * M_PI - gphi;
     }
+    Real gcp = cos(gphi);
+    Real gsp = sin(gphi);
     // Find matrix that rotates x-axis to gradient direction
     Real rotx[3][3];
     rotx[0][0] = gcp*gst;
@@ -252,7 +260,6 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     // Choose a direction for the new segment from a distribution of directions
     // around the x-axis
     Real rtheta = 0.1 * amrex::Random(engine);
-    rtheta = acos(rtheta);
     Real rphi = 2.0 * M_PI * amrex::Random(engine);
     Real rct = cos(rtheta);
     Real rst = sin(rtheta);
@@ -266,8 +273,8 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     Real gnx = rotx[0][0]*rx+rotx[0][1]*ry+rotx[0][2]*rz;
     Real gny = rotx[1][0]*rx+rotx[1][1]*ry+rotx[1][2]*rz;
     Real gnz = rotx[2][0]*rx+rotx[2][1]*ry+rotx[2][2]*rz;
-      printf("RTHETA: %f RPHI: %f GX: %f GY: %f GZ: %f NX: %f NY: %f NZ: %f\n",
-	  rtheta,rphi,gnx,gny,gnz,nx,ny,nz);
+//      printf("RTHETA: %f RPHI: %f GNX: %f GNY: %f GNZ: %f NX: %f NY: %f NZ: %f\n",
+//          rtheta,rphi,gnx,gny,gnz,nx,ny,nz);
     // Now have orientation of old segment (nx,ny,nz) and new segment
     // (gnx,gny,gnz). Finish constructing new configuration.
     Real x = pos_orig[0];
@@ -276,6 +283,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     Real c_length = par_orig[realIdx::c_length];
     Real x1, y1, z1, x2, y2, z2;
     if (bsite == 1) {
+      // new segment splits off site 2
       x1 = x - 0.5*c_length*nx;
       y1 = y - 0.5*c_length*ny;
       z1 = z - 0.5*c_length*nz;
@@ -295,6 +303,8 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       Real ax = x2 + gnx*seg_len;
       Real ay = y2 + gny*seg_len;
       Real az = z2 + gnz*seg_len;
+//      printf("B1 X1: %e Y1: %e Z1: %e X2: %e Y2: %e Z2: %e X3: %e Y3: %e Z3: %e\n",
+//          x1,y1,z1,x2,y2,z2,ax,ay,az);
       pos_new[0] = 0.5*(x2 + ax);
       pos_new[1] = 0.5*(y2 + ay);
       pos_new[2] = 0.5*(z2 + az);
@@ -303,10 +313,10 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       gst = sin(gtheta);
       gphi = 0.0;
       if (gst != 0.0) {
-	gphi = acos(gnx/gst);
-	if (gny < 0.0) gphi = 2.0 * M_PI - gtheta;
+        gphi = acos(gnx/gst);
+        if (gny < 0.0) gphi = 2.0 * M_PI - gphi;
       }
-      printf("SITE: %d GTHETA: %f GPHI: %f\n",bsite,gtheta,gphi);
+//      printf("SITE: %d GTHETA: %f GPHI: %f\n",bsite,gtheta,gphi);
       par_new[realIdx::theta] = gtheta;
       par_new[realIdx::phi] = gphi;
       ipar_new[intIdx::site1] = 1;
@@ -328,9 +338,11 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       Real seg_len = c_length-split_len;
       // find location of Site 1 on new segment (site 2 on new segment equals
       // site 1 of old segment)
-      Real ax = x1 + gnx*seg_len;
-      Real ay = y1 + gny*seg_len;
-      Real az = z1 + gnz*seg_len;
+      Real ax = x1 - gnx*seg_len;
+      Real ay = y1 - gny*seg_len;
+      Real az = z1 - gnz*seg_len;
+//      printf("B2 X1: %e Y1: %e Z1: %e X2: %e Y2: %e Z2: %e X3: %e Y3: %e Z3: %e\n",
+//          x1,y1,z1,x2,y2,z2,ax,ay,az);
       pos_new[0] = 0.5*(x1 + ax);
       pos_new[1] = 0.5*(y1 + ay);
       pos_new[2] = 0.5*(z1 + az);
@@ -339,17 +351,17 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       gst = sin(gtheta);
       gphi = 0.0;
       if (gst != 0.0) {
-	gphi = acos(gnx/gst);
-	if (gny < 0.0) gphi = 2.0 * M_PI - gtheta;
+        gphi = acos(gnx/gst);
+        if (gny < 0.0) gphi = 2.0 * M_PI - gtheta;
       }
-      printf("SITE: %d GTHETA: %f GPHI: %f\n",bsite,gtheta,gphi);
+//      printf("SITE: %d GTHETA: %f GPHI: %f\n",bsite,gtheta,gphi);
       par_new[realIdx::theta] = gtheta;
       par_new[realIdx::phi] = gphi;
       ipar_new[intIdx::site1] = 2;
       ipar_new[intIdx::position] = siteLocation::TIP;
     }
-    printf("PARENT LENGTH: %e\n",par_orig[realIdx::c_length]);
-    printf("CHILD LENGTH: %e\n",par_new[realIdx::c_length]);
+//    printf("PARENT LENGTH: %e\n",par_orig[realIdx::c_length]);
+//    printf("CHILD LENGTH: %e\n",par_new[realIdx::c_length]);
     ipar_orig[intIdx::n_bnds] = 2; 
     ipar_orig[intIdx::seg2_id1] = id;
     ipar_orig[intIdx::seg2_id2] = cpu;
@@ -359,7 +371,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
   } else if (nbnd == 2) {
     // Interior segment just behind growth tip
     if (ipar_orig[intIdx::position] == siteLocation::SECOND_1
-	|| ipar_orig[intIdx::position] == siteLocation::SECOND_2) {
+        || ipar_orig[intIdx::position] == siteLocation::SECOND_2) {
     }
   }
   // Recalculate area and volume
@@ -388,7 +400,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
   } else if (nbnd == 2) {
     // Interior segment just behind growth tip
     if (ipar_orig[intIdx::position] == siteLocation::SECOND_1
-	|| ipar_orig[intIdx::position] == siteLocation::SECOND_2) {
+        || ipar_orig[intIdx::position] == siteLocation::SECOND_2) {
     }
   }
 
@@ -654,68 +666,68 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
       // or any of the segment dimensions are below maximum
       // values
       if (is_tip) {
-	Real dvdt = std::max(kg*rB*orig_cell_vol,0.0);
-	cell_par[realIdx::dvdt] = dvdt; 
-	new_cell_vol += dtp*dvdt;
-	cell_par[realIdx::vol] = new_cell_vol; 
-	Real radius, c_length, tau;
-	if (cell_par[realIdx::radius] < radius_max
-	    && cell_par[realIdx::c_length] < length_max) {
-	  // grow segment proportionally
-	  tau = pow(new_cell_vol/orig_cell_vol,1.0/3.0);
-	  radius = tau*cell_par[realIdx::radius];
-	  c_length = tau*cell_par[realIdx::c_length];
-	  Real dtdt = 1.0/(3.0*pow(new_cell_vol,2.0/3.0))*dvdt/pow(orig_cell_vol,1.0/3.0);
-	  Real drdt = dtdt*cell_par[realIdx::radius];
-	  Real dldt = dtdt*cell_par[realIdx::c_length];
-	  cell_par[realIdx::dadt] = 2.0*M_PI*(drdt*(radius+c_length)+radius*(drdt+dldt));
-	  if (cell_ipar[intIdx::n_bnds] == 0) {
-	    cell_par[realIdx::area] = 2.0*M_PI*radius*(radius+c_length);
-	  } else {
-	    // Only one end of the cylinder is exposed to external fluid
-	    cell_par[realIdx::area] = M_PI*radius*(radius+2.0*c_length);
-	  }
-	} else if (cell_par[realIdx::radius] < radius_max) {
-	  // increase radius only (this case probably never reached)
-	  tau = sqrt(new_cell_vol/orig_cell_vol);
-	  radius = tau*cell_par[realIdx::radius];
-	  c_length = cell_par[realIdx::c_length];
-	  Real dtdt = 1.0/(2.0*sqrt(new_cell_vol))*dvdt/sqrt(orig_cell_vol);
-	  Real drdt = dtdt*cell_par[realIdx::radius];
-	  cell_par[realIdx::dadt] = 2.0*M_PI*(2.0*radius+c_length)*drdt;
-	} else {
-	  // increase length
-	  tau = new_cell_vol/orig_cell_vol;
-	  radius = cell_par[realIdx::radius];
-	  c_length = tau*cell_par[realIdx::c_length];
-	  Real dldt = dvdt*cell_par[realIdx::c_length]/orig_cell_vol;
-	  cell_par[realIdx::dadt] =  2.0*M_PI*radius*dldt;
-	}
-	cell_par[realIdx::radius] = radius;
-	cell_par[realIdx::c_length] = c_length;
+        Real dvdt = std::max(kg*rB*orig_cell_vol,0.0);
+        cell_par[realIdx::dvdt] = dvdt; 
+        new_cell_vol += dtp*dvdt;
+        cell_par[realIdx::vol] = new_cell_vol; 
+        Real radius, c_length, tau;
+        if (cell_par[realIdx::radius] < radius_max
+            && cell_par[realIdx::c_length] < length_max) {
+          // grow segment proportionally
+          tau = pow(new_cell_vol/orig_cell_vol,1.0/3.0);
+          radius = tau*cell_par[realIdx::radius];
+          c_length = tau*cell_par[realIdx::c_length];
+          Real dtdt = 1.0/(3.0*pow(new_cell_vol,2.0/3.0))*dvdt/pow(orig_cell_vol,1.0/3.0);
+          Real drdt = dtdt*cell_par[realIdx::radius];
+          Real dldt = dtdt*cell_par[realIdx::c_length];
+          cell_par[realIdx::dadt] = 2.0*M_PI*(drdt*(radius+c_length)+radius*(drdt+dldt));
+          if (cell_ipar[intIdx::n_bnds] == 0) {
+            cell_par[realIdx::area] = 2.0*M_PI*radius*(radius+c_length);
+          } else {
+            // Only one end of the cylinder is exposed to external fluid
+            cell_par[realIdx::area] = M_PI*radius*(radius+2.0*c_length);
+          }
+        } else if (cell_par[realIdx::radius] < radius_max) {
+          // increase radius only (this case probably never reached)
+          tau = sqrt(new_cell_vol/orig_cell_vol);
+          radius = tau*cell_par[realIdx::radius];
+          c_length = cell_par[realIdx::c_length];
+          Real dtdt = 1.0/(2.0*sqrt(new_cell_vol))*dvdt/sqrt(orig_cell_vol);
+          Real drdt = dtdt*cell_par[realIdx::radius];
+          cell_par[realIdx::dadt] = 2.0*M_PI*(2.0*radius+c_length)*drdt;
+        } else {
+          // increase length
+          tau = new_cell_vol/orig_cell_vol;
+          radius = cell_par[realIdx::radius];
+          c_length = tau*cell_par[realIdx::c_length];
+          Real dldt = dvdt*cell_par[realIdx::c_length]/orig_cell_vol;
+          cell_par[realIdx::dadt] =  2.0*M_PI*radius*dldt;
+        }
+        cell_par[realIdx::radius] = radius;
+        cell_par[realIdx::c_length] = c_length;
       } else {
-	// Fungi segment can only grow radially
-	if (cell_par[realIdx::radius] < radius_max) {
-	  Real dvdt = std::max(kg*rB*orig_cell_vol,0.0);
-	  cell_par[realIdx::dvdt] = dvdt; 
-	  new_cell_vol += dtp*dvdt;
-	  cell_par[realIdx::vol] = new_cell_vol; 
-	  Real tau = sqrt(new_cell_vol/orig_cell_vol);
-	  Real radius = tau*cell_par[realIdx::radius];
-	  Real c_length = cell_par[realIdx::c_length];
-	  Real dtdt = 1.0/(2.0*sqrt(new_cell_vol))*dvdt/sqrt(orig_cell_vol);
-	  Real drdt = dtdt*cell_par[realIdx::radius];
-	  cell_par[realIdx::radius] = radius;
-	  cell_par[realIdx::c_length] = c_length;
-	  // Both end caps of cylinder are hidden from fluid
-	  cell_par[realIdx::area] = 2.0*M_PI*radius*c_length;
-	  cell_par[realIdx::dadt] = 2.0*M_PI*(2.0*radius+c_length)*drdt;
-	} else {
-	  // Cell volume doesn't change, reset everything to original values
-	  cell_par[realIdx::dvdt] = 0.0; 
-	  cell_par[realIdx::vol] = orig_cell_vol; 
-	  cell_par[realIdx::dadt] = 0.0;
-	}
+        // Fungi segment can only grow radially
+        if (cell_par[realIdx::radius] < radius_max) {
+          Real dvdt = std::max(kg*rB*orig_cell_vol,0.0);
+          cell_par[realIdx::dvdt] = dvdt; 
+          new_cell_vol += dtp*dvdt;
+          cell_par[realIdx::vol] = new_cell_vol; 
+          Real tau = sqrt(new_cell_vol/orig_cell_vol);
+          Real radius = tau*cell_par[realIdx::radius];
+          Real c_length = cell_par[realIdx::c_length];
+          Real dtdt = 1.0/(2.0*sqrt(new_cell_vol))*dvdt/sqrt(orig_cell_vol);
+          Real drdt = dtdt*cell_par[realIdx::radius];
+          cell_par[realIdx::radius] = radius;
+          cell_par[realIdx::c_length] = c_length;
+          // Both end caps of cylinder are hidden from fluid
+          cell_par[realIdx::area] = 2.0*M_PI*radius*c_length;
+          cell_par[realIdx::dadt] = 2.0*M_PI*(2.0*radius+c_length)*drdt;
+        } else {
+          // Cell volume doesn't change, reset everything to original values
+          cell_par[realIdx::dvdt] = 0.0; 
+          cell_par[realIdx::vol] = orig_cell_vol; 
+          cell_par[realIdx::dadt] = 0.0;
+        }
       }
     }
 

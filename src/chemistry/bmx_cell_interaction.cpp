@@ -13,6 +13,7 @@ amrex::Real BMXCellInteraction::p_z_stiffness = 0.0;
 amrex::Real BMXCellInteraction::p_z_wall = 0.0;
 amrex::Real BMXCellInteraction::p_bond_strength = 0.0;
 amrex::Real BMXCellInteraction::p_bond_cutoff = 5.0;
+amrex::Real BMXCellInteraction::p_viscosity = 20.0;
 std::vector<amrex::Real> BMXCellInteraction::p_force_params;
 
 /**
@@ -65,11 +66,12 @@ void BMXCellInteraction::setParams(const char *file)
   pp.get("wall_repulsion_stiffness",p_z_r_stiffness);
   pp.get("wall_adhesion_stiffness",p_z_a_stiffness);
 #endif
-
-  p_bond_strength = 0.0;
-  pp.get("bond_strength",p_bond_strength);
+  pp.get("viscous_drag",p_viscosity);
 
   p_bond_strength = 5.0;
+  pp.get("bond_strength",p_bond_strength);
+
+  p_bond_cutoff = 0.00001;
   pp.get("bond_cutoff",p_bond_cutoff);
 
   p_z_wall = FLUID::surface_location;
@@ -83,6 +85,7 @@ void BMXCellInteraction::setParams(const char *file)
   p_force_params.push_back(p_z_gravity);
   p_force_params.push_back(p_bond_strength);
   p_force_params.push_back(p_bond_cutoff);
+  p_force_params.push_back(p_viscosity);
   amrex::Print() << "SURFACE LOCATION: "<<p_z_wall<<'\n';
 }
 

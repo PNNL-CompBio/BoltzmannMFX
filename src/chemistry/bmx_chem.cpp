@@ -89,7 +89,7 @@ void BMXChemistry::setParams(const char *file)
   Real radius = pow((3.0*vol/(4.0*M_PI)),1.0/3.0);
   ParmParse ppF("cell_force");
   Real width;
-  ppF.get("boundary_width",width);
+  ppF.get("neighbor_width",width);
   // TODO: Come up with correct neighborhood value base on what types of cells
   //       are being simulated
   DEM::neighborhood = 1.1*(2.0*radius+width);
