@@ -175,21 +175,21 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                       auto p2 = *mit;
                       const int j = mit.index();
 
-                      Real dist_x = p2.pos(0) - pos1[0];
-                      Real dist_y = p2.pos(1) - pos1[1];
-                      Real dist_z = p2.pos(2) - pos1[2];
+                      Real dist_x = pos1[0] - p2.pos(0);
+                      Real dist_y = pos1[1] - p2.pos(1);
+                      Real dist_z = pos1[2] - p2.pos(2);
 
                       Real r2 = dist_x*dist_x +
                                 dist_y*dist_y +
                                 dist_z*dist_z;
 
-                      printf("SEPARATION: %f\n",sqrt(r2));
+//                      printf("SEPARATION: %f\n",sqrt(r2));
                       RealVect diff(dist_x,dist_y,dist_z);
 
                       Real r_lm = maxInteractionDistance(&particle.rdata(0),&p2.rdata(0),
                                                          &particle.idata(0),&p2.idata(0),
                                                          fpar[0]);
-                      printf("R_LM: %f\n",r_lm);
+//                      printf("R_LM: %f\n",r_lm);
 
                       AMREX_ASSERT_WITH_MESSAGE(
                           not (particle.id() == p2.id() and
@@ -214,10 +214,10 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 
                           evaluateForce(&diff[0],&particle.rdata(0),&p2.rdata(0), &particle.idata(0),
                                         &p2.idata(0), &v1[0], &v2[0], &rot1[0], &rot2[0], fpar);
-                          printf("w1x: %e w1y: %e w1z: %e w2x: %e w2y: %e w2z: %e\n",
-                              rot1[0],rot1[1],rot1[2],rot2[0],rot2[1],rot2[2]);
-                          printf("v1x: %e r1x: %e v2x: %e r2x: %e\n",
-                              v1[0],pos1[0],v2[0],p2.pos(0));
+//                          printf("w1x: %e w1y: %e w1z: %e w2x: %e w2y: %e w2z: %e\n",
+//                              rot1[0],rot1[1],rot1[2],rot2[0],rot2[1],rot2[2]);
+//                          printf("v1x: %e r1x: %e v2x: %e r2x: %e\n",
+//                              v1[0],pos1[0],v2[0],p2.pos(0));
 #ifdef _OPENMP
 #pragma omp critical
                           {
@@ -305,19 +305,19 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                 particle.rdata(realIdx::wz) = fc_ptr[i+5*ntot];
 
 #if 1
-                printf("PARTICLE RX: %e RY: %e RZ: %e\n",ppos[0],ppos[1],ppos[2]);
-                printf("PARTICLE VX: %e VY: %e VZ: %e DT: %e\n",
-                    particle.rdata(realIdx::velx),
-                    particle.rdata(realIdx::vely),particle.rdata(realIdx::velz),
-                    subdt);
-                printf("PARTICLE WX: %e WY: %e WZ: %e\n",
-                    particle.rdata(realIdx::wx),
-                    particle.rdata(realIdx::wy),particle.rdata(realIdx::wz));
+//                printf("PARTICLE RX: %e RY: %e RZ: %e\n",ppos[0],ppos[1],ppos[2]);
+//                printf("PARTICLE VX: %e VY: %e VZ: %e DT: %e\n",
+//                    particle.rdata(realIdx::velx),
+//                    particle.rdata(realIdx::vely),particle.rdata(realIdx::velz),
+//                    subdt);
+//                printf("PARTICLE WX: %e WY: %e WZ: %e\n",
+//                    particle.rdata(realIdx::wx),
+//                    particle.rdata(realIdx::wy),particle.rdata(realIdx::wz));
                 ppos[0] += subdt * particle.rdata(realIdx::velx);
                 ppos[1] += subdt * particle.rdata(realIdx::vely);
                 ppos[2] += subdt * particle.rdata(realIdx::velz);
-                printf("PARTICLE POST RX: %e RY: %e RZ: %e\n",
-                    ppos[0],ppos[1],ppos[2]);
+//                printf("PARTICLE POST RX: %e RY: %e RZ: %e\n",
+//                    ppos[0],ppos[1],ppos[2]);
 #else
                 Real dx = subdt * particle.rdata(realIdx::velx);
                 Real dy = subdt * particle.rdata(realIdx::vely);
@@ -441,7 +441,7 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                     ndir[0] /= on;
                   }
                   phi = acos(ndir[0]);
-                  if (ndir[2] < 0.0) {
+                  if (ndir[1] < 0.0) {
                     phi = 2.0*M_PI-phi;
                   }
                   particle.rdata(realIdx::theta) = theta;
@@ -451,8 +451,8 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                 particle.pos(0) = ppos[0];
                 particle.pos(1) = ppos[1];
                 particle.pos(2) = ppos[2];
-                printf("PARTICLE FINAL RX: %e RY: %e RZ: %e\n",
-                    particle.pos(0),particle.pos(1),particle.pos(2));
+//                printf("PARTICLE FINAL RX: %e RY: %e RZ: %e\n",
+//                    particle.pos(0),particle.pos(1),particle.pos(2));
 
 #if !defined(AMREX_USE_GPU)
                 if (verbose) {

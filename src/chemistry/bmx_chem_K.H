@@ -207,6 +207,9 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     Real gn = sqrt(gx*gx+gy*gy+gz*gz);
     // Find out which end is bonded to a segment
     int bsite = ipar_orig[intIdx::site1];
+    printf("NBNDS: %d SITE1: %d SITE2: %d SITE3: %d\n",
+        ipar_orig[intIdx::n_bnds],ipar_orig[intIdx::site1],ipar_orig[intIdx::site2],
+        ipar_orig[intIdx::site3]);
     // Find orientation of existing segment
     Real theta = par_orig[realIdx::theta];
     Real phi = par_orig[realIdx::phi];
@@ -218,27 +221,20 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     Real ny = st*sp;
     Real nz = ct;
     if (gn == 0.0) {
-      if (ipar_orig[intIdx::growth_dir] == 0) {
-        gx = nx;
-        gy = ny;
-        gz = nz;
-//      printf("DIR 0 THETA: %f PHI: %f GX: %e GY: %e GZ: %e GN: %e\n",theta,phi,gx,gy,gz,gn);
-      } else {
-        gx = -nx;
-        gy = -ny;
-        gz = -nz;
-//      printf("DIR 1 THETA: %f PHI: %f GX: %e GY: %e GZ: %e GN: %e\n",theta,phi,gx,gy,gz,gn);
-      }
+      gx = nx;
+      gy = ny;
+      gz = nz;
+      //      printf("THETA: %f PHI: %f GX: %e GY: %e GZ: %e GN: %e\n",theta,phi,gx,gy,gz,gn);
       gn = 1.0;
     }
     // create unit vector in direction of chemical gradient
     gx = gx/gn;
     gy = gy/gn;
     gz = gz/gn;
-//    printf("THETA: %f PHI: %f GX: %e GY: %e GZ: %e GN: %e\n",theta,phi,gx,gy,gz,gn);
+    printf("THETA: %f PHI: %f GX: %e GY: %e GZ: %e GN: %e\n",theta,phi,gx,gy,gz,gn);
     Real gtheta = acos(gz);
     Real gst = sin(gtheta);
-    Real gct = cos(gtheta);
+    Real gct = gz;
     Real gphi = 0.0;
     if (gst != 0.0) {
       gphi = acos(gx/gst);
@@ -246,6 +242,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     }
     Real gcp = cos(gphi);
     Real gsp = sin(gphi);
+    printf("GTHETA: %f GPHI: %f GX: %e GY: %e GZ: %e GN: %e\n",theta,phi,gx,gy,gz,gn);
     // Find matrix that rotates x-axis to gradient direction
     Real rotx[3][3];
     rotx[0][0] = gcp*gst;
@@ -273,8 +270,8 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     Real gnx = rotx[0][0]*rx+rotx[0][1]*ry+rotx[0][2]*rz;
     Real gny = rotx[1][0]*rx+rotx[1][1]*ry+rotx[1][2]*rz;
     Real gnz = rotx[2][0]*rx+rotx[2][1]*ry+rotx[2][2]*rz;
-//      printf("RTHETA: %f RPHI: %f GNX: %f GNY: %f GNZ: %f NX: %f NY: %f NZ: %f\n",
-//          rtheta,rphi,gnx,gny,gnz,nx,ny,nz);
+      printf("RTHETA: %f RPHI: %f GNX: %f GNY: %f GNZ: %f NX: %f NY: %f NZ: %f\n",
+          rtheta,rphi,gnx,gny,gnz,nx,ny,nz);
     // Now have orientation of old segment (nx,ny,nz) and new segment
     // (gnx,gny,gnz). Finish constructing new configuration.
     Real x = pos_orig[0];
@@ -283,6 +280,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     Real c_length = par_orig[realIdx::c_length];
     Real x1, y1, z1, x2, y2, z2;
     if (bsite == 1) {
+      printf("Add to site 2\n");
       // new segment splits off site 2
       x1 = x - 0.5*c_length*nx;
       y1 = y - 0.5*c_length*ny;
@@ -322,6 +320,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       ipar_new[intIdx::site1] = 1;
       ipar_new[intIdx::position] = siteLocation::TIP;
     } else {
+      printf("Add to site 1\n");
       x2 = x + 0.5*c_length*nx;
       y2 = y + 0.5*c_length*ny;
       z2 = z + 0.5*c_length*nz;
@@ -363,6 +362,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
 //    printf("PARENT LENGTH: %e\n",par_orig[realIdx::c_length]);
 //    printf("CHILD LENGTH: %e\n",par_new[realIdx::c_length]);
     ipar_orig[intIdx::n_bnds] = 2; 
+    printf("Adding new segment ID: %d CPU: %d\n",id,cpu);
     ipar_orig[intIdx::seg2_id1] = id;
     ipar_orig[intIdx::seg2_id2] = cpu;
     ipar_new[intIdx::n_bnds] = 1; 
@@ -396,27 +396,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
  * @param dt time step interval
  * @param nloop number of subintervals to use for chemistry
  * @param chempar vector containing chemistry parameters
- * @param cell_ipar point to integer cell parameter values
-  } else if (nbnd == 2) {
-    // Interior segment just behind growth tip
-    if (ipar_orig[intIdx::position] == siteLocation::SECOND_1
-        || ipar_orig[intIdx::position] == siteLocation::SECOND_2) {
-    }
-  }
-
-}
-
-/**
- * Transfer mesh values to internal concentrations and evaluate chemistry
- * @param grid_vol fluid volume in grid cell that contains biological cell
- * @param npart number of particles in grid cell
- * @param cell_par pointer to cell parameter values
- * @param mesh_vals values of concentrations on mesh
- * @param p_vals values of concentrations in particles
- * @param dt time step interval
- * @param nloop number of subintervals to use for chemistry
- * @param chempar vector containing chemistry parameters
- * @param cell_ipar point to integer cell parameter values
+ * @param cell_ipar pointer to integer cell parameter values
  */
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
@@ -441,6 +421,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
 
   // cell parameters
   Real orig_cell_vol = cell_par[realIdx::vol];
+//  printf("CELL ID: %d CELL CPU: %d\n",cell_ipar[intIdx::id],cell_ipar[intIdx::cpu]);
 
   // ********************************************************************
   // Define original concentrations
