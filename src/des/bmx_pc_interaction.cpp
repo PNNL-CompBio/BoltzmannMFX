@@ -305,14 +305,14 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                 particle.rdata(realIdx::wz) = fc_ptr[i+5*ntot];
 
 #if 1
-//                printf("PARTICLE RX: %e RY: %e RZ: %e\n",ppos[0],ppos[1],ppos[2]);
-//                printf("PARTICLE VX: %e VY: %e VZ: %e DT: %e\n",
-//                    particle.rdata(realIdx::velx),
-//                    particle.rdata(realIdx::vely),particle.rdata(realIdx::velz),
-//                    subdt);
-//                printf("PARTICLE WX: %e WY: %e WZ: %e\n",
-//                    particle.rdata(realIdx::wx),
-//                    particle.rdata(realIdx::wy),particle.rdata(realIdx::wz));
+                printf("PARTICLE RX: %e RY: %e RZ: %e\n",ppos[0],ppos[1],ppos[2]);
+                printf("PARTICLE VX: %e VY: %e VZ: %e DT: %e\n",
+                    particle.rdata(realIdx::velx),
+                    particle.rdata(realIdx::vely),particle.rdata(realIdx::velz),
+                    subdt);
+                printf("PARTICLE WX: %e WY: %e WZ: %e\n",
+                    particle.rdata(realIdx::wx),
+                    particle.rdata(realIdx::wy),particle.rdata(realIdx::wz));
                 ppos[0] += subdt * particle.rdata(realIdx::velx);
                 ppos[1] += subdt * particle.rdata(realIdx::vely);
                 ppos[2] += subdt * particle.rdata(realIdx::velz);

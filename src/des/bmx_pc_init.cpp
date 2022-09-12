@@ -51,7 +51,6 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
 
     for (int i = 0; i < np; i++)
     {
-#ifdef NEW_CHEM
       // Read from input file
       ifs >> host_particles[i].pos(0);
       ifs >> host_particles[i].pos(1);
@@ -87,31 +86,26 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
       }
       bmxchem->setIntegers(&host_particles[i].idata(0));
       
-#else
-      ifs >> host_particles[i].rdata(realData::velx);
-      ifs >> host_particles[i].rdata(realData::vely);
-      ifs >> host_particles[i].rdata(realData::velz);
-      ifs >> host_particles[i].rdata(realData::radius);
-      ifs >> host_particles[i].rdata(realData::volume);
-      ifs >> host_particles[i].idata(intData::phase);
-      ifs >> host_particles[i].idata(intData::state);
-
-      // These will hold the values interpolated from the fluid
-      host_particles[i].rdata(realData::fluid_A) = 0.;
-      host_particles[i].rdata(realData::fluid_B) = 0.;
-
-      // These will hold the values that the particle is going to consume from the fluid -- 
-      //  these will be deposited onto the grid to change X_A and X_B
-      host_particles[i].rdata(realData::consume_A) = 0.;
-      host_particles[i].rdata(realData::consume_B) = 0.;
-#endif
-
       // Set id and cpu for this particle
       host_particles[i].id()  = ParticleType::NextID();
       host_particles[i].cpu() = ParallelDescriptor::MyProc();
+      host_particles[i].idata(intIdx::id) = host_particles[i].id();
+      host_particles[i].idata(intIdx::cpu) = host_particles[i].cpu();
 
       if (!ifs.good())
           amrex::Abort("Error initializing particles from Ascii file. \n");
+    }
+    for (int i = 0; i < np; i++)
+    {
+      printf("PARTICLE: %d:%d x: %f y: %f z: %f theta: %f phi: %f\n",
+          host_particles[i].id(),
+          host_particles[i].cpu(),
+          host_particles[i].pos(0),
+          host_particles[i].pos(1),
+          host_particles[i].pos(2),
+          host_particles[i].rdata(realIdx::theta),
+          host_particles[i].rdata(realIdx::phi)
+          );
     }
 
     auto& aos = particles.GetArrayOfStructs();

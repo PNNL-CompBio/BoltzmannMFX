@@ -301,8 +301,8 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       Real ax = x2 + gnx*seg_len;
       Real ay = y2 + gny*seg_len;
       Real az = z2 + gnz*seg_len;
-//      printf("B1 X1: %e Y1: %e Z1: %e X2: %e Y2: %e Z2: %e X3: %e Y3: %e Z3: %e\n",
-//          x1,y1,z1,x2,y2,z2,ax,ay,az);
+      printf("B1 X1: %e Y1: %e Z1: %e X2: %e Y2: %e Z2: %e X3: %e Y3: %e Z3: %e\n",
+          x1,y1,z1,x2,y2,z2,ax,ay,az);
       pos_new[0] = 0.5*(x2 + ax);
       pos_new[1] = 0.5*(y2 + ay);
       pos_new[2] = 0.5*(z2 + az);
@@ -314,7 +314,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
         gphi = acos(gnx/gst);
         if (gny < 0.0) gphi = 2.0 * M_PI - gphi;
       }
-//      printf("SITE: %d GTHETA: %f GPHI: %f\n",bsite,gtheta,gphi);
+      printf("SITE: %d GTHETA: %f GPHI: %f\n",bsite,gtheta,gphi);
       par_new[realIdx::theta] = gtheta;
       par_new[realIdx::phi] = gphi;
       ipar_new[intIdx::site1] = 1;
@@ -340,8 +340,8 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       Real ax = x1 - gnx*seg_len;
       Real ay = y1 - gny*seg_len;
       Real az = z1 - gnz*seg_len;
-//      printf("B2 X1: %e Y1: %e Z1: %e X2: %e Y2: %e Z2: %e X3: %e Y3: %e Z3: %e\n",
-//          x1,y1,z1,x2,y2,z2,ax,ay,az);
+      printf("B2 X1: %e Y1: %e Z1: %e X2: %e Y2: %e Z2: %e X3: %e Y3: %e Z3: %e\n",
+          x1,y1,z1,x2,y2,z2,ax,ay,az);
       pos_new[0] = 0.5*(x1 + ax);
       pos_new[1] = 0.5*(y1 + ay);
       pos_new[2] = 0.5*(z1 + az);
@@ -351,9 +351,9 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       gphi = 0.0;
       if (gst != 0.0) {
         gphi = acos(gnx/gst);
-        if (gny < 0.0) gphi = 2.0 * M_PI - gtheta;
+        if (gny < 0.0) gphi = 2.0 * M_PI - gphi;
       }
-//      printf("SITE: %d GTHETA: %f GPHI: %f\n",bsite,gtheta,gphi);
+      printf("SITE: %d GTHETA: %f GPHI: %f\n",bsite,gtheta,gphi);
       par_new[realIdx::theta] = gtheta;
       par_new[realIdx::phi] = gphi;
       ipar_new[intIdx::site1] = 2;

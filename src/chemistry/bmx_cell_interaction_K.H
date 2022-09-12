@@ -127,9 +127,9 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     int icpu = ipar1[intIdx::cpu];
     int jid = ipar2[intIdx::id];
     int jcpu = ipar2[intIdx::cpu];
-    printf("ID: %d CPU: %d I_ID: %d %d %d I_CPU: %d %d %d\n",
-        iid,icpu,i_id[0],i_id[1],i_id[2],i_cpu[0],
-        i_cpu[1],i_cpu[2]);
+    // printf("ID: %d CPU: %d I_ID: %d %d %d I_CPU: %d %d %d\n",
+    //     iid,icpu,i_id[0],i_id[1],i_id[2],i_cpu[0],
+    //     i_cpu[1],i_cpu[2]);
 //    printf("j_site[0]: %d j_site[1]: %d j_site[2]: %d\n",j_site[0],j_site[1],j_site[2]);
     int i, j, k;
     for (i=0; i<3; i++) {
@@ -159,8 +159,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     xi2 = r12[0] + 0.5*nx*c_length1;
     yi2 = r12[1] + 0.5*ny*c_length1;
     zi2 = r12[2] + 0.5*nz*c_length1;
-    printf("id: %d cpu: %d xi1: %e yi1: %e zi1: %e xi2: %e yi2: %e zi2: %e\n",
-      ipar1[intIdx::id],ipar1[intIdx::cpu],xi1,yi1,zi1,xi2,yi2,zi2);
+    // printf("id: %d cpu: %d xi1: %e yi1: %e zi1: %e xi2: %e yi2: %e zi2: %e\n",
+    //   ipar1[intIdx::id],ipar1[intIdx::cpu],xi1,yi1,zi1,xi2,yi2,zi2);
     // Construct rotation matrices for this segment (for later use)
     Real rot_i[3][3];
     rot_i[0][0] = cp*st;
@@ -207,8 +207,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     xj2 = 0.5*nx*c_length2;
     yj2 = 0.5*ny*c_length2;
     zj2 = 0.5*nz*c_length2;
-    printf("id: %d cpu: %d xj1: %e yj1: %e zj1: %e xj2: %e yj2: %e zj2: %e\n",
-      ipar2[intIdx::id],ipar2[intIdx::cpu],xj1,yj1,zj1,xj2,yj2,zj2);
+    // printf("id: %d cpu: %d xj1: %e yj1: %e zj1: %e xj2: %e yj2: %e zj2: %e\n",
+    //   ipar2[intIdx::id],ipar2[intIdx::cpu],xj1,yj1,zj1,xj2,yj2,zj2);
 
 //    printf("r12x: %e r12y: %e r12z: %e r12: %e clen1: %e clen2: %e\n",
 //      r12[0],r12[1],r12[2],sqrt(r12[0]*r12[0]+r12[1]*r12[1]+r12[2]*r12[2]),
@@ -223,8 +223,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
  //   printf("Bond_cutoff: %e r: %e\n",bond_cutoff,r);
     if (r<bond_cutoff) {
       // Might be bonded. Check further
-      printf("12 n_bonds: %d i_site[0]: %d i_id[0]: %d i_cpu[0]: %d j_id: %d j_cpu: %d\n",
-        i_bnds,i_site[0],iid,icpu,jid,jcpu);
+      // printf("12 n_bonds: %d i_site[0]: %d i_id[0]: %d i_cpu[0]: %d j_id: %d j_cpu: %d\n",
+      //   i_bnds,i_site[0],iid,icpu,jid,jcpu);
 //      printf("DIFF (12) rx: %e ry: %e rz: %e r: %e\n",rx,ry,rz,r);
       for (i=0; i<i_bnds; i++) {
         if (i_id[i] == jid && i_cpu[i] == jcpu) break;
@@ -234,7 +234,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       }
       if (i < i_bnds && j < j_bnds) {
         if ((i_site[i] == 1 && j_site[j] == 2)) {
-          printf("Found bond\n");
+          // printf("Found bond\n");
           f1_s1[0] -= bond_strength*rx;
           f1_s1[1] -= bond_strength*ry;
           f1_s1[2] -= bond_strength*rz;
@@ -256,8 +256,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
    // printf("Bond_cutoff: %e r: %e\n",bond_cutoff,r);
     if (r<bond_cutoff) {
       // Might be bonded. Check further
-      printf("21 n_bonds: %d i_site[0]: %d i_id[0]: %d i_cpu[0]: %d j_id: %d j_cpu: %d\n",
-        i_bnds,i_site[0],iid,icpu,jid,jcpu);
+      // printf("21 n_bonds: %d i_site[0]: %d i_id[0]: %d i_cpu[0]: %d j_id: %d j_cpu: %d\n",
+      //   i_bnds,i_site[0],iid,icpu,jid,jcpu);
 //      printf("DIFF (21) rx: %e ry: %e rz: %e r: %e\n",rx,ry,rz,r);
       for (i=0; i<i_bnds; i++) {
         if (i_id[i] == jid && i_cpu[i] == jcpu) break;
@@ -267,13 +267,13 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       }
       if (i < i_bnds && j < j_bnds) {
         if (i_site[i] == 2 && j_site[j] == 1) {
-          printf("Found bond\n");
-          f1_s2[0] += bond_strength*rx;
-          f1_s2[1] += bond_strength*ry;
-          f1_s2[2] += bond_strength*rz;
-          f2_s1[0] -= bond_strength*rx;
-          f2_s1[1] -= bond_strength*ry;
-          f2_s1[2] -= bond_strength*rz;
+          // printf("Found bond\n");
+          f1_s2[0] -= bond_strength*rx;
+          f1_s2[1] -= bond_strength*ry;
+          f1_s2[2] -= bond_strength*rz;
+          f2_s1[0] += bond_strength*rx;
+          f2_s1[1] += bond_strength*ry;
+          f2_s1[2] += bond_strength*rz;
           //            printf("f1_s2: %e x1: %e f2_s1: %e x2: %e rx: %e r: %e\n",f1_s2[0],xi2,f2_s1[0],xj1,rx,r);
         }
         else {
@@ -281,7 +281,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         }
       }
     }
-#if 0
+#if 1
     // Evaluate interactions between cylinders
     // Calculate segment vectors
     Real rho_i[3];
@@ -434,6 +434,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
 //    printf("SEGJ bond_strength: %f f1x: %e f1y: %e f1z: %e f2x: %e f2y: %e f2z: %e\n",
 //	bond_strength,f2_s1[0],f2_s1[1],f2_s1[2],f2_s2[0],f2_s2[1],f2_s2[2]);
 
+#if 1
     // Calculate friction tensor for segment i. Start by calculating
     // size of spheres with same exposed surface as cylinder
     Real area = par1[realIdx::area];
@@ -590,6 +591,35 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     rotv2[0] += -0.5*(ry_j*vj_2[2]-rz_j*vj_2[1]);
     rotv2[1] += -0.5*(rz_j*vj_2[0]-rx_j*vj_2[2]);
     rotv2[2] += -0.5*(rx_j*vj_2[1]-ry_j*vj_2[0]);
+#endif
+    vel1[0] = 0.5*(f1_s1[0]+f1_s2[0]);
+    vel1[1] = 0.5*(f1_s1[1]+f1_s2[1]);
+    vel1[2] = 0.5*(f1_s1[2]+f1_s2[2]);
+    vel2[0] = 0.5*(f2_s1[0]+f2_s2[0]);
+    vel2[1] = 0.5*(f2_s1[1]+f2_s2[1]);
+    vel2[2] = 0.5*(f2_s1[2]+f2_s2[2]);
+//    printf("R1X: %e V1X: %e R2X: %e V2X: %e\n",r12[0],vel1[0],0.0,vel2[0]);
+
+    // remove force on center of mass
+    for (i=0; i<3; i++) {
+      f1_s1[i] -= 0.5*vel1[i];
+      f1_s2[i] -= 0.5*vel1[i];
+      f2_s1[i] -= 0.5*vel2[i];
+      f2_s2[i] -= 0.5*vel2[i];
+    }
+    rotv1[0] = 0.5*(ry_i*f1_s1[2]-rz_i*f1_s1[1]);
+    rotv1[1] = 0.5*(rz_i*f1_s1[0]-rx_i*f1_s1[2]);
+    rotv1[2] = 0.5*(rx_i*f1_s1[1]-ry_i*f1_s1[0]);
+    rotv1[0] += -0.5*(ry_i*f1_s2[2]-rz_i*f1_s2[1]);
+    rotv1[1] += -0.5*(rz_i*f1_s2[0]-rx_i*f1_s2[2]);
+    rotv1[2] += -0.5*(rx_i*f1_s2[1]-ry_i*f1_s2[0]);
+
+    rotv2[0] = 0.5*(ry_j*f2_s1[2]-rz_j*f2_s1[1]);
+    rotv2[1] = 0.5*(rz_j*f2_s1[0]-rx_j*f2_s1[2]);
+    rotv2[2] = 0.5*(rx_j*f2_s1[1]-ry_j*f2_s1[0]);
+    rotv2[0] += -0.5*(ry_j*f2_s2[2]-rz_j*f2_s2[1]);
+    rotv2[1] += -0.5*(rz_j*f2_s2[0]-rx_j*f2_s2[2]);
+    rotv2[2] += -0.5*(rx_j*f2_s2[1]-ry_j*f2_s2[0]);
   }
 }
 
@@ -663,12 +693,12 @@ evaluateSurfaceForce(const Real *pos, Real *par, int *ipar, Real *vel, Real *rot
     Real ny = st*sp;
     Real nz = ct;
     // Find interaction centers on segment
-    x1 = pos[0] + 0.5*nx*c_length;
-    y1 = pos[1] + 0.5*ny*c_length;
-    z1 = pos[2] + 0.5*nz*c_length;
-    x2 = pos[0] - 0.5*nx*c_length;
-    y2 = pos[1] - 0.5*ny*c_length;
-    z2 = pos[2] - 0.5*nz*c_length;
+    x1 = pos[0] - 0.5*nx*c_length;
+    y1 = pos[1] - 0.5*ny*c_length;
+    z1 = pos[2] - 0.5*nz*c_length;
+    x2 = pos[0] + 0.5*nx*c_length;
+    y2 = pos[1] + 0.5*ny*c_length;
+    z2 = pos[2] + 0.5*nz*c_length;
     //DBG printf("LOCATION z1: %f z2: %f\n",z1,z2);
     // Construct rotation matrices for this segment (for later use)
     Real rot[3][3];
@@ -759,6 +789,7 @@ evaluateSurfaceForce(const Real *pos, Real *par, int *ipar, Real *vel, Real *rot
     }
 #endif
 
+#if 1
     // Calculate friction tensor for segment. Start by calculating
     // size of spheres with same exposed surface as cylinder
     Real area = par[realIdx::area];
@@ -834,6 +865,7 @@ evaluateSurfaceForce(const Real *pos, Real *par, int *ipar, Real *vel, Real *rot
     vel[2] = 0.5*(v_1[2]+v_2[2]);
     //DBG printf("VELOCITY VX: %e VY: %e VZ: %e\n",vel[0],vel[1],vel[2]);
 
+    // Remove force on center of mass
     for (i=0; i<3; i++) {
       v_1[i] -= vel[i];
       v_2[i] -= vel[i];
@@ -846,5 +878,22 @@ evaluateSurfaceForce(const Real *pos, Real *par, int *ipar, Real *vel, Real *rot
     rotv[1] += -0.5*(rz*v_2[0]-rx*v_2[2]);
     rotv[2] += -0.5*(rx*v_2[1]-ry*v_2[0]);
     //DBG printf("ANG MOM LX: %e LY: %e LZ: %e\n",rotv[0],rotv[1],rotv[2]);
+#endif
+    vel[0] = 0.5*(f_s1[0]+f_s2[0]);
+    vel[1] = 0.5*(f_s1[1]+f_s2[1]);
+    vel[2] = 0.5*(f_s1[2]+f_s2[2]);
+
+    // Remove force on center of mass
+    for (i=0; i<3; i++) {
+      f_s1[i] -= 0.5*vel[i];
+      f_s2[i] -= 0.5*vel[i];
+    }
+
+    rotv[0] = 0.5*(ry*f_s1[2]-rz*f_s1[1]);
+    rotv[1] = 0.5*(rz*f_s1[0]-rx*f_s1[2]);
+    rotv[2] = 0.5*(rx*f_s1[1]-ry*f_s1[0]);
+    rotv[0] += -0.5*(ry*f_s2[2]-rz*f_s2[1]);
+    rotv[1] += -0.5*(rz*f_s2[0]-rx*f_s2[2]);
+    rotv[2] += -0.5*(rx*f_s2[1]-ry*f_s2[0]);
   }
 }
