@@ -89,8 +89,8 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
       // Set id and cpu for this particle
       host_particles[i].id()  = ParticleType::NextID();
       host_particles[i].cpu() = ParallelDescriptor::MyProc();
-      host_particles[i].idata(intIdx::id) = host_particles[i].id();
-      host_particles[i].idata(intIdx::cpu) = host_particles[i].cpu();
+      host_particles[i].idata(intIdx::id) = static_cast<int>(host_particles[i].id());
+      host_particles[i].idata(intIdx::cpu) = static_cast<int>(host_particles[i].cpu());
 
       if (!ifs.good())
           amrex::Abort("Error initializing particles from Ascii file. \n");
@@ -98,8 +98,8 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
     for (int i = 0; i < np; i++)
     {
       printf("PARTICLE: %d:%d x: %f y: %f z: %f theta: %f phi: %f\n",
-          host_particles[i].id(),
-          host_particles[i].cpu(),
+          (int)host_particles[i].id(),
+          (int)host_particles[i].cpu(),
           host_particles[i].pos(0),
           host_particles[i].pos(1),
           host_particles[i].pos(2),

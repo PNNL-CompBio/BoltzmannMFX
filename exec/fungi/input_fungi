@@ -105,7 +105,7 @@ amr.check_file     ="chk"
 
 #! Restart from checkpoint
 #!-----------------------------------------------------------//
-#amr.restart   ="chk05300"
+#amr.restart   ="chk12000"
 
 #_______________________________________________________________________
 # Fluid model settings
@@ -134,16 +134,16 @@ bmx.substeps = 4
 #_______________________________________________________________________
 # Cell force parameters
 #
-cell_force.stiffness = 0.0 #1.0e6
-cell_force.wall_stiffness = 0.0 #1.0e5
+cell_force.stiffness = 1.0e6
+cell_force.wall_stiffness = 1.0e5
 
 cell_force.boundary_width = 1.0e-4
 cell_force.wall_boundary_width = 1.0e-04
 
 cell_force.neighbor_width = 1.0e-2 #set range of neighbor list
 
-cell_force.bond_strength = 5.0
-cell_force.bond_cutoff = 1.0e-4
+cell_force.bond_strength = 1.0
+cell_force.bond_cutoff = 5.0e-4
 
 cell_force.viscous_drag = 20.0
 

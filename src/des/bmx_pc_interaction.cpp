@@ -161,13 +161,17 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 #endif
 
             // now we loop over the neighbor list and compute the forces
+            int me = ParallelDescriptor::MyProc();
             amrex::ParallelFor(nrp,
-                [nrp,pstruct,fc_ptr,nbor_data,subdt,ntot,fpar]
+                [nrp,pstruct,fc_ptr,nbor_data,subdt,ntot,fpar,me]
               AMREX_GPU_DEVICE (int i) noexcept
               {
                   auto particle = pstruct[i];
 
                   RealVect pos1(particle.pos());
+//                  printf("p[%d] ID: %d CPU: %d RX: %e RY: %e RZ: %e\n",me,
+//                      static_cast<int>(particle.id()),static_cast<int>(particle.cpu()),
+//                      pos1[0],pos1[1],pos1[2]);
 
                   const auto neighbs = nbor_data.getNeighbors(i);
                   for (auto mit = neighbs.begin(); mit != neighbs.end(); ++mit)
@@ -213,7 +217,7 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                           RealVect rot2(0.);
 
                           evaluateForce(&diff[0],&particle.rdata(0),&p2.rdata(0), &particle.idata(0),
-                                        &p2.idata(0), &v1[0], &v2[0], &rot1[0], &rot2[0], fpar);
+                                        &p2.idata(0), &v1[0], &v2[0], &rot1[0], &rot2[0], fpar, me);
 //                          printf("w1x: %e w1y: %e w1z: %e w2x: %e w2y: %e w2z: %e\n",
 //                              rot1[0],rot1[1],rot1[2],rot2[0],rot2[1],rot2[2]);
 //                          printf("v1x: %e r1x: %e v2x: %e r2x: %e\n",
@@ -305,14 +309,16 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                 particle.rdata(realIdx::wz) = fc_ptr[i+5*ntot];
 
 #if 1
-                printf("PARTICLE RX: %e RY: %e RZ: %e\n",ppos[0],ppos[1],ppos[2]);
-                printf("PARTICLE VX: %e VY: %e VZ: %e DT: %e\n",
-                    particle.rdata(realIdx::velx),
-                    particle.rdata(realIdx::vely),particle.rdata(realIdx::velz),
-                    subdt);
-                printf("PARTICLE WX: %e WY: %e WZ: %e\n",
-                    particle.rdata(realIdx::wx),
-                    particle.rdata(realIdx::wy),particle.rdata(realIdx::wz));
+//                printf("PARTICLE RX: %e RY: %e RZ: %e ID: %d CPU: %d\n",
+//                    ppos[0],ppos[1],ppos[2],static_cast<int>(particle.id()),
+//                    static_cast<int>(particle.cpu()));
+//                printf("PARTICLE VX: %e VY: %e VZ: %e DT: %e\n",
+//                    particle.rdata(realIdx::velx),
+//                    particle.rdata(realIdx::vely),particle.rdata(realIdx::velz),
+//                    subdt);
+//                printf("PARTICLE WX: %e WY: %e WZ: %e\n",
+//                    particle.rdata(realIdx::wx),
+//                    particle.rdata(realIdx::wy),particle.rdata(realIdx::wz));
                 ppos[0] += subdt * particle.rdata(realIdx::velx);
                 ppos[1] += subdt * particle.rdata(realIdx::vely);
                 ppos[2] += subdt * particle.rdata(realIdx::velz);
