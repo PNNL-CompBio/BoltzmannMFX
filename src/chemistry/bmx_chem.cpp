@@ -70,7 +70,8 @@ void BMXChemistry::setIntegers(int *ipar)
 }
 
 /**
- * Setup chemistry model by reading a parameter file
+ * Setup chemistry model by reading a parameter file (a file is not currently
+ * being used but probably will be at some point).
  * @param file name of parameter file used by chemistry model
  */
 void BMXChemistry::setParams(const char *file)

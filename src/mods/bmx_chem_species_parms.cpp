@@ -40,6 +40,9 @@ namespace SPECIES
   // Maximum segment radius
   amrex::Real max_rad;
 
+  // Maximum branching probability
+  amrex::Real brnch_prob;
+
   void Initialize ()
   {
     amrex::ParmParse pp("chem_species");
@@ -51,6 +54,8 @@ namespace SPECIES
     pp.query("seg_split_length", split_len);
     max_rad = 0.00025;
     pp.query("max_seg_radius", max_rad);
+    brnch_prob = 0.0001;
+    pp.query("branching_probability", brnch_prob);
 
     if (pp.contains("solve"))
     {

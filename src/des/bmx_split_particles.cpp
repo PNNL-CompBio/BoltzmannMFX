@@ -14,6 +14,7 @@ BMXParticleContainer::split_particles (Real time)
   Real l_max_vol  = SPECIES::max_vol; 
   Real l_max_len  = SPECIES::max_len; 
   Real l_max_rad  = SPECIES::max_rad; 
+  Real l_brnch_prob = SPECIES::brnch_prob;
   Real l_overlap  = BMXChemistry::p_overlap;
   int l_num_reals = BMXChemistry::p_num_reals;
   int l_num_ints  = BMXChemistry::p_num_ints;
@@ -39,7 +40,7 @@ BMXParticleContainer::split_particles (Real time)
         {
             BMXParticleContainer::ParticleType& p = pstruct[i];
             if (checkSplit(&p.rdata(0), &p.idata(0), l_max_vol,
-                  l_max_len, l_max_rad, engine))
+                  l_max_len, l_max_rad, l_brnch_prob, engine))
             {
                 do_split_p[i] = 1;
             }
@@ -107,7 +108,7 @@ BMXParticleContainer::split_particles (Real time)
                   Real split_len = SPECIES::split_len;
                   setNewSegment(pos_orig, pos_new, par_orig,
                                 par_new, ipar_orig, ipar_new,
-                                l_num_reals, l_num_ints, split_len,
+                                l_num_reals, l_num_ints, split_len, l_max_rad,
                                 p.id(), p.cpu(), engine);
                 }
                 ipar_new[intIdx::id] = p.id();

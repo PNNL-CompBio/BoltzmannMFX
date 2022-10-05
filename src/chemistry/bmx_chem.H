@@ -9,7 +9,7 @@
  * defined in the realIdx and intIdx enumerations, plus the number of
  * variables in the undefined blocks */
 #define MAX_CHEM_REAL_VAR 32
-#define MAX_CHEM_INT_VAR 20
+#define MAX_CHEM_INT_VAR 24
 
 using amrex::Real;
 
@@ -83,15 +83,17 @@ struct intIdx
     seg2_id2,       // original process of bonded segment 2
     seg3_id1,       // unique identifier of bonded segment 3
     seg3_id2,       // original process of bonded segment 3
+    seg4_id1,       // unique identifier of bonded segment 4
+    seg4_id2,       // original process of bonded segment 4                      15
     site1,          // bonding site of segment 1
-    site2,          // bonding site of segment 2                                 15
+    site2,          // bonding site of segment 2
     site3,          // bonding site of segment 3
-    position,       // identify tip, second position, interior segment
-    growth_dir,     // growth direction (direction 12 (0), direction 21(1) or both (2))
+    site4,          // bonding site of segment 4
+    position,       // identify tip, second position, interior segment           20
     id,             // unique identifier of segment
-    cpu,            // original process of segment                               20
+    cpu,            // original process of segment
     first_data,     // index of first value of uncharacterized block
-    count           // total number of elements in this enumeration
+    count           // total number of elements in this enumeration              24
   };
 };
 
@@ -190,6 +192,7 @@ class BMXChemistry
 
   static Real radius_max;  // maximum value of cylinder radius for fungi segment
   static Real length_max;  // maximum value of cylinder length for fungi segment
+  static Real brnch_prob;  // probability of side branching
 
   // Fraction of overlap
   static Real p_overlap;

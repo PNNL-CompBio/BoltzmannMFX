@@ -48,6 +48,9 @@ namespace SPECIES
   // Maximum segment radius
   extern amrex::Real max_rad;
 
+  // Branching probability
+  extern amrex::Real brnch_prob;
+
   struct SPECIES_t {
     // Constructor
     SPECIES_t() :

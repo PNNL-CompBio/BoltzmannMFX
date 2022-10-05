@@ -247,11 +247,13 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
         int_comp_names.push_back("home_proc_2");
         int_comp_names.push_back("unique_id_3");
         int_comp_names.push_back("home_proc_3");
+        int_comp_names.push_back("unique_id_4");
+        int_comp_names.push_back("home_proc_4");
         int_comp_names.push_back("site_1");
         int_comp_names.push_back("site_2");
         int_comp_names.push_back("site_3");
+        int_comp_names.push_back("site_4");
         int_comp_names.push_back("position");
-        int_comp_names.push_back("growth_dir");
         int_comp_names.push_back("unique_id");
         int_comp_names.push_back("home_cpu");
         for (i=intIdx::count-1; i<MAX_CHEM_INT_VAR; i++) {
