@@ -622,6 +622,14 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
   kg = chempar[6];
   radius_max = chempar[7];
   length_max = chempar[8];
+  // Stop growth on interior segments that are maximum sized
+  if (cell_par[realIdx::c_length] == length_max &&
+      cell_par[realIdx::radius] == radius_max &&
+      cell_ipar[intIdx::position] != siteLocation::TIP &&
+      cell_type == cellType::FUNGI) {
+    k2 = 0.0;
+    kr2 = 0.0;
+  }
 
   // cell parameters
   Real orig_cell_vol = cell_par[realIdx::vol];
