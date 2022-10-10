@@ -87,6 +87,8 @@ void BMXChemistry::setParams(const char *file)
   p_overlap = 0.2;
   /* figure out cutoff for neighbor list */
   Real vol = SPECIES::max_vol;
+  Real radius_max = SPECIES::max_rad;
+  Real length_max = SPECIES::max_len;
   Real radius = pow((3.0*vol/(4.0*M_PI)),1.0/3.0);
   ParmParse ppF("cell_force");
   Real width;

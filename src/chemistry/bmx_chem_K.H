@@ -218,9 +218,9 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
         amrex::Abort("ERROR: bonds at both ends of tip segment");
       }
     }
-    printf("NBNDS: %d SITE1: %d SITE2: %d SITE3: %d\n",
-        ipar_orig[intIdx::n_bnds],ipar_orig[intIdx::site1],ipar_orig[intIdx::site2],
-        ipar_orig[intIdx::site3]);
+    //printf("NBNDS: %d SITE1: %d SITE2: %d SITE3: %d\n",
+    //    ipar_orig[intIdx::n_bnds],ipar_orig[intIdx::site1],ipar_orig[intIdx::site2],
+    //    ipar_orig[intIdx::site3]);
     // Find orientation of existing segment
     Real theta = par_orig[realIdx::theta];
     Real phi = par_orig[realIdx::phi];
@@ -242,7 +242,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     gx = gx/gn;
     gy = gy/gn;
     gz = gz/gn;
-    printf("THETA: %f PHI: %f GX: %e GY: %e GZ: %e GN: %e\n",theta,phi,gx,gy,gz,gn);
+    //printf("THETA: %f PHI: %f GX: %e GY: %e GZ: %e GN: %e\n",theta,phi,gx,gy,gz,gn);
     Real gtheta = acos(gz);
     Real gst = sin(gtheta);
     Real gct = gz;
@@ -253,7 +253,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     }
     Real gcp = cos(gphi);
     Real gsp = sin(gphi);
-    printf("GTHETA: %f GPHI: %f GX: %e GY: %e GZ: %e GN: %e\n",theta,phi,gx,gy,gz,gn);
+    //printf("GTHETA: %f GPHI: %f GX: %e GY: %e GZ: %e GN: %e\n",theta,phi,gx,gy,gz,gn);
     // Find matrix that rotates x-axis to gradient direction
     Real rotx[3][3];
     rotx[0][0] = gcp*gst;
@@ -281,8 +281,8 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     Real gnx = rotx[0][0]*rx+rotx[0][1]*ry+rotx[0][2]*rz;
     Real gny = rotx[1][0]*rx+rotx[1][1]*ry+rotx[1][2]*rz;
     Real gnz = rotx[2][0]*rx+rotx[2][1]*ry+rotx[2][2]*rz;
-      printf("RTHETA: %f RPHI: %f GNX: %f GNY: %f GNZ: %f NX: %f NY: %f NZ: %f\n",
-          rtheta,rphi,gnx,gny,gnz,nx,ny,nz);
+    //  printf("RTHETA: %f RPHI: %f GNX: %f GNY: %f GNZ: %f NX: %f NY: %f NZ: %f\n",
+    //      rtheta,rphi,gnx,gny,gnz,nx,ny,nz);
     // Now have orientation of old segment (nx,ny,nz) and new segment
     // (gnx,gny,gnz). Finish constructing new configuration.
     Real x = pos_orig[0];
@@ -291,7 +291,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     Real c_length = par_orig[realIdx::c_length];
     Real x1, y1, z1, x2, y2, z2;
     if (bsite == 1) {
-      printf("Add to site 2\n");
+    //  printf("Add to site 2\n");
       // new segment splits off site 2
       x1 = x - 0.5*c_length*nx;
       y1 = y - 0.5*c_length*ny;
@@ -315,8 +315,8 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       Real ax = x2 + gnx*seg_len;
       Real ay = y2 + gny*seg_len;
       Real az = z2 + gnz*seg_len;
-      printf("B1 X1: %e Y1: %e Z1: %e X2: %e Y2: %e Z2: %e X3: %e Y3: %e Z3: %e\n",
-          x1,y1,z1,x2,y2,z2,ax,ay,az);
+      //printf("B1 X1: %e Y1: %e Z1: %e X2: %e Y2: %e Z2: %e X3: %e Y3: %e Z3: %e\n",
+      //    x1,y1,z1,x2,y2,z2,ax,ay,az);
       pos_new[0] = 0.5*(x2 + ax);
       pos_new[1] = 0.5*(y2 + ay);
       pos_new[2] = 0.5*(z2 + az);
@@ -328,13 +328,13 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
         gphi = acos(gnx/gst);
         if (gny < 0.0) gphi = 2.0 * M_PI - gphi;
       }
-      printf("SITE: %d GTHETA: %f GPHI: %f\n",bsite,gtheta,gphi);
+      //printf("SITE: %d GTHETA: %f GPHI: %f\n",bsite,gtheta,gphi);
       par_new[realIdx::theta] = gtheta;
       par_new[realIdx::phi] = gphi;
       ipar_new[intIdx::site1] = 1;
       ipar_new[intIdx::position] = siteLocation::TIP;
     } else {
-      printf("Add to site 1\n");
+      //printf("Add to site 1\n");
       x2 = x + 0.5*c_length*nx;
       y2 = y + 0.5*c_length*ny;
       z2 = z + 0.5*c_length*nz;
@@ -357,8 +357,8 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       Real ax = x1 - gnx*seg_len;
       Real ay = y1 - gny*seg_len;
       Real az = z1 - gnz*seg_len;
-      printf("B2 X1: %e Y1: %e Z1: %e X2: %e Y2: %e Z2: %e X3: %e Y3: %e Z3: %e\n",
-          x1,y1,z1,x2,y2,z2,ax,ay,az);
+      //printf("B2 X1: %e Y1: %e Z1: %e X2: %e Y2: %e Z2: %e X3: %e Y3: %e Z3: %e\n",
+      //    x1,y1,z1,x2,y2,z2,ax,ay,az);
       pos_new[0] = 0.5*(x1 + ax);
       pos_new[1] = 0.5*(y1 + ay);
       pos_new[2] = 0.5*(z1 + az);
@@ -370,7 +370,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
         gphi = acos(gnx/gst);
         if (gny < 0.0) gphi = 2.0 * M_PI - gphi;
       }
-      printf("SITE: %d GTHETA: %f GPHI: %f\n",bsite,gtheta,gphi);
+      //printf("SITE: %d GTHETA: %f GPHI: %f\n",bsite,gtheta,gphi);
       par_new[realIdx::theta] = gtheta;
       par_new[realIdx::phi] = gphi;
       ipar_new[intIdx::site1] = 2;
@@ -378,7 +378,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     }
 //    printf("PARENT LENGTH: %e\n",par_orig[realIdx::c_length]);
 //    printf("CHILD LENGTH: %e\n",par_new[realIdx::c_length]);
-    printf("Adding new segment ID: %d CPU: %d\n",id,cpu);
+//    printf("Adding new segment ID: %d CPU: %d\n",id,cpu);
     if (nbnd == 1) {
       ipar_orig[intIdx::n_bnds] = 2; 
       ipar_orig[intIdx::seg2_id1] = id;
@@ -436,7 +436,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       gy = sin(tphi);
       gz = 0;
       gn = 1.0;
-      printf("GRADIENT nx: %f ny: %f nz: %f gx: %f gy: %f gz: %f\n",nx,ny,nz,gx,gy,gz);
+//      printf("GRADIENT nx: %f ny: %f nz: %f gx: %f gy: %f gz: %f\n",nx,ny,nz,gx,gy,gz);
     }
     // create unit vector in direction of chemical gradient
     gx = gx/gn;
@@ -479,8 +479,8 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     Real gnx = rotx[0][0]*rx+rotx[0][1]*ry+rotx[0][2]*rz;
     Real gny = rotx[1][0]*rx+rotx[1][1]*ry+rotx[1][2]*rz;
     Real gnz = rotx[2][0]*rx+rotx[2][1]*ry+rotx[2][2]*rz;
-      printf("RTHETA: %f RPHI: %f GNX: %f GNY: %f GNZ: %f NX: %f NY: %f NZ: %f\n",
-          rtheta,rphi,gnx,gny,gnz,nx,ny,nz);
+//      printf("RTHETA: %f RPHI: %f GNX: %f GNY: %f GNZ: %f NX: %f NY: %f NZ: %f\n",
+//          rtheta,rphi,gnx,gny,gnz,nx,ny,nz);
     // Find theta and phi for new segment
     Real gntheta = acos(gnz);
     Real gnst = sin(gntheta);
@@ -544,7 +544,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     }
     // Volume for new segment comes from shrinking radius of old segment
     Real radius = par_orig[realIdx::radius];
-    printf("OLD RADIUS: %e\n",radius);
+//    printf("OLD RADIUS: %e\n",radius);
     Real old_vol =  c_length*radius*radius*M_PI;
     par_new[realIdx::theta] = gntheta;
     par_new[realIdx::phi] = gnphi;
@@ -552,7 +552,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     // old volume
     radius = old_vol/(M_PI*(c_length+par_new[realIdx::c_length]));
     radius = sqrt(radius);
-    printf("NEW RADIUS: %e\n",radius);
+//    printf("NEW RADIUS: %e\n",radius);
     par_orig[realIdx::radius] = radius;
     par_new[realIdx::radius] = radius;
     par_new[realIdx::c_length] = seg_len;
@@ -610,7 +610,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
   Real k1, k2, k3, kr1, kr2, kr3, kg;
   Real fluid_vol = grid_vol/npart;
   int cell_type =  cell_ipar[intIdx::cell_type];
-  bool is_tip = (cell_ipar[intIdx::n_bnds] <= 1);
+  bool is_tip = (cell_ipar[intIdx::position] == siteLocation::TIP);
   Real radius_max, length_max;
 
   k1 = chempar[0];
@@ -622,6 +622,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
   kg = chempar[6];
   radius_max = chempar[7];
   length_max = chempar[8];
+#if 0
   // Stop growth on interior segments that are maximum sized
   if (cell_par[realIdx::c_length] == length_max &&
       cell_par[realIdx::radius] == radius_max &&
@@ -630,6 +631,15 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     k2 = 0.0;
     kr2 = 0.0;
   }
+#endif
+#if 0
+  if (cell_type == cellType::FUNGI &&
+      cell_ipar[intIdx::position] == siteLocation::TIP) {
+    printf("Rate constants: %e %e id: %d cpu: %d\n",
+        k2,kr2, cell_par[realIdx::c_length],
+        cell_ipar[intIdx::id], cell_ipar[intIdx::cpu]);
+  }
+#endif
 
   // cell parameters
   Real orig_cell_vol = cell_par[realIdx::vol];
@@ -643,6 +653,15 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
   fA = mesh_vals[0];
   fB = mesh_vals[1];
   fC = mesh_vals[2];
+#if 0
+  if (cell_type == cellType::FUNGI &&
+      cell_ipar[intIdx::position] == siteLocation::TIP) {
+    printf("mesh concentrations: %e %e %e id: %d cpu: %d\n",
+        fA,fB,fC, cell_par[realIdx::c_length],
+        cell_ipar[intIdx::id], cell_ipar[intIdx::cpu]);
+  }
+#endif
+
 
 #if 0
   printf("   Loop size                     : %16d\n",nloop);
@@ -665,7 +684,6 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
   cA = p_vals[0];
   cB = p_vals[1];
   cC = p_vals[2];
- 
   int i;
   double dtp = dt/static_cast<double>(nloop);
 
@@ -683,6 +701,14 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
 
   Real new_cell_vol = cell_par[realIdx::vol];
   Real new_cell_area = cell_par[realIdx::area];
+#if 0
+  if (cell_type == cellType::FUNGI &&
+      cell_ipar[intIdx::position] == siteLocation::TIP) {
+    printf("cell concentrations: %e %e %e vol: %e area: %e id: %d cpu: %d\n",
+        cA,cB,cC,new_cell_vol,new_cell_area,cell_par[realIdx::c_length],
+        cell_ipar[intIdx::id], cell_ipar[intIdx::cpu]);
+  }
+#endif
   bool is_negative = false;
   // ********************************************************************
   // Take multiple shorter steps to evaluate chemistry
@@ -861,12 +887,25 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
       if (is_tip) {
         Real dvdt = std::max(kg*rB*orig_cell_vol,0.0);
         cell_par[realIdx::dvdt] = dvdt; 
+#if 0
+  if (cell_ipar[intIdx::position] == siteLocation::TIP) {
+    printf("Growth rate %e id: %d cpu: %d\n",
+        dvdt,cell_par[realIdx::c_length],
+        cell_ipar[intIdx::id], cell_ipar[intIdx::cpu]);
+  }
+#endif
         new_cell_vol += dtp*dvdt;
         cell_par[realIdx::vol] = new_cell_vol; 
         Real radius, c_length, tau;
+          printf("Check radius: %e length: %e max: %e id: %d cpu: %d\n",
+              cell_par[realIdx::radius],cell_par[realIdx::c_length],radius_max,
+              cell_ipar[intIdx::id],cell_ipar[intIdx::cpu]);
         if (cell_par[realIdx::radius] < radius_max
             && cell_par[realIdx::c_length] < length_max) {
           // grow segment proportionally
+          printf("Beginning radius: %e length: %e id: %d cpu: %d\n",
+              cell_par[realIdx::radius],cell_par[realIdx::c_length],
+              cell_ipar[intIdx::id],cell_ipar[intIdx::cpu]);
           tau = pow(new_cell_vol/orig_cell_vol,1.0/3.0);
           radius = tau*cell_par[realIdx::radius];
           c_length = tau*cell_par[realIdx::c_length];
@@ -880,6 +919,9 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
             // Only one end of the cylinder is exposed to external fluid
             cell_par[realIdx::area] = M_PI*radius*(radius+2.0*c_length);
           }
+          printf("Final radius: %e length: %e id: %d cpu: %d\n",
+              cell_par[realIdx::radius],cell_par[realIdx::c_length],
+              cell_ipar[intIdx::id],cell_ipar[intIdx::cpu]);
         } else if (cell_par[realIdx::radius] < radius_max) {
           // increase radius only (this case probably never reached)
           tau = sqrt(new_cell_vol/orig_cell_vol);
@@ -1050,6 +1092,14 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
 #endif
     amrex::Abort("Negative concentrations found. Aborting...");
   }
+#if 0
+  if (cell_type == cellType::FUNGI &&
+      cell_ipar[intIdx::position] == siteLocation::TIP) {
+    printf("Volume growth rate: %e length: %e id: %d cpu: %d\n",
+        cell_par[realIdx::dvdt], cell_par[realIdx::c_length],
+        cell_ipar[intIdx::id], cell_ipar[intIdx::cpu]);
+  }
+#endif
 
   // ********************************************************************
   // Now update the actual particle values 

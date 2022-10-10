@@ -140,6 +140,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     int jid = ipar2[intIdx::id];
     int jcpu = ipar2[intIdx::cpu];
     int i, j, k;
+#if 0
     printf("PAIR iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
     printf("BONDS on segment id: %d cpu: %d\n",iid,icpu);
     for (i=0; i<i_bnds; i++) {
@@ -151,21 +152,22 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       printf("Bonded to id: %d cpu: %d at site %d\n",
           j_id[i],j_cpu[i],j_site[i]);
     }
+#endif
     // Find other segments that segment 1 or segment 2 might be bonded to
     // as a result of side branching. This is only necessary if segment 1
     // or segment 2 is a growth tip and has only 1 bond
     if (ipar1[intIdx::position] == siteLocation::TIP &&
         i_bnds == 1 && j_bnds > 1) {
-      printf("FIXING UP BONDS on segment I\n");
+//      printf("FIXING UP BONDS on segment I\n");
       // Segment i is growth tip and segment j is bonded to at least 2 segments.
       // Search though list segments bonded to segment j to see if they share
       // an attachment point to segment i
       if (i_site[0] == 1) {
         // Check to see if i is already listed as bonded to j
-        printf("Already bonded to I at site 1? jid: %d jcpu: %d i_id[0]: %d i_cpu[0]: %d\n",
-            jid,jcpu,i_id[0],i_cpu[0]);
+//        printf("Already bonded to I at site 1? jid: %d jcpu: %d i_id[0]: %d i_cpu[0]: %d\n",
+//            jid,jcpu,i_id[0],i_cpu[0]);
         if (jid != i_id[0] || jcpu != i_cpu[0]) {
-          printf("Checking bonds on segment J\n");
+//          printf("Checking bonds on segment J\n");
           // is anything else attached to site 2 on segment j?
           for (j=0; j<j_bnds; j++) {
             if (j_site[j] == 1 && j_id[j] == iid && j_cpu[j] == icpu) {
@@ -188,10 +190,10 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         }
       } else if (i_site[0] == 2) {
         // Check to see if i is already listed as bonded to j
-        printf("Already bonded to I at site 2? jid: %d jcpu: %d i_id[0]: %d i_cpu[0]: %d\n",
-            jid,jcpu,i_id[0],i_cpu[0]);
+//        printf("Already bonded to I at site 2? jid: %d jcpu: %d i_id[0]: %d i_cpu[0]: %d\n",
+//            jid,jcpu,i_id[0],i_cpu[0]);
         if (jid != i_id[0] || jcpu != i_cpu[0]) {
-          printf("Checking bonds on segment J\n");
+//          printf("Checking bonds on segment J\n");
           // is anything else attached to site 1 on segment j?
           for (j=0; j<j_bnds; j++) {
             if (j_site[j] == 2 && j_id[j] == iid && j_cpu[j] == icpu) {
@@ -204,10 +206,10 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
               i_id[1] = jid;
               i_cpu[1] = jcpu;
               i_site[1] = 2;
-              printf("FIXED BOND on segment I  id: %d cpu: %d at site 2 nbnds: %d\n",
-                  iid,icpu,i_bnds);
-              printf("BONDED to J id: %d cpu: %d at site 2 nbnds: %d\n",
-                  jid,jcpu,j_bnds);
+//              printf("FIXED BOND on segment I  id: %d cpu: %d at site 2 nbnds: %d\n",
+//                  iid,icpu,i_bnds);
+//              printf("BONDED to J id: %d cpu: %d at site 2 nbnds: %d\n",
+//                  jid,jcpu,j_bnds);
               break;
             }
           }
@@ -218,13 +220,13 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       // Segment j is growth tip and segment i is bonded to at least 3 segments.
       // Search though list segments bonded to segment i to see if they share
       // an attachment point to segment j.
-      printf("FIXING UP BONDS on segment J\n");
+//      printf("FIXING UP BONDS on segment J\n");
       if (j_site[0] == 1) {
         // Check to see if j is already listed as bonded to i
-        printf("Already bonded to J at site 1? iid: %d icpu: %d j_id[0]: %d j_cpu[0]: %d\n",
-            iid,icpu,j_id[0],j_cpu[0]);
+//        printf("Already bonded to J at site 1? iid: %d icpu: %d j_id[0]: %d j_cpu[0]: %d\n",
+//            iid,icpu,j_id[0],j_cpu[0]);
         if (iid != j_id[0] || icpu != j_cpu[0]) {
-          printf("Checking bonds on segment I\n");
+//          printf("Checking bonds on segment I\n");
           // is anything else attached to site 2 on segment j?
           for (i=0; i<i_bnds; i++) {
             if (i_site[i] == 1 && i_id[i] == jid && i_cpu[i] == jcpu) {
@@ -237,20 +239,20 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
               j_id[1] = iid;
               j_cpu[1] = icpu;
               j_site[1] = 1;
-              printf("FIXED BOND on segment J id: %d cpu: %d at site 1 nbnds: %d\n",
-                  jid,jcpu,j_bnds);
-              printf("BONDED to I id: %d cpu: %d at site 1 nbnds: %d\n",
-                  iid,icpu,i_bnds);
+//              printf("FIXED BOND on segment J id: %d cpu: %d at site 1 nbnds: %d\n",
+//                  jid,jcpu,j_bnds);
+//              printf("BONDED to I id: %d cpu: %d at site 1 nbnds: %d\n",
+//                  iid,icpu,i_bnds);
               break;
             }
           }
         }
       } else if (j_site[0] == 2) {
         // Check to see if j is already listed as bonded to i
-        printf("Already bonded to J at site 2? iid: %d icpu: %d j_id[0]: %d j_cpu[0]: %d\n",
-            iid,icpu,j_id[0],j_cpu[0]);
+//        printf("Already bonded to J at site 2? iid: %d icpu: %d j_id[0]: %d j_cpu[0]: %d\n",
+//            iid,icpu,j_id[0],j_cpu[0]);
         if (iid != j_id[0] || icpu != j_cpu[0]) {
-          printf("Checking bonds on segment I\n");
+//          printf("Checking bonds on segment I\n");
           // is anything else attached to site 1 on segment j?
           for (i=0; i<i_bnds; i++) {
             if (i_site[j] == 2 && i_id[i] == jid && i_cpu[i] == jcpu) {
@@ -263,10 +265,10 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
               j_id[1] = iid;
               j_cpu[1] = icpu;
               j_site[1] = 2;
-              printf("FIXED BOND on segment J id: %d cpu: %d at site 2 nbnds: %d\n",
-                  jid,jcpu,j_bnds);
-              printf("BONDED to I id: %d cpu: %d at site 2 nbnds: %d\n",
-                  iid,icpu,i_bnds);
+//              printf("FIXED BOND on segment J id: %d cpu: %d at site 2 nbnds: %d\n",
+//                  jid,jcpu,j_bnds);
+//              printf("BONDED to I id: %d cpu: %d at site 2 nbnds: %d\n",
+//                  iid,icpu,i_bnds);
               break;
             }
           }
@@ -361,11 +363,11 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     //   c_length1,c_length2);
     // Look for bonds connecting these two segments
     for (i=0; i<i_bnds; i++) {
-      printf(" i_id[%d]: %d i_cpu[%d]: %d jid: %d jcpu: %d\n",i,i_id[i],i,i_cpu[i],jid,jcpu);
+//      printf(" i_id[%d]: %d i_cpu[%d]: %d jid: %d jcpu: %d\n",i,i_id[i],i,i_cpu[i],jid,jcpu);
       if (i_id[i] == jid && i_cpu[i] == jcpu) break;
     }
     for (j=0; j<j_bnds; j++) {
-      printf(" j_id[%d]: %d j_cpu[%d]: %d iid: %d icpu: %d\n",j,j_id[j],j,j_cpu[j],iid,icpu);
+//      printf(" j_id[%d]: %d j_cpu[%d]: %d iid: %d icpu: %d\n",j,j_id[j],j,j_cpu[j],iid,icpu);
       if (j_id[j] == iid && j_cpu[j] == icpu) break;
     }
     // Found a connection
@@ -378,14 +380,14 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         ry = yi1 - yj1;
         rz = zi1 - zj1;
         r = sqrt(rx*rx+ry*ry+rz*rz);
-        printf("p[%d] 11 Bond_cutoff: %e r: %e\n",me,bond_cutoff,r);
+//        printf("p[%d] 11 Bond_cutoff: %e r: %e\n",me,bond_cutoff,r);
         if (r<bond_cutoff) {
           // Might be bonded. Check further
           //      printf("p[%d] 11 n_bonds: %d i_site[0]: %d i_id[0]: %d i_cpu[0]: %d j_id: %d j_cpu: %d\n",
           //         me,i_bnds,i_site[0],iid,icpu,jid,jcpu);
-          printf("p[%d] DIFF (11) rx: %e ry: %e rz: %e r: %e i: %d j: %d ibnd: %d jbnd: %d\n",
-              me,rx,ry,rz,r,i,j,i_bnds,j_bnds);
-          printf("Found bond iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
+//          printf("p[%d] DIFF (11) rx: %e ry: %e rz: %e r: %e i: %d j: %d ibnd: %d jbnd: %d\n",
+//              me,rx,ry,rz,r,i,j,i_bnds,j_bnds);
+//          printf("Found bond iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
           f1_s1[0] -= bond_strength*rx;
           f1_s1[1] -= bond_strength*ry;
           f1_s1[2] -= bond_strength*rz;
@@ -408,7 +410,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           //      printf("p[%d] 12 n_bonds: %d i_site[0]: %d i_id[0]: %d i_cpu[0]: %d j_id: %d j_cpu: %d\n",
           //         me,i_bnds,i_site[0],iid,icpu,jid,jcpu);
           //      printf("p[%d] DIFF (12) rx: %e ry: %e rz: %e r: %e i: %d j: %d\n",me,rx,ry,rz,r,i,j);
-          printf("Found bond iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
+//          printf("Found bond iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
           f1_s1[0] -= bond_strength*rx;
           f1_s1[1] -= bond_strength*ry;
           f1_s1[2] -= bond_strength*rz;
@@ -430,9 +432,9 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           // Might be bonded. Check further
           //      printf("p[%d] 21 n_bonds: %d i_site[0]: %d i_id[0]: %d i_cpu[0]: %d j_id: %d j_cpu: %d\n",
           //         me,i_bnds,i_site[0],iid,icpu,jid,jcpu);
-          printf("p[%d] DIFF (21) rx: %e ry: %e rz: %e r: %e i: %d j: %d ibnd: %d jbnd: %d\n",
-              me,rx,ry,rz,r,i,j,i_bnds,j_bnds);
-          printf("Found bond iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
+//          printf("p[%d] DIFF (21) rx: %e ry: %e rz: %e r: %e i: %d j: %d ibnd: %d jbnd: %d\n",
+//              me,rx,ry,rz,r,i,j,i_bnds,j_bnds);
+//          printf("Found bond iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
           f1_s2[0] -= bond_strength*rx;
           f1_s2[1] -= bond_strength*ry;
           f1_s2[2] -= bond_strength*rz;
@@ -449,14 +451,14 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         ry = yi2 - yj2;
         rz = zi2 - zj2;
         r = sqrt(rx*rx+ry*ry+rz*rz);
-        printf("p[%d] 22 Bond_cutoff: %e r: %e\n",me,bond_cutoff,r);
+//        printf("p[%d] 22 Bond_cutoff: %e r: %e\n",me,bond_cutoff,r);
         if (r<bond_cutoff) {
           // Might be bonded. Check further
           //      printf("p[%d] 22 n_bonds: %d i_site[0]: %d i_id[0]: %d i_cpu[0]: %d j_id: %d j_cpu: %d\n",
           //         me,i_bnds,i_site[0],iid,icpu,jid,jcpu);
-          printf("p[%d] DIFF (22) rx: %e ry: %e rz: %e r: %e i: %d j: %d ibnd: %d jbnd: %d\n",
-              me,rx,ry,rz,r,i,j,i_bnds,j_bnds);
-          printf("Found bond iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
+//          printf("p[%d] DIFF (22) rx: %e ry: %e rz: %e r: %e i: %d j: %d ibnd: %d jbnd: %d\n",
+//              me,rx,ry,rz,r,i,j,i_bnds,j_bnds);
+//          printf("Found bond iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
           f1_s2[0] -= bond_strength*rx;
           f1_s2[1] -= bond_strength*ry;
           f1_s2[2] -= bond_strength*rz;
