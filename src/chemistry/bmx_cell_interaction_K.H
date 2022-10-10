@@ -209,8 +209,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
               i_site[1] = 2;
               printf("FIXED BOND on segment I index: %d  id: %d cpu: %d at site 2 nbnds: %d step: %d\n",
                   i_index,iid,icpu,i_bnds,step);
-              printf("BONDED to J id: %d cpu: %d at site 2 nbnds: %d step: %d\n",
-                  jid,jcpu,j_bnds,step);
+              printf("BONDED to J index: %d id: %d cpu: %d at site 2 nbnds: %d step: %d\n",
+                  j_index,jid,jcpu,j_bnds,step);
               break;
             }
           }
