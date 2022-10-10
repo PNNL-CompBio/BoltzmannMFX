@@ -897,15 +897,15 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
         new_cell_vol += dtp*dvdt;
         cell_par[realIdx::vol] = new_cell_vol; 
         Real radius, c_length, tau;
-          printf("Check radius: %e length: %e max: %e id: %d cpu: %d\n",
-              cell_par[realIdx::radius],cell_par[realIdx::c_length],radius_max,
-              cell_ipar[intIdx::id],cell_ipar[intIdx::cpu]);
+//          printf("Check radius: %e length: %e max: %e id: %d cpu: %d\n",
+//              cell_par[realIdx::radius],cell_par[realIdx::c_length],radius_max,
+//              cell_ipar[intIdx::id],cell_ipar[intIdx::cpu]);
         if (cell_par[realIdx::radius] < radius_max
             && cell_par[realIdx::c_length] < length_max) {
           // grow segment proportionally
-          printf("Beginning radius: %e length: %e id: %d cpu: %d\n",
-              cell_par[realIdx::radius],cell_par[realIdx::c_length],
-              cell_ipar[intIdx::id],cell_ipar[intIdx::cpu]);
+//          printf("Beginning radius: %e length: %e id: %d cpu: %d\n",
+//              cell_par[realIdx::radius],cell_par[realIdx::c_length],
+//              cell_ipar[intIdx::id],cell_ipar[intIdx::cpu]);
           tau = pow(new_cell_vol/orig_cell_vol,1.0/3.0);
           radius = tau*cell_par[realIdx::radius];
           c_length = tau*cell_par[realIdx::c_length];
@@ -919,9 +919,9 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
             // Only one end of the cylinder is exposed to external fluid
             cell_par[realIdx::area] = M_PI*radius*(radius+2.0*c_length);
           }
-          printf("Final radius: %e length: %e id: %d cpu: %d\n",
-              cell_par[realIdx::radius],cell_par[realIdx::c_length],
-              cell_ipar[intIdx::id],cell_ipar[intIdx::cpu]);
+//          printf("Final radius: %e length: %e id: %d cpu: %d\n",
+//              cell_par[realIdx::radius],cell_par[realIdx::c_length],
+//              cell_ipar[intIdx::id],cell_ipar[intIdx::cpu]);
         } else if (cell_par[realIdx::radius] < radius_max) {
           // increase radius only (this case probably never reached)
           tau = sqrt(new_cell_vol/orig_cell_vol);

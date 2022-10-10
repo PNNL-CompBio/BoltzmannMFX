@@ -86,7 +86,7 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 
     while (n < nsubsteps)
     {
-        // Redistribute particles ever so often BUT always update the neighbour
+        // Redistribute particles every so often BUT always update the neighbour
         // list (Note that this fills the neighbour list after every
         // redistribute operation)
         if (n % 25 == 0) {
@@ -163,7 +163,7 @@ void BMXParticleContainer::EvolveParticles (Real dt,
             // now we loop over the neighbor list and compute the forces
             int me = ParallelDescriptor::MyProc();
             amrex::ParallelFor(nrp,
-                [nrp,pstruct,fc_ptr,nbor_data,subdt,ntot,fpar,me]
+                [nrp,pstruct,fc_ptr,nbor_data,subdt,ntot,fpar,me,n]
               AMREX_GPU_DEVICE (int i) noexcept
               {
                   auto particle = pstruct[i];
@@ -217,7 +217,7 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                           RealVect rot2(0.);
 
                           evaluateForce(&diff[0],&particle.rdata(0),&p2.rdata(0), &particle.idata(0),
-                                        &p2.idata(0), &v1[0], &v2[0], &rot1[0], &rot2[0], fpar, me);
+                                        &p2.idata(0), &v1[0], &v2[0], &rot1[0], &rot2[0], fpar, me, i, j, n);
 //                          printf("w1x: %e w1y: %e w1z: %e w2x: %e w2y: %e w2z: %e\n",
 //                              rot1[0],rot1[1],rot1[2],rot2[0],rot2[1],rot2[2]);
 //                          printf("v1x: %e r1x: %e v2x: %e r2x: %e\n",

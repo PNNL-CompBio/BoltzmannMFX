@@ -46,7 +46,8 @@ maxInteractionDistance(const Real *p1, const Real *p2, const int *i1,
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void 
 evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
-              Real *vel1, Real *vel2, Real *rotv1, Real *rotv2, Real *fpar, int me )
+              Real *vel1, Real *vel2, Real *rotv1, Real *rotv2, Real *fpar, int me,
+              int i_index, int j_index, int step)
 {
   if (ipar1[intIdx::cell_type] == cellType::YEAST &&
       ipar2[intIdx::cell_type] == cellType::YEAST) {
@@ -180,10 +181,10 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
               i_id[1] = jid;
               i_cpu[1] = jcpu;
               i_site[1] = 1;
-              printf("FIXED BOND on segment I  id: %d cpu: %d at site 1 nbnds: %d\n",
-                  iid,icpu,i_bnds);
-              printf("BONDED to J id: %d cpu: %d at site 1 nbnds: %d\n",
-                  jid,jcpu,j_bnds);
+              printf("FIXED BOND on segment I index: %d  id: %d cpu: %d at site 1 nbnds: %d step: %d\n",
+                  i_index,iid,icpu,i_bnds,step);
+              printf("BONDED to J index: %d id: %d cpu: %d at site 1 nbnds: %d step: %d\n",
+                  j_index,jid,jcpu,j_bnds,step);
               break;
             }
           }
@@ -206,10 +207,10 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
               i_id[1] = jid;
               i_cpu[1] = jcpu;
               i_site[1] = 2;
-//              printf("FIXED BOND on segment I  id: %d cpu: %d at site 2 nbnds: %d\n",
-//                  iid,icpu,i_bnds);
-//              printf("BONDED to J id: %d cpu: %d at site 2 nbnds: %d\n",
-//                  jid,jcpu,j_bnds);
+              printf("FIXED BOND on segment I index: %d  id: %d cpu: %d at site 2 nbnds: %d step: %d\n",
+                  i_index,iid,icpu,i_bnds,step);
+              printf("BONDED to J id: %d cpu: %d at site 2 nbnds: %d step: %d\n",
+                  jid,jcpu,j_bnds,step);
               break;
             }
           }
@@ -239,10 +240,10 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
               j_id[1] = iid;
               j_cpu[1] = icpu;
               j_site[1] = 1;
-//              printf("FIXED BOND on segment J id: %d cpu: %d at site 1 nbnds: %d\n",
-//                  jid,jcpu,j_bnds);
-//              printf("BONDED to I id: %d cpu: %d at site 1 nbnds: %d\n",
-//                  iid,icpu,i_bnds);
+              printf("FIXED BOND on segment J index: %d id: %d cpu: %d at site 1 nbnds: %d step: %d\n",
+                  j_index,jid,jcpu,j_bnds,step);
+              printf("BONDED to I index: %d id: %d cpu: %d at site 1 nbnds: %d step: %d\n",
+                  i_index,iid,icpu,i_bnds,step);
               break;
             }
           }
@@ -265,10 +266,10 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
               j_id[1] = iid;
               j_cpu[1] = icpu;
               j_site[1] = 2;
-//              printf("FIXED BOND on segment J id: %d cpu: %d at site 2 nbnds: %d\n",
-//                  jid,jcpu,j_bnds);
-//              printf("BONDED to I id: %d cpu: %d at site 2 nbnds: %d\n",
-//                  iid,icpu,i_bnds);
+              printf("FIXED BOND on segment J index: %d id: %d cpu: %d at site 2 nbnds: %d step: %d\n",
+                  j_index,jid,jcpu,j_bnds,step);
+              printf("BONDED to I index: %d id: %d cpu: %d at site 2 nbnds: %d step: %d\n",
+                  i_index,iid,icpu,i_bnds,step);
               break;
             }
           }
