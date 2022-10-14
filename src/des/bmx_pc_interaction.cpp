@@ -166,7 +166,7 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                 [nrp,pstruct,fc_ptr,nbor_data,subdt,ntot,fpar,me,n]
               AMREX_GPU_DEVICE (int i) noexcept
               {
-                  auto particle = pstruct[i];
+                  auto& particle = pstruct[i];
 
                   RealVect pos1(particle.pos());
 //                  printf("p[%d] ID: %d CPU: %d RX: %e RY: %e RZ: %e\n",me,

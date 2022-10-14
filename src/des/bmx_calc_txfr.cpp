@@ -300,7 +300,8 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
         int nloop = m_nloop;
         amrex::ParallelFor(np,
             [pstruct,interp_array,interp_varray,interp_narray,plo,dxi,grid_vol,dt,
-             nloop,chempar,l_cnc_deposition_scheme,l_vf_deposition_scheme]
+             nloop,chempar,l_cnc_deposition_scheme,l_vf_deposition_scheme,interp_gxarray,
+            interp_gyarray,interp_gzarray]
             AMREX_GPU_DEVICE (int pid) noexcept
               {
               // Local array storing interpolated values
@@ -341,6 +342,12 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
               }
               one_to_one_interp(p.pos(), &interp_nloc[0],
                   interp_narray, plo, dxi, 1);
+              one_to_one_interp(p.pos(), &interp_gxloc[0],
+                  interp_gxarray, plo, dxi, 1);
+              one_to_one_interp(p.pos(), &interp_gyloc[0],
+                  interp_gyarray, plo, dxi, 1);
+              one_to_one_interp(p.pos(), &interp_gzloc[0],
+                  interp_gzarray, plo, dxi, 1);
 
 #ifndef AMREX_USE_GPU
               //std::cout<<"Number of particles in grid cell: "<<interp_nloc[0]<<std::endl;
@@ -353,6 +360,15 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
               cell_par[realIdx::gx] = interp_gxloc[0];
               cell_par[realIdx::gy] = interp_gyloc[0];
               cell_par[realIdx::gz] = interp_gzloc[0];
+#ifndef AMREX_USE_GPU
+              Real gx = cell_par[realIdx::gx];
+              Real gy = cell_par[realIdx::gy];
+              Real gz = cell_par[realIdx::gz];
+              if (sqrt(gx*gx+gy*gy+gz*gz) != 0.0) {
+                printf("Assigned gradient values gx: %e gy: %e gz: %e\n",
+                    gx,gy,gz);
+              }
+#endif
             //  printf("GXLOC: %e GYLOC: %e GZLOC: %e\n",interp_gxloc[0],
             //      interp_gyloc[0], interp_gzloc[0]);
 

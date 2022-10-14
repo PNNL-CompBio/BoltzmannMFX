@@ -154,6 +154,32 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           j_id[i],j_cpu[i],j_site[i]);
     }
 #endif
+    // Fix up status of interior location if attached TIP has converted to an
+    // interior segment
+    if (ipar1[intIdx::position] == siteLocation::SECOND_1 ||
+        ipar1[intIdx::position] == siteLocation::SECOND_2) {
+      int site;
+      if (ipar1[intIdx::position] == siteLocation::SECOND_1) {
+        // Growth tip is attached to site 1
+        site = 1;
+      } else {
+        // Growth tip is attached to site 2
+        site = 2;
+      }
+      // find out if segment j is attached to appropriate site
+      for (i=0; i<i_bnds; i++) {
+        if (i_id[i] == jid && i_cpu[i] == jcpu && i_site[i] == site) {
+          break;
+        }
+      }
+      // segment j is attached to segment i at site specified by
+      // siteLocation value. Is segment j a growth tip? If not,
+      // change position to INTERIOR
+      if (i<i_bnds && ipar2[intIdx::position] != siteLocation::TIP) {
+        printf("Converting site position on segment id: %d cpu: %d\n",iid,icpu);
+        ipar1[intIdx::position] = siteLocation::INTERIOR;
+      }
+    }
     // Find other segments that segment 1 or segment 2 might be bonded to
     // as a result of side branching. This is only necessary if segment 1
     // or segment 2 is a growth tip and has only 1 bond
