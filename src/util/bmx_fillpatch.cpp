@@ -19,15 +19,15 @@ void set_ptr_to_bmx (bmx& bmx_for_fillpatching_in)
 // This interface must match the definition of the interface for
 //    CpuBndryFuncFab in amrex/Src/Base/AMReX_PhysBCFunct.H
 inline
-void ChemSpeciesFillBox (Box const& bx,
+void ChemSpeciesFillBox (Box const& /*bx*/,
                          Array4<amrex::Real> const& dest,
                          const int dcomp,
                          const int numcomp,
                          GeometryData const& geom_data,
                          const Real time_in,
-                         const BCRec* bcr,
-                         const int bcomp,
-                         const int orig_comp)
+                         const BCRec* /*bcr*/,
+                         const int /*bcomp*/,
+                         const int /*orig_comp*/)
 {
     if (dcomp != 0)
          amrex::Abort("Must have dcomp = 0 in ChemSpeciesFillBox");
@@ -61,15 +61,15 @@ void ChemSpeciesFillBox (Box const& bx,
 // This interface must match the definition of the interface for
 //    CpuBndryFuncFab in amrex/Src/Base/AMReX_PhysBCFunct.H
 inline
-void ChemCoeffsFillBox (Box const& bx,
+void ChemCoeffsFillBox (Box const& /*bx*/,
                         Array4<amrex::Real> const& dest,
                         const int dcomp,
                         const int numcomp,
                         GeometryData const& geom_data,
                         const Real time_in,
-                        const BCRec* bcr,
-                        const int bcomp,
-                        const int orig_comp)
+                        const BCRec* /*bcr*/,
+                        const int /*bcomp*/,
+                        const int /*orig_comp*/)
 {
     if (dcomp != 0)
          amrex::Abort("Must have dcomp = 0 in ChemCoeffsFillBox");
@@ -102,15 +102,15 @@ void ChemCoeffsFillBox (Box const& bx,
 // This interface must match the definition of the interface for
 //    CpuBndryFuncFab in amrex/Src/Base/AMReX_PhysBCFunct.H
 inline
-void VolFracFillBox (Box const& bx,
+void VolFracFillBox (Box const& /*bx*/,
                      Array4<amrex::Real> const& dest,
                      const int dcomp,
                      const int numcomp,
                      GeometryData const& geom_data,
                      const Real time_in,
-                     const BCRec* bcr,
-                     const int bcomp,
-                     const int orig_comp)
+                     const BCRec* /*bcr*/,
+                     const int /*bcomp*/,
+                     const int /*orig_comp*/)
 {
     if (dcomp != 0)
          amrex::Abort("Must have dcomp = 0 in VolFracFillBox");
@@ -325,7 +325,7 @@ bmx::GetDataChemSpecies (int lev,
 // Utility to copy in data 
 void
 bmx::GetDataChemCoeffs (int lev,
-                        Real time,
+                        Real /*time*/,
                         Vector<MultiFab*>& data,
                         int icomp,
                         Vector<Real>& datatime)
@@ -343,7 +343,7 @@ bmx::GetDataChemCoeffs (int lev,
 // Utility to copy in data
 void
 bmx::GetDataVolFrac (int lev,
-                     Real time,
+                     Real /*time*/,
                      Vector<MultiFab*>& data,
                      int icomp,
                      Vector<Real>& datatime)

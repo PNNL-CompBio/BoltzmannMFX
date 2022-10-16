@@ -4,7 +4,7 @@
 
 // Location is just a marker used to determine at which location in the code
 // this function is being called.
-void bmx::print_mesh(int location)
+void bmx::print_mesh(int /*location*/)
 {
 #if 0
   const int nchem_species = FLUID::nchem_species;
@@ -278,7 +278,6 @@ bmx::EvolveFluid (int nstep,
 
         for (int lev = 0; lev <= finest_level; lev++)
         {
-            Real grid_vol = (geom[lev].CellSize(0))*(geom[lev].CellSize(1))*(geom[lev].CellSize(2));
             auto& ld = *m_leveldata[lev];
 
             for (MFIter mfi(*ld.X_k,TilingIfNotGPU()); mfi.isValid(); ++mfi)

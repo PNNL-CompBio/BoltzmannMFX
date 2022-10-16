@@ -9,7 +9,7 @@
  * @param time current time at which split occurs
  */
 void
-BMXParticleContainer::split_particles (Real time)
+BMXParticleContainer::split_particles (Real /*time*/)
 {
   Real l_max_vol  = SPECIES::max_vol; 
   Real l_max_len  = SPECIES::max_len; 

@@ -202,10 +202,8 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 
                       if ( r2 <= (r_lm - small_number)*(r_lm - small_number) )
                       {
-                          Real dist_mag = sqrt(r2);
-
-                          Real dist_mag_inv = 1.e0/dist_mag;
-
+                       //   Real dist_mag = sqrt(r2);
+                       //   Real dist_mag_inv = 1.e0/dist_mag;
                        //   RealVect normal(0.);
                        //   normal[0] = dist_x * dist_mag_inv;
                        //   normal[1] = dist_y * dist_mag_inv;
@@ -218,6 +216,7 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 
                           evaluateForce(&diff[0],&particle.rdata(0),&p2.rdata(0), &particle.idata(0),
                                         &p2.idata(0), &v1[0], &v2[0], &rot1[0], &rot2[0], fpar, me, i, j, n);
+
 //                          printf("w1x: %e w1y: %e w1z: %e w2x: %e w2y: %e w2z: %e\n",
 //                              rot1[0],rot1[1],rot1[2],rot2[0],rot2[1],rot2[2]);
 //                          printf("v1x: %e r1x: %e v2x: %e r2x: %e\n",
@@ -343,9 +342,9 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                   Real sp = sin(phi);
                   Real ct = cos(theta);
                   Real st = sin(theta);
-                  Real x = sp*st;
-                  Real y = cp*st;
-                  Real z = ct;
+                  // Real x = sp*st;
+                  // Real y = cp*st;
+                  // Real z = ct;
                   // construct matrix to rotate x-axis to segment orientation
                   Real rot[3][3];
                   rot[0][0] = cp*st;
@@ -365,11 +364,10 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                   // transform angular momentum using inverse rotation
                   // and calculate rotational velocity
                   Real om[3];
-                  int i, j;
-                  for (i=0; i<3; i++) {
-                    om[i] = 0.0;
-                    for (j=0; j<3; j++) {
-                      om[i] += rot[j][i]*lm[j];
+                  for (int ii=0; ii<3; ii++) {
+                    om[ii] = 0.0;
+                    for (int jj=0; jj<3; jj++) {
+                      om[ii] += rot[jj][ii]*lm[jj];
                     }
                   }
                   Real clen = particle.rdata(realIdx::c_length);
@@ -424,19 +422,19 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                   ndir[2] = 0.0;
                   // apply inverse of orot to ndir (inverse is equal to
                   // transpose)
-                  for (i=0; i<3; i++) {
-                    om[i] = 0.0;
-                    for (j=0; j<3; j++) {
-                      om[i] += orot[j][i]*ndir[j];
+                  for (int ii=0; ii<3; ii++) {
+                    om[ii] = 0.0;
+                    for (int jj=0; jj<3; jj++) {
+                      om[ii] += orot[jj][ii]*ndir[jj];
                     }
                   }
               //DBG    printf("Dtheta: %f om_x: %f om_y: %f om_z: %f\n",dtheta,om[0],om[1],om[2]);
 
                   // apply rot to new direction to recover final orientation
-                  for (i=0; i<3; i++) {
-                    ndir[i] = 0.0;
-                    for (j=0; j<3; j++) {
-                      ndir[i] += rot[i][j]*om[j];
+                  for (int ii=0; ii<3; ii++) {
+                    ndir[ii] = 0.0;
+                    for (int jj=0; jj<3; jj++) {
+                      ndir[ii] += rot[ii][jj]*om[jj];
                     }
                   }
               //DBG    printf("NEW ORIENTATION NX: %e NY: %e NZ: %e\n",ndir[0],ndir[1],ndir[2]);

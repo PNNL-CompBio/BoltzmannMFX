@@ -74,7 +74,7 @@ void BMXChemistry::setIntegers(int *ipar)
  * being used but probably will be at some point).
  * @param file name of parameter file used by chemistry model
  */
-void BMXChemistry::setParams(const char *file)
+void BMXChemistry::setParams(const char* /*file*/)
 {
   ParmParse pp("chem_species");
   pp.get("k1",k1);

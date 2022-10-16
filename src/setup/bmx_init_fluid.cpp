@@ -13,12 +13,12 @@ using namespace amrex;
 //!                                                                      !
 //!^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
 void set_ic_chem_species (const Box& sbx,
-                          const Box& domain,
-                          const Real   dx,
-                          const Real   dy,
+                          const Box& /*domain*/,
+                          const Real   /*dx*/,
+                          const Real   /*dy*/,
                           const Real   dz,
                           const GpuArray<Real, 3>& p_lo,
-                          const GpuArray<Real, 3>& p_hi,
+                          const GpuArray<Real, 3>& /*p_hi*/,
                           const Array4<Real> X_k_arr)
 {
 #ifdef NEW_CHEM

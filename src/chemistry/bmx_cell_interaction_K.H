@@ -46,7 +46,7 @@ maxInteractionDistance(const Real *p1, const Real *p2, const int *i1,
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void 
 evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
-              Real *vel1, Real *vel2, Real *rotv1, Real *rotv2, Real *fpar, int me,
+              Real *vel1, Real *vel2, Real *rotv1, Real *rotv2, Real *fpar, int /*me*/,
               int i_index, int j_index, int step)
 {
   if (ipar1[intIdx::cell_type] == cellType::YEAST &&
@@ -140,7 +140,6 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     int icpu = ipar1[intIdx::cpu];
     int jid = ipar2[intIdx::id];
     int jcpu = ipar2[intIdx::cpu];
-    int i, j, k;
 #if 0
     printf("PAIR iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
     printf("BONDS on segment id: %d cpu: %d\n",iid,icpu);
@@ -167,8 +166,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         site = 2;
       }
       // find out if segment j is attached to appropriate site
-      for (i=0; i<i_bnds; i++) {
-        if (i_id[i] == jid && i_cpu[i] == jcpu && i_site[i] == site) {
+      for (int ib=0; ib<i_bnds; ib++) {
+        if (i_id[ib] == jid && i_cpu[ib] == jcpu && i_site[ib] == site) {
           break;
         }
       }
@@ -183,12 +182,15 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     // Find other segments that segment 1 or segment 2 might be bonded to
     // as a result of side branching. This is only necessary if segment 1
     // or segment 2 is a growth tip and has only 1 bond
+
     if (ipar1[intIdx::position] == siteLocation::TIP &&
         i_bnds == 1 && j_bnds > 1) {
-//      printf("FIXING UP BONDS on segment I\n");
+
+      // printf("FIXING UP BONDS on segment I\n");
       // Segment i is growth tip and segment j is bonded to at least 2 segments.
       // Search though list segments bonded to segment j to see if they share
       // an attachment point to segment i
+
       if (i_site[0] == 1) {
         // Check to see if i is already listed as bonded to j
 //        printf("Already bonded to I at site 1? jid: %d jcpu: %d i_id[0]: %d i_cpu[0]: %d\n",
@@ -196,9 +198,9 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         if (jid != i_id[0] || jcpu != i_cpu[0]) {
 //          printf("Checking bonds on segment J\n");
           // is anything else attached to site 2 on segment j?
-          for (j=0; j<j_bnds; j++) {
-            if (j_site[j] == 1 && j_id[j] == iid && j_cpu[j] == icpu) {
-              // found that segment j is bonded to segment i. Update i
+          for (int jb=0; jb<j_bnds; jb++) {
+            if (j_site[jb] == 1 && j_id[jb] == iid && j_cpu[jb] == icpu) {
+              // found that segment jb is bonded to segment i. Update i
               i_bnds++;
               ipar1[intIdx::n_bnds] = i_bnds;
               ipar1[intIdx::seg2_id1] = jid;
@@ -212,9 +214,10 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
               printf("BONDED to J index: %d id: %d cpu: %d at site 1 nbnds: %d step: %d\n",
                   j_index,jid,jcpu,j_bnds,step);
               break;
-            }
-          }
-        }
+            } // if
+          } // jb
+        } // if jid
+
       } else if (i_site[0] == 2) {
         // Check to see if i is already listed as bonded to j
 //        printf("Already bonded to I at site 2? jid: %d jcpu: %d i_id[0]: %d i_cpu[0]: %d\n",
@@ -222,9 +225,9 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         if (jid != i_id[0] || jcpu != i_cpu[0]) {
 //          printf("Checking bonds on segment J\n");
           // is anything else attached to site 1 on segment j?
-          for (j=0; j<j_bnds; j++) {
-            if (j_site[j] == 2 && j_id[j] == iid && j_cpu[j] == icpu) {
-              // found that segment j is bonded to segment i. Update i
+          for (int jb=0; jb<j_bnds; jb++) {
+            if (j_site[jb] == 2 && j_id[jb] == iid && j_cpu[jb] == icpu) {
+              // found that segment jb is bonded to segment i. Update i
               i_bnds++;
               ipar1[intIdx::n_bnds] = i_bnds;
               ipar1[intIdx::seg2_id1] = jid;
@@ -239,15 +242,18 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
                   j_index,jid,jcpu,j_bnds,step);
               break;
             }
-          }
-        }
-      }
+          } // jb
+        } // if jid
+      } // if i_site[0] == 2
+
     } else if (ipar2[intIdx::position] == siteLocation::TIP &&
         j_bnds == 1 && i_bnds > 1) {
+
+      // printf("FIXING UP BONDS on segment J\n");
       // Segment j is growth tip and segment i is bonded to at least 3 segments.
       // Search though list segments bonded to segment i to see if they share
       // an attachment point to segment j.
-//      printf("FIXING UP BONDS on segment J\n");
+
       if (j_site[0] == 1) {
         // Check to see if j is already listed as bonded to i
 //        printf("Already bonded to J at site 1? iid: %d icpu: %d j_id[0]: %d j_cpu[0]: %d\n",
@@ -255,8 +261,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         if (iid != j_id[0] || icpu != j_cpu[0]) {
 //          printf("Checking bonds on segment I\n");
           // is anything else attached to site 2 on segment j?
-          for (i=0; i<i_bnds; i++) {
-            if (i_site[i] == 1 && i_id[i] == jid && i_cpu[i] == jcpu) {
+          for (int ib=0; ib<i_bnds; ib++) {
+            if (i_site[ib] == 1 && i_id[ib] == jid && i_cpu[ib] == jcpu) {
               // found that segment i is bonded to segment j. Update j
               j_bnds++;
               ipar2[intIdx::n_bnds] = j_bnds;
@@ -271,18 +277,20 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
               printf("BONDED to I index: %d id: %d cpu: %d at site 1 nbnds: %d step: %d\n",
                   i_index,iid,icpu,i_bnds,step);
               break;
-            }
-          }
-        }
+            } // if i_site[i]
+          } // ib
+        } // if iid ...
+
       } else if (j_site[0] == 2) {
         // Check to see if j is already listed as bonded to i
 //        printf("Already bonded to J at site 2? iid: %d icpu: %d j_id[0]: %d j_cpu[0]: %d\n",
 //            iid,icpu,j_id[0],j_cpu[0]);
-        if (iid != j_id[0] || icpu != j_cpu[0]) {
 //          printf("Checking bonds on segment I\n");
-          // is anything else attached to site 1 on segment j?
-          for (i=0; i<i_bnds; i++) {
-            if (i_site[j] == 2 && i_id[i] == jid && i_cpu[i] == jcpu) {
+
+        // Is anything else attached to site 1 on segment j?
+        if (iid != j_id[0] || icpu != j_cpu[0]) {
+          for (int ib =0; ib < i_bnds; ib++) {
+            if (i_site[j] == 2 && i_id[ib] == jid && i_cpu[ib] == jcpu) {
               // found that segment i is bonded to segment j. Update j
               j_bnds++;
               ipar2[intIdx::n_bnds] = j_bnds;
@@ -297,21 +305,21 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
               printf("BONDED to I index: %d id: %d cpu: %d at site 2 nbnds: %d step: %d\n",
                   i_index,iid,icpu,i_bnds,step);
               break;
-            }
-          }
-        }
-      }
+            } // if i_site[j]
+          } // ib
+        } // iid
+      } // if j_site[0] == 2
     }
 //    printf("p[%d] ID: %d CPU: %d I_ID: %d %d %d I_CPU: %d %d %d\n",
 //        me,iid,icpu,i_id[0],i_id[1],i_id[2],i_cpu[0],
 //        i_cpu[1],i_cpu[2]);
 //    printf("p[%d] nbnd: %d i_site[0]: %d i_site[1]: %d i_site[2]: %d\n",me,i_bnds,i_site[0],i_site[1],i_site[2]);
 //    printf("p[%d] nbnd: %d j_site[0]: %d j_site[1]: %d j_site[2]: %d\n",me,j_bnds,j_site[0],j_site[1],j_site[2]);
-    for (i=0; i<3; i++) {
-      f1_s1[i] = 0.0;
-      f1_s2[i] = 0.0;
-      f2_s1[i] = 0.0;
-      f2_s2[i] = 0.0;
+    for (int ii=0; ii<3; ii++) {
+      f1_s1[ii] = 0.0;
+      f1_s2[ii] = 0.0;
+      f2_s1[ii] = 0.0;
+      f2_s2[ii] = 0.0;
     }
     // find locations of segment end points
     Real xi1, yi1, zi1, xi2, yi2, zi2;
@@ -389,17 +397,15 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     //   me,r12[0],r12[1],r12[2],sqrt(r12[0]*r12[0]+r12[1]*r12[1]+r12[2]*r12[2]),
     //   c_length1,c_length2);
     // Look for bonds connecting these two segments
-    for (i=0; i<i_bnds; i++) {
-//      printf(" i_id[%d]: %d i_cpu[%d]: %d jid: %d jcpu: %d\n",i,i_id[i],i,i_cpu[i],jid,jcpu);
-      if (i_id[i] == jid && i_cpu[i] == jcpu) break;
+    for (int ib=0; ib<i_bnds; ib++) {
+      if (i_id[ib] == jid && i_cpu[ib] == jcpu) break;
     }
-    for (j=0; j<j_bnds; j++) {
-//      printf(" j_id[%d]: %d j_cpu[%d]: %d iid: %d icpu: %d\n",j,j_id[j],j,j_cpu[j],iid,icpu);
-      if (j_id[j] == iid && j_cpu[j] == icpu) break;
+    for (int jb=0; jb<j_bnds; jb++) {
+      if (j_id[jb] == iid && j_cpu[jb] == icpu) break;
     }
     // Found a connection
     Real rx, ry, rz, r;
-    if (i<i_bnds && j_bnds) {
+    if (i <i_bnds && j_bnds) {
       // Four possibilities for bonded interactions
       if ((i_site[i] == 1 && j_site[j] == 1)) {
         // 1-1 interaction
@@ -407,14 +413,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         ry = yi1 - yj1;
         rz = zi1 - zj1;
         r = sqrt(rx*rx+ry*ry+rz*rz);
-//        printf("p[%d] 11 Bond_cutoff: %e r: %e\n",me,bond_cutoff,r);
         if (r<bond_cutoff) {
           // Might be bonded. Check further
-          //      printf("p[%d] 11 n_bonds: %d i_site[0]: %d i_id[0]: %d i_cpu[0]: %d j_id: %d j_cpu: %d\n",
-          //         me,i_bnds,i_site[0],iid,icpu,jid,jcpu);
-//          printf("p[%d] DIFF (11) rx: %e ry: %e rz: %e r: %e i: %d j: %d ibnd: %d jbnd: %d\n",
-//              me,rx,ry,rz,r,i,j,i_bnds,j_bnds);
-//          printf("Found bond iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
           f1_s1[0] -= bond_strength*rx;
           f1_s1[1] -= bond_strength*ry;
           f1_s1[2] -= bond_strength*rz;
@@ -423,8 +423,9 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           f2_s2[2] += bond_strength*rz;
           //          printf("p[%d] f1_s1: %e x1: %e f2_s2: %e x2: %e rx: %e r: %e\n",me,f1_s1[0],xi1,f2_s2[0],xj2,rx,r);
           bonded = true;
-        }
-      }
+        } // r < bond_cutoff
+      } // if ((i_site[ib] == 1 && j_site[j] == 1)) ...
+
       if ((i_site[i] == 1 && j_site[j] == 2 && !bonded)) {
         // 1-2 interaction
         rx = xi1 - xj2;
@@ -446,8 +447,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           f2_s2[2] += bond_strength*rz;
           //          printf("p[%d] f1_s1: %e x1: %e f2_s2: %e x2: %e rx: %e r: %e\n",me,f1_s1[0],xi1,f2_s2[0],xj2,rx,r);
           bonded = true;
-        }
-      }
+        } // r < bond_cutoff
+      } // if ((i_site[i] == 1 && j_site[j] == 2 && !bonded)) ...
       if ((i_site[i] == 2 && j_site[j] == 1 && !bonded)) {
         // 2-1 interaction
         rx = xi2 - xj1;
@@ -492,11 +493,10 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           f2_s1[0] += bond_strength*rx;
           f2_s1[1] += bond_strength*ry;
           f2_s1[2] += bond_strength*rz;
-          //          printf("p[%d] f1_s2: %e x1: %e f2_s1: %e x2: %e rx: %e r: %e\n",me,f1_s2[0],xi2,f2_s1[0],xj1,rx,r);
           bonded = true;
-        }
-      }
-    }
+        } // if (r<bond_cutoff)  ...
+      } // if ((i_site[i] == 2 && j_site[j] == 2 && !bonded)) ...
+    } // if (i<i_bnds && j_bnds) ...
 #if 1
     // Evaluate interactions between cylinders. Only calculate these
     // interactions if cylinders are not bonded.
@@ -511,16 +511,18 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       rho_j[1] = yj2-yj1;
       rho_j[2] = zj2-zj1;
       Real rirj = 0.0;
-      Real rtest = sqrt(r12[0]*r12[0]+r12[1]*r12[1]+r12[2]*r12[0]);
-//      if (rtest > 0.003) {
+//    Real rtest = sqrt(r12[0]*r12[0]+r12[1]*r12[1]+r12[2]*r12[0]);
+//    if (rtest > 0.003) {
 //      printf("p[%d] INTERACTION PAIR IID: %d ICPU: %d JID: %d JCPU: %d\n",
 //          me,iid,icpu,jid,jcpu);
 //      printf("p[%d] SEP RX: %e RY: %e RZ: %e R: %e RA: %e\n",me,r12[0],r12[1],r12[2],
 //          rtest,rA);
-//      }
-      for (i=0; i<3; i++) rirj += rho_i[i]*rho_j[i];
-//      printf("rho_i: %f %f %f rho_j: %f %f %f rirj: %e\n",rho_i[0],rho_i[1],rho_i[2],
-//          rho_j[0],rho_j[1],rho_j[2],rirj);
+//    }
+
+      for (int ii=0; ii<3; ii++) {
+          rirj += rho_i[ii]*rho_j[ii];
+      } // ii
+
       Real tau_i, tau_j;
       // Find tau_i and tau_j corresponding to minimum distance between
       // cylinder segments
@@ -657,16 +659,16 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           imin = 3;
           min = min3;
         }
-        if (imin = 0) {
+        if (imin == 0) {
           tau_i = 0.0;
           tau_j = 0.0;
-        } else if (imin = 1) {
+        } else if (imin == 1) {
           tau_i = 0.0;
           tau_j = 1.0;
-        } else if (imin = 2) {
+        } else if (imin == 2) {
           tau_i = 1.0;
           tau_j = 0.0;
-        } else if (imin = 3) {
+        } else if (imin == 3) {
           tau_i = 1.0;
           tau_j = 1.0;
         }
@@ -694,34 +696,27 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         rz /= r;
       } else {
         /* Segments intersect. Find an appropriate separation vector */
-        Real Ri = 0.0;
-        Real Rj = 0.0;
-        for (i = 0; i<3; i++) {
-          Ri += rho_i[i]*rho_i[i];
-          Rj += rho_j[i]*rho_j[i];
+        Real Ri = std::sqrt(rho_i[0]*rho_i[0] + rho_i[1]*rho_i[1] + rho_i[2]*rho_i[2]);
+        Real Rj = std::sqrt(rho_j[0]*rho_j[0] + rho_j[1]*rho_j[1] + rho_j[2]*rho_j[2]);
+
+        for (int ii=0; ii<3; ii++) {
+          rho_i[ii] /= Ri;
+          rho_j[ii] /= Rj;
         }
-        Ri = sqrt(Ri);
-        Rj = sqrt(Rj);
-        for (i=0; i<3; i++) {
-          rho_i[i] /= Ri;
-          rho_j[i] /= Rj;
-        }
-        Real rdot = 0.0;
-        for (i=0; i<3; i++) {
-          rdot += rho_i[i]*rho_j[i];
-        }
+
+        Real rdot = rho_i[0]*rho_j[0] + rho_i[1]*rho_j[1] + rho_i[2]*rho_j[2];
         if (rdot < 0.0) {
-          for (i=0; i<3; i++) {
-            rho_j[i] = -rho_j[i];
-          }
-        }
+          for (int ii=0; ii<3; ii++) {
+            rho_j[ii] = -rho_j[ii];
+          } // ii
+        } // if rdot
         rx = rho_i[0]-rho_j[0];
         ry = rho_i[1]-rho_j[1];
         rz = rho_i[2]-rho_j[2];
-        Real rn = sqrt(rx*rx+ry*ry+rz*rz);
-        rx /= rn;
-        ry /= rn;
-        rz /= rn;
+        Real inv_rn = 1. / sqrt(rx*rx+ry*ry+rz*rz);
+        rx *= inv_rn;
+        ry *= inv_rn;
+        rz *= inv_rn;
       }
 
       Real F;
@@ -814,14 +809,14 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     // Assume the cylinder is oriented along the x-axis
     Real dii[3][3];
     Real dij[3][3];
-    for (i=0; i<3; i++) {
-      for (j=0; j<3; j++) {
-	if (i==j) {
-	  dii[i][j] = 1.0/(6.0*M_PI*arad*visc);
+    for (int ii=0; ii<3; ii++) {
+      for (int jj=0; jj<3; jj++) {
+	if (ii==jj) {
+	  dii[ii][jj] = 1.0/(6.0*M_PI*arad*visc);
 	} else {
-	  dii[i][j] = 0.0;
+	  dii[ii][jj] = 0.0;
 	}
-	dij[i][j] = 0.0;
+	dij[ii][jj] = 0.0;
       }
     }
     if (c_length1 > 2.0*arad) {
@@ -842,37 +837,40 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     printf("(1) Dij21: %e Dij22: %e Dij23: %e\n",dij[1][0],dij[1][1],dij[1][2]);
     printf("(1) Dij31: %e Dij32: %e Dij33: %e\n",dij[2][0],dij[2][1],dij[2][2]);
 #endif
+
     // Reorient dij so that it reflects the correct direction (dii is diagonal
     // so it doesn't change under reorientation). Note the transpose of the
     // rotation is equal to its inverse
     Real dtmp[3][3];
-    for (i=0; i<3; i++) {
-      for (j=0; j<3; j++) {
-	dtmp[i][j] = 0.0;
-	for (k=0; k<3; k++) {
+    for (int ii=0; ii<3; ii++) {
+      for (int jj=0; jj<3; jj++) {
+	dtmp[ii][jj] = 0.0;
+	for (int kk=0; kk<3; kk++) {
 	  // use inverse rotation here
-	  dtmp[i][j] += dij[i][k]*rot_i[j][k];
-	}
-      }
-    }
-    for (i=0; i<3; i++) {
-      for (j=0; j<3; j++) {
-	dij[i][j] = 0.0;
-	for (k=0; k<3; k++) {
-	  dij[i][j] += rot_i[i][k]*dtmp[k][j];
-	}
-      }
-    }
+	  dtmp[ii][jj] += dij[ii][kk]*rot_i[jj][kk];
+	} // kk
+      } // jj 
+    } // ii
+
+    for (int ii=0; ii<3; ii++) {
+      for (int jj=0; jj<3; jj++) {
+	dij[ii][jj] = 0.0;
+	for (int kk=0; kk<3; kk++) {
+	  dij[ii][jj] += rot_i[ii][kk]*dtmp[kk][jj];
+	} // kk
+      } // jj
+    } // ii
+
     // calculate velocities on sites 1 and 2
     Real vi_1[3], vi_2[3];
-    for (i=0; i<3; i++) {
-      vi_1[i] = 0.0;
-      vi_2[i] = 0.0;
-      for (j=0; j<3; j++) {
-	vi_1[i] += dii[i][j]*f1_s1[j]+dij[i][j]*f1_s2[j];
-	vi_2[i] += dii[i][j]*f1_s2[j]+dij[i][j]*f1_s1[j];
-      }
-    } 
+    for (int ii=0; ii<3; ii++) {
+      vi_1[ii] = 0.0;
+      vi_2[ii] = 0.0;
+      for (int jj=0; jj<3; jj++) {
+	vi_1[ii] += dii[ii][jj]*f1_s1[jj]+dij[ii][jj]*f1_s2[jj];
+	vi_2[ii] += dii[ii][jj]*f1_s2[jj]+dij[ii][jj]*f1_s1[jj];
+      } // jj 
+    } // ii
 
     // Calculate friction tensor for segment j. Start by calculating
     // size of spheres with same exposed surface as cylinder
@@ -880,16 +878,16 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     area /= 2.0;
     arad = sqrt(area/(4.0*M_PI));
     // Assume the cylinder is oriented along the x-axis
-    for (i=0; i<3; i++) {
-      for (j=0; j<3; j++) {
-	if (i==j) {
-	  dii[i][j] = 1.0/(6.0*M_PI*arad*visc);
+    for (int ii=0; ii<3; ii++) {
+      for (int jj=0; jj<3; jj++) {
+	if (ii==jj) {
+	  dii[ii][jj] = 1.0/(6.0*M_PI*arad*visc);
 	} else {
-	  dii[i][j] = 0.0;
+	  dii[ii][jj] = 0.0;
 	}
-	dij[i][j] = 0.0;
-      }
-    }
+	dij[ii][jj] = 0.0;
+      } // jj
+    } // ii
     if (c_length2 > 2.0*arad) {
       dij[0][0] = (c_length2*c_length2-2.0*arad*arad/3.0)/(4.0*M_PI*pow(c_length2,3)*visc);
       dij[1][1] = (c_length2*c_length2+2.0*arad*arad/3.0)/(8.0*M_PI*pow(c_length2,3)*visc);
@@ -912,42 +910,42 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     // Reorient dij so that it reflects the correct direction (dii is diagonal
     // so it doesn't change under reorientation). Note the transpose of the
     // rotation is equal to its inverse
-    for (i=0; i<3; i++) {
-      for (j=0; j<3; j++) {
-	dtmp[i][j] = 0.0;
-	for (k=0; k<3; k++) {
+    for (int ii=0; ii<3; ii++) {
+      for (int jj=0; jj<3; jj++) {
+	dtmp[ii][jj] = 0.0;
+	for (int kk=0; kk<3; kk++) {
 	  // use inverse rotation here
-	  dtmp[i][j] += dij[i][k]*rot_j[j][k];
+	  dtmp[ii][jj] += dij[ii][kk]*rot_j[jj][kk];
 	}
       }
     }
-    for (i=0; i<3; i++) {
-      for (j=0; j<3; j++) {
-	dij[i][j] = 0.0;
-	for (k=0; k<3; k++) {
-	  dij[i][j] += rot_j[i][k]*dtmp[k][j];
-	}
-      }
-    }
-    // calculate velocities on sites 1 and 2
+    for (int ii=0; ii<3; ii++) {
+      for (int jj=0; jj<3; jj++) {
+	dij[ii][jj] = 0.0;
+	for (int kk=0; kk<3; kk++) {
+	  dij[ii][jj] += rot_j[ii][kk]*dtmp[kk][jj];
+	} // kk
+      } // jj
+    } // ii
+
+    // Calculate velocities on sites 1 and 2
     Real vj_1[3], vj_2[3];
-    for (i=0; i<3; i++) {
-      vj_1[i] = 0.0;
-      vj_2[i] = 0.0;
-      for (j=0; j<3; j++) {
-	vj_1[i] += dii[i][j]*f2_s1[j]+dij[i][j]*f2_s2[j];
-	vj_2[i] += dii[i][j]*f2_s2[j]+dij[i][j]*f2_s1[j];
-      }
-    } 
-    // Get translational and rotational velocities of each
-    // segment
+    for (int ii=0; ii<3; ii++) {
+      vj_1[ii] = 0.0;
+      vj_2[ii] = 0.0;
+      for (int jj=0; jj<3; jj++) {
+	vj_1[ii] += dii[ii][jj]*f2_s1[jj]+dij[ii][jj]*f2_s2[jj];
+	vj_2[ii] += dii[ii][jj]*f2_s2[jj]+dij[ii][jj]*f2_s1[jj];
+      } // jj
+    } // ii
+
+    // Get translational and rotational velocities of each segment
     vel1[0] = 0.5*(vi_1[0]+vi_2[0]);
     vel1[1] = 0.5*(vi_1[1]+vi_2[1]);
     vel1[2] = 0.5*(vi_1[2]+vi_2[2]);
     vel2[0] = 0.5*(vj_1[0]+vj_2[0]);
     vel2[1] = 0.5*(vj_1[1]+vj_2[1]);
     vel2[2] = 0.5*(vj_1[2]+vj_2[2]);
-//    printf("R1X: %e V1X: %e R2X: %e V2X: %e\n",r12[0],vel1[0],0.0,vel2[0]);
 
     rotv1[0] = 0.5*(ry_i*vi_1[2]-rz_i*vi_1[1]);
     rotv1[1] = 0.5*(rz_i*vi_1[0]-rx_i*vi_1[2]);
@@ -969,14 +967,13 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     vel2[0] = 0.5*(f2_s1[0]+f2_s2[0]);
     vel2[1] = 0.5*(f2_s1[1]+f2_s2[1]);
     vel2[2] = 0.5*(f2_s1[2]+f2_s2[2]);
-//    printf("R1X: %e V1X: %e R2X: %e V2X: %e\n",r12[0],vel1[0],0.0,vel2[0]);
 
     // remove force on center of mass
-    for (i=0; i<3; i++) {
-      f1_s1[i] -= 0.5*vel1[i];
-      f1_s2[i] -= 0.5*vel1[i];
-      f2_s1[i] -= 0.5*vel2[i];
-      f2_s2[i] -= 0.5*vel2[i];
+    for (int ii=0; ii<3; ii++) {
+      f1_s1[ii] -= 0.5*vel1[ii];
+      f1_s2[ii] -= 0.5*vel1[ii];
+      f2_s1[ii] -= 0.5*vel2[ii];
+      f2_s2[ii] -= 0.5*vel2[ii];
     }
     rotv1[0] = 0.5*(ry_i*f1_s1[2]-rz_i*f1_s1[1]);
     rotv1[1] = 0.5*(rz_i*f1_s1[0]-rx_i*f1_s1[2]);

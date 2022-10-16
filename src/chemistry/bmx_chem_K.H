@@ -143,7 +143,7 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void 
 setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
               Real *par_new, int *ipar_orig, int *ipar_new, int num_reals,
-              int num_ints, Real split_len, Real max_rad, int id, int cpu,
+              int num_ints, Real split_len, Real /*max_rad*/, int id, int cpu,
               amrex::RandomEngine const& engine)
 {
   // Copy values from original particle to child
@@ -183,11 +183,13 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     pos_new[2] = z_orig - 0.25*c_length*nz;
     par_orig[realIdx::c_length] = 0.5*c_length;
     par_new[realIdx::c_length] = 0.5*c_length;
-    // Fix up topology of new and old segment
-    //        1-----------2 parent
-    //            /    \
-    //           /      \
-    //(child) 1----2  1----2 (parent)
+
+    /* Fix up topology of new and old segment
+              1-----------2 parent
+                  /    \
+                 /      \
+      (child) 1----2  1----2 (parent) */
+
     ipar_orig[intIdx::n_bnds] = 1;
     ipar_orig[intIdx::seg1_id1] = id;
     ipar_orig[intIdx::seg1_id2] = cpu;
@@ -202,13 +204,12 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     // Growth is towards site 1
     ipar_new[intIdx::id] = id;
     ipar_new[intIdx::cpu] = cpu;
+
   } else if (position == siteLocation::TIP) {
     // Terminal segment (growth tip)
     // Find direction of chemical gradient
-    Real gx = par_orig[realIdx::gx];
-    Real gy = par_orig[realIdx::gy];
-    Real gz = par_orig[realIdx::gz];
     Real gn = sqrt(gx*gx+gy*gy+gz*gz);
+
     // Find out which end is bonded to a segment
     int bsite = ipar_orig[intIdx::site1];
     if (nbnd == 2) {
@@ -221,6 +222,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     //printf("NBNDS: %d SITE1: %d SITE2: %d SITE3: %d\n",
     //    ipar_orig[intIdx::n_bnds],ipar_orig[intIdx::site1],ipar_orig[intIdx::site2],
     //    ipar_orig[intIdx::site3]);
+
     // Find orientation of existing segment
     Real theta = par_orig[realIdx::theta];
     Real phi = par_orig[realIdx::phi];
@@ -238,10 +240,12 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       //      printf("THETA: %f PHI: %f GX: %e GY: %e GZ: %e GN: %e\n",theta,phi,gx,gy,gz,gn);
       gn = 1.0;
     }
+
     // create unit vector in direction of chemical gradient
     gx = gx/gn;
     gy = gy/gn;
     gz = gz/gn;
+
     //printf("THETA: %f PHI: %f GX: %e GY: %e GZ: %e GN: %e\n",theta,phi,gx,gy,gz,gn);
     Real gtheta = acos(gz);
     Real gst = sin(gtheta);
@@ -251,6 +255,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       gphi = acos(gx/gst);
       if (gy < 0.0) gphi = 2.0 * M_PI - gphi;
     }
+
     Real gcp = cos(gphi);
     Real gsp = sin(gphi);
     //printf("GTHETA: %f GPHI: %f GX: %e GY: %e GZ: %e GN: %e\n",theta,phi,gx,gy,gz,gn);
@@ -394,9 +399,6 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
   } else if (ipar_orig[intIdx::position] == siteLocation::SECOND_1
         || ipar_orig[intIdx::position] == siteLocation::SECOND_2) {
     // Find direction of chemical gradient
-    Real gx = par_orig[realIdx::gx];
-    Real gy = par_orig[realIdx::gy];
-    Real gz = par_orig[realIdx::gz];
     Real gn = sqrt(gx*gx+gy*gy+gz*gz);
     // Find orientation of existing segment
     Real theta = par_orig[realIdx::theta];
@@ -484,7 +486,7 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     // Find theta and phi for new segment
     Real gntheta = acos(gnz);
     Real gnst = sin(gntheta);
-    Real gnct = gz;
+    // Real gnct = gz;
     Real gnphi = 0.0;
     if (gnst != 0.0) {
       gnphi = acos(gnx/gnst);

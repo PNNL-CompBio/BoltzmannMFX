@@ -46,7 +46,7 @@ BMXCellInteraction::~BMXCellInteraction()
  * Setup chemistry model by reading a parameter file
  * @param file name of parameter file used by chemistry model
  */
-void BMXCellInteraction::setParams(const char *file)
+void BMXCellInteraction::setParams(const char* /*file*/)
 {
   ParmParse pp("cell_force");
 

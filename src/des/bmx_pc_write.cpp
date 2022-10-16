@@ -20,7 +20,6 @@ void BMXParticleContainer::WriteToAscii (const std::string& vtk_filename,int nst
 
   for (int lev = 0; lev <= finest_level; lev++)
   {
-      const auto& plevel = GetParticles(lev);
       total_number_of_particles += NumberOfParticlesAtLevel(lev);
   }
 
