@@ -166,7 +166,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         site = 2;
       }
       // find out if segment j is attached to appropriate site
-      for (int ib=0; ib<i_bnds; ib++) {
+      int ib;
+      for (ib=0; ib<i_bnds; ib++) {
         if (i_id[ib] == jid && i_cpu[ib] == jcpu && i_site[ib] == site) {
           break;
         }
@@ -174,7 +175,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       // segment j is attached to segment i at site specified by
       // siteLocation value. Is segment j a growth tip? If not,
       // change position to INTERIOR
-      if (i<i_bnds && ipar2[intIdx::position] != siteLocation::TIP) {
+      if (ib<i_bnds && ipar2[intIdx::position] != siteLocation::TIP) {
         printf("Converting site position on segment id: %d cpu: %d\n",iid,icpu);
         ipar1[intIdx::position] = siteLocation::INTERIOR;
       }
@@ -290,7 +291,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         // Is anything else attached to site 1 on segment j?
         if (iid != j_id[0] || icpu != j_cpu[0]) {
           for (int ib =0; ib < i_bnds; ib++) {
-            if (i_site[j] == 2 && i_id[ib] == jid && i_cpu[ib] == jcpu) {
+            if (i_site[ib] == 2 && i_id[ib] == jid && i_cpu[ib] == jcpu) {
               // found that segment i is bonded to segment j. Update j
               j_bnds++;
               ipar2[intIdx::n_bnds] = j_bnds;
@@ -397,17 +398,18 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     //   me,r12[0],r12[1],r12[2],sqrt(r12[0]*r12[0]+r12[1]*r12[1]+r12[2]*r12[2]),
     //   c_length1,c_length2);
     // Look for bonds connecting these two segments
-    for (int ib=0; ib<i_bnds; ib++) {
+    int ib, jb;
+    for (ib=0; ib<i_bnds; ib++) {
       if (i_id[ib] == jid && i_cpu[ib] == jcpu) break;
     }
-    for (int jb=0; jb<j_bnds; jb++) {
+    for (jb=0; jb<j_bnds; jb++) {
       if (j_id[jb] == iid && j_cpu[jb] == icpu) break;
     }
     // Found a connection
     Real rx, ry, rz, r;
-    if (i <i_bnds && j_bnds) {
+    if (ib <i_bnds && jb < j_bnds) {
       // Four possibilities for bonded interactions
-      if ((i_site[i] == 1 && j_site[j] == 1)) {
+      if ((i_site[ib] == 1 && j_site[jb] == 1)) {
         // 1-1 interaction
         rx = xi1 - xj1;
         ry = yi1 - yj1;
@@ -426,7 +428,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         } // r < bond_cutoff
       } // if ((i_site[ib] == 1 && j_site[j] == 1)) ...
 
-      if ((i_site[i] == 1 && j_site[j] == 2 && !bonded)) {
+      if ((i_site[ib] == 1 && j_site[jb] == 2 && !bonded)) {
         // 1-2 interaction
         rx = xi1 - xj2;
         ry = yi1 - yj2;
@@ -449,7 +451,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           bonded = true;
         } // r < bond_cutoff
       } // if ((i_site[i] == 1 && j_site[j] == 2 && !bonded)) ...
-      if ((i_site[i] == 2 && j_site[j] == 1 && !bonded)) {
+      if ((i_site[ib] == 2 && j_site[jb] == 1 && !bonded)) {
         // 2-1 interaction
         rx = xi2 - xj1;
         ry = yi2 - yj1;
@@ -473,7 +475,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           bonded = true;
         }
       }
-      if ((i_site[i] == 2 && j_site[j] == 2 && !bonded)) {
+      if ((i_site[ib] == 2 && j_site[jb] == 2 && !bonded)) {
         // 2-2 interaction
         rx = xi2 - xj2;
         ry = yi2 - yj2;

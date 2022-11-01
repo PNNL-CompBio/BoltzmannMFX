@@ -184,11 +184,16 @@ class BMXChemistry
    */
   void getChemParams(std::vector<Real> &chempar);
 
+  /** Returen a vector containing exchange parameters
+   * @return vector of exchange parameters
+   */
+  std::vector<Real> getExchangeParameters();
+
   // Hardwired variables for ABC model
   static Real k1, kr1;   // rate coefficients for species A into and out of biological cell
   static Real k2, kr2;   // rate coefficients for converting A into B and C inside biological cell
   static Real k3, kr3;   // rate coefficients for species C into and out of biological cell
-  static Real kg;        // cell growth coefficient
+  static Real kg, kv;        // cell growth coefficients
 
   static Real radius_max;  // maximum value of cylinder radius for fungi segment
   static Real length_max;  // maximum value of cylinder length for fungi segment
@@ -199,6 +204,10 @@ class BMXChemistry
 
   static int p_num_reals;   // Total number of real values allocated in model
   static int p_num_ints;    // Total number of int values allocated in model
+
+  static Real mtA;  // Septum mass transfer coefficient for A
+  static Real mtB;  // Septum mass transfer coefficient for B
+  static Real mtC;  // Septum mass transfer coefficient for C
 
   protected:
   /**

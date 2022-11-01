@@ -154,6 +154,11 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
   Real gx = par_orig[realIdx::gx];
   Real gy = par_orig[realIdx::gy];
   Real gz = par_orig[realIdx::gz];
+  if (true) {
+    gx = 0.0;
+    gy = 0.0;
+    gz = 0.0;
+  }
 
   //Check out if this is an interior or terminal segment
   int nbnd = ipar_orig[intIdx::n_bnds];
@@ -609,7 +614,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     Real *cell_par, Real *mesh_vals, Real *p_vals, Real dt, int nloop,
     Real *chempar, int *cell_ipar)
 {
-  Real k1, k2, k3, kr1, kr2, kr3, kg;
+  Real k1, k2, k3, kr1, kr2, kr3, kg, kv;
   Real fluid_vol = grid_vol/npart;
   int cell_type =  cell_ipar[intIdx::cell_type];
   bool is_tip = (cell_ipar[intIdx::position] == siteLocation::TIP);
@@ -622,8 +627,23 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
   kr2 = chempar[4];
   kr3 = chempar[5];
   kg = chempar[6];
-  radius_max = chempar[7];
-  length_max = chempar[8];
+  kv = chempar[7];
+  radius_max = chempar[8];
+  length_max = chempar[9];
+  // check to see if particle can grow. Set growth rates to zero
+  // if it cannot
+    printf("KG: %e KV: %e\n",kg,kv);
+  if (cell_type == cellType::FUNGI) {
+    if (cell_ipar[intIdx::position] != siteLocation::TIP) {
+      if ((cell_par[realIdx::radius] >= radius_max &&
+            cell_par[realIdx::c_length] >= length_max)
+          || cell_ipar[intIdx::position] == siteLocation::INTERIOR) {
+        kg = 0.0;
+        kv = 0.0;
+      }
+    }
+  }
+    printf("AT 2 KG: %e KV: %e\n",kg,kv);
 #if 0
   // Stop growth on interior segments that are maximum sized
   if (cell_par[realIdx::c_length] == length_max &&
@@ -687,7 +707,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
   cB = p_vals[1];
   cC = p_vals[2];
   int i;
-  double dtp = dt/static_cast<double>(nloop);
+  Real dtp = dt/static_cast<Real>(nloop);
 
   Real fA_tmp = fA;
   Real fB_tmp = fB;
@@ -733,9 +753,9 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
 
     // Adjusted fluid values. Grid vol represents the volume of fluid in the
     // grid cell not occupied by the particle
-    double dfA = dA1/fluid_vol;
-    double dfB = dB1/fluid_vol;
-    double dfC = dC1/fluid_vol;
+    Real dfA = dA1/fluid_vol;
+    Real dfB = dB1/fluid_vol;
+    Real dfC = dC1/fluid_vol;
     //if (dfA > fA_tmp) dfA = fA_tmp;
     //if (dfB > fB_tmp) dfB = fB_tmp;
     //if (dfC > fC_tmp) dfC = fC_tmp;
@@ -812,10 +832,11 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     // Compute changes due to reactions within the cell only 
     // Update cA, cB, cC
     // ********************************************************************
-    Real rA, rB, rC;
+    Real rA, rB, rC, rV;
     rA = -k2*cA + kr2*cB*cC;
     rB =  k2*cA - kr2*cB*cC;
     rC =  k2*cA - kr2*cB*cC;
+    printf("RV: %e KV: %e CB: %e V_cell: %e RB: %e\n",rV,kv,cB,orig_cell_vol,rB);
 
     // Increment concentrations
     Real dA3, dB3, dC3;
@@ -825,6 +846,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     cA += dA3;
     cB += dB3;
     cC += dC3;
+    printf("CB at 1: %e\n",cB);
     if (cA < 0.0) {
       cA -= dA3;
       dA3 = -cA;
@@ -853,6 +875,26 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
       cC += dC3;
     }
 
+    // ********************************************************************
+    // Increment B again to account for first order reaction. Handle this
+    // reaction separately since it does not conserve A and B
+    // ********************************************************************
+    printf("CB at 2: %e\n",cB);
+    rV =  kv*cB*orig_cell_vol;
+    rB = -kg*cB;
+    dB3 = dtp*rB;
+    cB += dB3;
+    Real dV = dtp*rV;
+    if (cB < 0.0) {
+      cB -= dB3;
+      // Assume a shorter time step if cB goes to zero for a full time step
+      Real ttmp = -cB/rB;
+      dV = ttmp*rV;
+      cB = 0.0;
+    }
+    printf("CB at 3: %e\n",cB);
+    printf("DV: %e\n",dV);
+
 #ifndef AMREX_USE_GPU
     if (cA < 0.0) printf("   Intermediate internal concentration A: %16.8e\n",cA);
     if (cB < 0.0) printf("   Intermediate internal concentration B: %16.8e\n",cB);
@@ -871,10 +913,10 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     // Update the cell area, change in area, and sizes
     if (cell_type == cellType::YEAST) {
       // Yeast cells grow no matter what
-      Real dvdt = std::max(kg*rB*orig_cell_vol,0.0);
+      Real dvdt = rV;
 
       cell_par[realIdx::dvdt] = dvdt; 
-      new_cell_vol += dtp*dvdt;
+      new_cell_vol += dV;
       cell_par[realIdx::vol] = new_cell_vol; 
       // Calculate new surface area, volume and radius
       Real radius = pow((3.0*new_cell_vol/(4.0*M_PI)),1.0/3.0);
@@ -887,31 +929,19 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
       // or any of the segment dimensions are below maximum
       // values
       if (is_tip) {
-        Real dvdt = std::max(kg*rB*orig_cell_vol,0.0);
-        cell_par[realIdx::dvdt] = dvdt; 
-#if 0
-  if (cell_ipar[intIdx::position] == siteLocation::TIP) {
-    printf("Growth rate %e id: %d cpu: %d\n",
-        dvdt,cell_par[realIdx::c_length],
-        cell_ipar[intIdx::id], cell_ipar[intIdx::cpu]);
-  }
-#endif
-        new_cell_vol += dtp*dvdt;
+        Real dvdt = std::max(rV,0.0);
+        cell_par[realIdx::dvdt] = rV; 
+        new_cell_vol += dV;
         cell_par[realIdx::vol] = new_cell_vol; 
         Real radius, c_length, tau;
-//          printf("Check radius: %e length: %e max: %e id: %d cpu: %d\n",
-//              cell_par[realIdx::radius],cell_par[realIdx::c_length],radius_max,
-//              cell_ipar[intIdx::id],cell_ipar[intIdx::cpu]);
         if (cell_par[realIdx::radius] < radius_max
             && cell_par[realIdx::c_length] < length_max) {
           // grow segment proportionally
-//          printf("Beginning radius: %e length: %e id: %d cpu: %d\n",
-//              cell_par[realIdx::radius],cell_par[realIdx::c_length],
-//              cell_ipar[intIdx::id],cell_ipar[intIdx::cpu]);
           tau = pow(new_cell_vol/orig_cell_vol,1.0/3.0);
           radius = tau*cell_par[realIdx::radius];
           c_length = tau*cell_par[realIdx::c_length];
-          Real dtdt = 1.0/(3.0*pow(new_cell_vol,2.0/3.0))*dvdt/pow(orig_cell_vol,1.0/3.0);
+          Real dtdt = 1.0/(3.0*pow(new_cell_vol,2.0/3.0))
+            *rV/pow(orig_cell_vol,1.0/3.0);
           Real drdt = dtdt*cell_par[realIdx::radius];
           Real dldt = dtdt*cell_par[realIdx::c_length];
           cell_par[realIdx::dadt] = 2.0*M_PI*(drdt*(radius+c_length)+radius*(drdt+dldt));
@@ -929,7 +959,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
           tau = sqrt(new_cell_vol/orig_cell_vol);
           radius = tau*cell_par[realIdx::radius];
           c_length = cell_par[realIdx::c_length];
-          Real dtdt = 1.0/(2.0*sqrt(new_cell_vol))*dvdt/sqrt(orig_cell_vol);
+          Real dtdt = 1.0/(2.0*sqrt(new_cell_vol))*rV/sqrt(orig_cell_vol);
           Real drdt = dtdt*cell_par[realIdx::radius];
           cell_par[realIdx::dadt] = 2.0*M_PI*(2.0*radius+c_length)*drdt;
         } else {
@@ -937,7 +967,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
           tau = new_cell_vol/orig_cell_vol;
           radius = cell_par[realIdx::radius];
           c_length = tau*cell_par[realIdx::c_length];
-          Real dldt = dvdt*cell_par[realIdx::c_length]/orig_cell_vol;
+          Real dldt = rV*cell_par[realIdx::c_length]/orig_cell_vol;
           cell_par[realIdx::dadt] =  2.0*M_PI*radius*dldt;
         }
         cell_par[realIdx::radius] = radius;
@@ -945,14 +975,13 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
       } else {
         // Fungi segment can only grow radially
         if (cell_par[realIdx::radius] < radius_max) {
-          Real dvdt = std::max(kg*rB*orig_cell_vol,0.0);
-          cell_par[realIdx::dvdt] = dvdt; 
-          new_cell_vol += dtp*dvdt;
+          cell_par[realIdx::dvdt] = rV; 
+          new_cell_vol += dV;
           cell_par[realIdx::vol] = new_cell_vol; 
           Real tau = sqrt(new_cell_vol/orig_cell_vol);
           Real radius = tau*cell_par[realIdx::radius];
           Real c_length = cell_par[realIdx::c_length];
-          Real dtdt = 1.0/(2.0*sqrt(new_cell_vol))*dvdt/sqrt(orig_cell_vol);
+          Real dtdt = 1.0/(2.0*sqrt(new_cell_vol))*rV/sqrt(orig_cell_vol);
           Real drdt = dtdt*cell_par[realIdx::radius];
           cell_par[realIdx::radius] = radius;
           cell_par[realIdx::c_length] = c_length;
@@ -1119,3 +1148,131 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
 #endif
 }
 
+/**
+ * Initialize exchange increments to zero
+ * @param par real parameters describing particle
+ * @param ipar integer parameters describing particle
+ */
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void 
+initExchange(Real *par, int *ipar)
+{
+  if (ipar[intIdx::cell_type] == cellType::FUNGI) {
+    Real *cnc = &par[realIdx::first_data];
+    cnc[3] = 0.0;
+    cnc[4] = 0.0;
+    cnc[5] = 0.0;
+  }
+}
+/**
+ * Calculate the exchange of material between two segments. r12 is computed
+ * outside this routine and periodic boundary conditions, if applicable, have
+ * already been applied
+ * @param par1 real parameters describing particle 1
+ * @param par2 real parameters describing particle 2
+ * @param ipar1 integer parameters describing particle 1
+ * @param ipar2 integer parameters describing particle 2
+ * @param xpar array of params used in exchange calculation
+ * @param dt magnitude of the time step
+ */
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void 
+evaluateExchange(Real *par1, Real *par2, int *ipar1, int *ipar2, Real *xpar, Real dt)
+{
+  if (ipar1[intIdx::cell_type] == cellType::FUNGI &&
+      ipar2[intIdx::cell_type] == cellType::FUNGI) {
+    // Mass exchange parameters
+    Real mtA = xpar[0];
+    Real mtB = xpar[1];
+    Real mtC = xpar[2];
+    int i_id[4];
+    int i_cpu[4];
+    int j_id[4];
+    int j_cpu[4];
+
+    int i_bnds = ipar1[intIdx::n_bnds];
+    i_id[0] = ipar1[intIdx::seg1_id1];
+    i_id[1] = ipar1[intIdx::seg2_id1];
+    i_id[2] = ipar1[intIdx::seg3_id1];
+    i_id[3] = ipar1[intIdx::seg4_id1];
+
+    i_cpu[0] = ipar1[intIdx::seg1_id2];
+    i_cpu[1] = ipar1[intIdx::seg2_id2];
+    i_cpu[2] = ipar1[intIdx::seg3_id2];
+    i_cpu[3] = ipar1[intIdx::seg4_id2];
+
+    int j_bnds = ipar2[intIdx::n_bnds];
+    j_id[0] = ipar2[intIdx::seg1_id1];
+    j_id[1] = ipar2[intIdx::seg2_id1];
+    j_id[2] = ipar2[intIdx::seg3_id1];
+    j_id[3] = ipar2[intIdx::seg4_id1];
+
+    j_cpu[0] = ipar2[intIdx::seg1_id2];
+    j_cpu[1] = ipar2[intIdx::seg2_id2];
+    j_cpu[2] = ipar2[intIdx::seg3_id2];
+    j_cpu[3] = ipar2[intIdx::seg4_id2];
+
+    int iid = ipar1[intIdx::id];
+    int icpu = ipar1[intIdx::cpu];
+    int jid = ipar2[intIdx::id];
+    int jcpu = ipar2[intIdx::cpu];
+
+    // Look for bonds connecting these two segments
+    int ib, jb;
+    for (ib=0; ib<i_bnds; ib++) {
+      if (i_id[ib] == jid && i_cpu[ib] == jcpu) break;
+    }
+    for (jb=0; jb<j_bnds; jb++) {
+      if (j_id[jb] == iid && j_cpu[jb] == icpu) break;
+    }
+    if (ib <i_bnds && jb < j_bnds) {
+      // Found a connection so calculate the exchange increment
+       Real *cnc1 = &par1[realIdx::first_data];
+       Real *cnc2 = &par2[realIdx::first_data];
+       Real cA_1 = cnc1[0];
+       Real cB_1 = cnc1[1];
+       Real cC_1 = cnc1[2];
+       Real cA_2 = cnc2[0];
+       Real cB_2 = cnc2[1];
+       Real cC_2 = cnc2[2];
+       
+       // Calculate area of septum
+       Real rad1 = par1[realIdx::radius];
+       Real area1 = M_PI*rad1*rad1;
+       Real rad2 = par2[realIdx::radius];
+       Real area2 = M_PI*rad2*rad2;
+       Real area = 0.5*(area1+area2);
+
+       // Calculate exchange increment. Exchange is transfer from segment 1
+       // to segment 2
+       Real dA = (cA_1-cA_2)*area*mtA*dt;
+       Real dB = (cB_1-cB_2)*area*mtB*dt;
+       Real dC = (cC_1-cC_2)*area*mtC*dt;
+
+       // Update increments
+       cnc1[3] -= dA;
+       cnc1[4] -= dB;
+       cnc1[5] -= dC;
+       cnc2[3] += dA;
+       cnc2[4] += dB;
+       cnc2[5] += dC;
+    } // if (i<i_bnds && j_bnds) ...
+  }
+}
+
+/**
+ * apply increments from particle exchange calculation to concentrations
+ * @param par real parameters describing particle
+ * @param ipar integer parameters describing particle
+ */
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void 
+applyIncrements(Real *par, int *ipar)
+{
+  if (ipar[intIdx::cell_type] == cellType::FUNGI) {
+    Real *cnc = &par[realIdx::first_data];
+    cnc[0] += cnc[3];
+    cnc[1] += cnc[4];
+    cnc[2] += cnc[5];
+  }
+}

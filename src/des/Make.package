@@ -9,3 +9,4 @@ CEXE_sources += bmx_pc_write.cpp
 CEXE_sources += bmx_calc_txfr.cpp
 CEXE_sources += bmx_calc_volume_fraction.cpp
 CEXE_sources += bmx_split_particles.cpp
+CEXE_sources += bmx_pc_xchng.cpp

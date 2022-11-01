@@ -10,6 +10,10 @@ amrex::Real BMXChemistry::kr1 = 0.0;
 amrex::Real BMXChemistry::kr2 = 0.0;
 amrex::Real BMXChemistry::kr3 = 0.0;
 amrex::Real BMXChemistry::kg = 0.0;
+amrex::Real BMXChemistry::kv = 0.0;
+amrex::Real BMXChemistry::mtA = 0.0;
+amrex::Real BMXChemistry::mtB = 0.0;
+amrex::Real BMXChemistry::mtC = 0.0;
 amrex::Real BMXChemistry::radius_max = 0.0;
 amrex::Real BMXChemistry::length_max = 0.0;
 amrex::Real BMXChemistry::p_overlap = 0.0;
@@ -84,6 +88,13 @@ void BMXChemistry::setParams(const char* /*file*/)
   pp.get("k3",k3);
   pp.get("kr3",kr3);
   pp.get("kg",kg);
+  pp.get("kv",kv);
+  mtA = 0.0;
+  pp.query("mass_transfer_A",mtA);
+  mtB = 0.0;
+  pp.query("mass_transfer_B",mtB);
+  mtC = 0.0;
+  pp.query("mass_transfer_C",mtC);
   p_overlap = 0.2;
   /* figure out cutoff for neighbor list */
   Real vol = SPECIES::max_vol;
@@ -184,6 +195,19 @@ void BMXChemistry::getChemParams(std::vector<Real> &chempar)
   chempar.push_back(kr2);
   chempar.push_back(kr3);
   chempar.push_back(kg);
+  chempar.push_back(kv);
   chempar.push_back(radius_max);
   chempar.push_back(length_max);
+}
+
+/** Returen a vector containing exchange parameters
+ * @return vector of exchange parameters
+ */
+std::vector<Real> BMXChemistry::getExchangeParameters()
+{
+  std::vector<Real> ret;
+  ret.push_back(mtA);
+  ret.push_back(mtB);
+  ret.push_back(mtC);
+  return ret;
 }

@@ -113,6 +113,10 @@ public:
                           const amrex::Vector<amrex::MultiFab *> cost,
                           std::string & knapsack_weight_type,
                           int & nsubsteps);
+    void ParticleExchange (Real dt,
+                           const amrex::Vector<amrex::MultiFab*> cost,
+                           std::string& knapsack_weight_type,
+                           int& nsubsteps);
 
     ///
     /// Write out all particles in the format of the particle_input.dat files so we
