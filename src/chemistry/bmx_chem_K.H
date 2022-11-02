@@ -632,7 +632,6 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
   length_max = chempar[9];
   // check to see if particle can grow. Set growth rates to zero
   // if it cannot
-    printf("KG: %e KV: %e\n",kg,kv);
   if (cell_type == cellType::FUNGI) {
     if (cell_ipar[intIdx::position] != siteLocation::TIP) {
       if ((cell_par[realIdx::radius] >= radius_max &&
@@ -643,7 +642,6 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
       }
     }
   }
-    printf("AT 2 KG: %e KV: %e\n",kg,kv);
 #if 0
   // Stop growth on interior segments that are maximum sized
   if (cell_par[realIdx::c_length] == length_max &&
@@ -836,7 +834,6 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     rA = -k2*cA + kr2*cB*cC;
     rB =  k2*cA - kr2*cB*cC;
     rC =  k2*cA - kr2*cB*cC;
-    printf("RV: %e KV: %e CB: %e V_cell: %e RB: %e\n",rV,kv,cB,orig_cell_vol,rB);
 
     // Increment concentrations
     Real dA3, dB3, dC3;
@@ -846,7 +843,6 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     cA += dA3;
     cB += dB3;
     cC += dC3;
-    printf("CB at 1: %e\n",cB);
     if (cA < 0.0) {
       cA -= dA3;
       dA3 = -cA;
@@ -879,7 +875,6 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     // Increment B again to account for first order reaction. Handle this
     // reaction separately since it does not conserve A and B
     // ********************************************************************
-    printf("CB at 2: %e\n",cB);
     rV =  kv*cB*orig_cell_vol;
     rB = -kg*cB;
     dB3 = dtp*rB;
@@ -892,8 +887,6 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
       dV = ttmp*rV;
       cB = 0.0;
     }
-    printf("CB at 3: %e\n",cB);
-    printf("DV: %e\n",dV);
 
 #ifndef AMREX_USE_GPU
     if (cA < 0.0) printf("   Intermediate internal concentration A: %16.8e\n",cA);
@@ -1239,8 +1232,10 @@ evaluateExchange(Real *par1, Real *par2, int *ipar1, int *ipar2, Real *xpar, Rea
        // Calculate area of septum
        Real rad1 = par1[realIdx::radius];
        Real area1 = M_PI*rad1*rad1;
+       Real vol1 = par1[realIdx::vol];
        Real rad2 = par2[realIdx::radius];
        Real area2 = M_PI*rad2*rad2;
+       Real vol2 = par2[realIdx::vol];
        Real area = 0.5*(area1+area2);
 
        // Calculate exchange increment. Exchange is transfer from segment 1
@@ -1250,12 +1245,12 @@ evaluateExchange(Real *par1, Real *par2, int *ipar1, int *ipar2, Real *xpar, Rea
        Real dC = (cC_1-cC_2)*area*mtC*dt;
 
        // Update increments
-       cnc1[3] -= dA;
-       cnc1[4] -= dB;
-       cnc1[5] -= dC;
-       cnc2[3] += dA;
-       cnc2[4] += dB;
-       cnc2[5] += dC;
+       cnc1[3] -= dA/vol1;
+       cnc1[4] -= dB/vol1;
+       cnc1[5] -= dC/vol1;
+       cnc2[3] += dA/vol2;
+       cnc2[4] += dB/vol2;
+       cnc2[5] += dC/vol2;
     } // if (i<i_bnds && j_bnds) ...
   }
 }

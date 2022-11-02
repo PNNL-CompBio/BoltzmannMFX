@@ -116,6 +116,9 @@ void BMXParticleContainer::ParticleExchange (Real dt,
               {
                   auto& particle = pstruct[i];
 
+                  // initialize particle before evaluating exchange
+                  initExchange(&particle.rdata(0),&particle.idata(0));
+
                   // Initialize increments to zero
                   const auto neighbs = nbor_data.getNeighbors(i);
                   for (auto mit = neighbs.begin(); mit != neighbs.end(); ++mit)

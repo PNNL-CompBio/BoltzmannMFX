@@ -106,10 +106,14 @@ void BMXParticleContainer::WriteToAscii (const std::string& vtk_filename,int nst
 
                 File << x1 << " " << y1 << " " << z1 << std::endl;
                 File << x2 << " " << y2 << " " << z2 << std::endl;
-                File    << " "                                                            << std::endl;
+                File << " " << std::endl;
               } // i
             } // loop over particles at level "lev"
           } // levels
+          File.flush();
+          File.close();
+          if (!File.good())
+            amrex::Abort("BMXarticleContainer::WriteVTKAscii():  problem writing file");
         } // MyProc
         ParallelDescriptor::Barrier();
     } // loop over proc
@@ -151,9 +155,60 @@ void BMXParticleContainer::WriteToAscii (const std::string& vtk_filename,int nst
         }
         File     << std::endl;
 
+        File << "SCALARS "      << "conc_B "   << "float"                         << std::endl;
+        File << "LOOKUP_TABLE " << "default"                                  << std::endl;
+
         File.flush();
         File.close();
         if (!File.good())
              amrex::Abort("BMXarticleContainer::WriteVTKAscii():  problem writing file");
      } // I/O Proc
+
+  ParallelDescriptor::Barrier();
+ 
+  for (int proc = 0; proc < ParallelDescriptor::NProcs(); proc++)
+  {
+      if (MyProc == proc)
+      {
+          //
+          // Each CPU opens the file for appending and adds its particles.
+          //
+          VisMF::IO_Buffer io_buffer(VisMF::IO_Buffer_Size);
+
+          std::ofstream File;
+
+          File.rdbuf()->pubsetbuf(io_buffer.dataPtr(), io_buffer.size());
+
+          File.open(filename+".vtk", std::ios::out|std::ios::app);
+
+          File.precision(8);
+
+          if (!File.good())
+              amrex::FileOpenFailed(filename+".vtk");
+
+          for (int lev = 0; lev <= finest_level; lev++)
+          {
+            const auto& plevel = GetParticles(lev);
+            for (const auto& kv : plevel)
+            {
+              const auto& particles = kv.second.GetArrayOfStructs();
+
+              for (int i = 0; i < particles.numParticles(); ++i)
+              {
+                const Real* par = &particles[i].rdata(0); 
+
+                Real concB = par[realIdx::first_data+1];
+
+                File << concB << " " << concB << std::endl;
+              } // i
+            } // loop over particles at level "lev"
+          } // levels
+          File.flush();
+          File.close();
+          if (!File.good())
+             amrex::Abort("BMXarticleContainer::WriteVTKAscii():  problem writing file");
+        } // MyProc
+        ParallelDescriptor::Barrier();
+    } // loop over proc
+
 }
