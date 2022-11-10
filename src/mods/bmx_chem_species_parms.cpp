@@ -40,8 +40,11 @@ namespace SPECIES
   // Maximum segment radius
   amrex::Real max_rad;
 
-  // Maximum branching probability
+  // Branching probability
   amrex::Real brnch_prob;
+
+  // Tip-splitting probability
+  amrex::Real split_prob;
 
   void Initialize ()
   {
@@ -56,6 +59,8 @@ namespace SPECIES
     pp.query("max_seg_radius", max_rad);
     brnch_prob = 0.0001;
     pp.query("branching_probability", brnch_prob);
+    split_prob = 0.1;
+    pp.query("splitting_probability", split_prob);
 
     if (pp.contains("solve"))
     {

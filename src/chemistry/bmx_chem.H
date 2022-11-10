@@ -198,6 +198,7 @@ class BMXChemistry
   static Real radius_max;  // maximum value of cylinder radius for fungi segment
   static Real length_max;  // maximum value of cylinder length for fungi segment
   static Real brnch_prob;  // probability of side branching
+  static Real split_prob;  // probability of tip splitting
 
   // Fraction of overlap
   static Real p_overlap;

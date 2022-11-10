@@ -6,29 +6,43 @@
  * @param max_len maximum segment length for splitting of FUNGI
  * @param max_rad maximum radius of FUNGI segments
  * @param brnch_prob probability per step that a side branch will be created
+ * @param split_prob probability of splitting versus single bud
+ * @param n_new number of new particles
  * @param engine object for implementing random number generator
  * @return true if particle should split
  */
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 bool 
 checkSplit(Real *p_par, int *p_ipar, Real max_vol, Real max_len,
-    Real max_rad, Real brnch_prob, amrex::RandomEngine const& engine)
+    Real max_rad, Real brnch_prob, Real split_prob, int *n_new,
+    amrex::RandomEngine const& engine)
 {
   bool ret = false;
   int cell_type = p_ipar[intIdx::cell_type];
+  *n_new = 0;
   if (cell_type == cellType::YEAST) {
     if (p_par[realIdx::vol] > max_vol) ret = true;
+    *n_new = 1;
   } else if (cell_type == cellType::FUNGI) {
     //TODO: Check fungi values
     int position = p_ipar[intIdx::position];
     if (position == siteLocation::TIP) {
       // Only consider splitting if segment cannot grow radially
       if (p_par[realIdx::radius] >= max_rad) {
-        // If segment is a growth tip then split if segment is greater than
-        // or equal to maximum length
+        // Choose single bud or tip splitting
+        Real x = amrex::Random(engine);
         if (p_par[realIdx::c_length] >= max_len) {
-          printf("LENGTH: %16.8f\n",p_par[realIdx::c_length]);
-          ret = true;
+          if (x > split_prob || p_ipar[intIdx::n_bnds] == 0) {
+            // If segment is a growth tip then split if segment is greater than
+            // or equal to maximum length
+            printf("LENGTH: %16.8f\n",p_par[realIdx::c_length]);
+            ret = true;
+            *n_new = 1;
+          } else {
+            printf("SPLIT LENGTH: %16.8f\n",p_par[realIdx::c_length]);
+            ret = true;
+            *n_new = 2;
+          }
         }
       }
     } else if (position == siteLocation::SECOND_1 ||
@@ -37,8 +51,9 @@ checkSplit(Real *p_par, int *p_ipar, Real max_vol, Real max_len,
       // branch with some probability.
       Real x = amrex::Random(engine);
       if (x < brnch_prob) ret = true;
-      printf("CHECKING FOR SIDE BRANCH brnch_prob: %f x: %f\n",brnch_prob,x);
+//      printf("CHECKING FOR SIDE BRANCH brnch_prob: %f x: %f\n",brnch_prob,x);
       if (ret) printf("SIDE BRANCH WILL BE CREATED\n");
+      *n_new = 1;
     }
   }
   return ret;
@@ -135,7 +150,6 @@ setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
  * @param ipar_orig, ipar_new integer parameter values of original and new segments
  * @param num_reals, num_ints number of real and integer parameters
  * @param split_len length of parent segment after split
- * @param max_rad  maximum radius of parent segment
  * @param id, cpu ID and cpu of new segment
  * @param engine object for implementing random number generator
  */
@@ -143,7 +157,7 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void 
 setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
               Real *par_new, int *ipar_orig, int *ipar_new, int num_reals,
-              int num_ints, Real split_len, Real /*max_rad*/, int id, int cpu,
+              int num_ints, Real split_len, int id, int cpu,
               amrex::RandomEngine const& engine)
 {
   // Copy values from original particle to child
@@ -1270,4 +1284,335 @@ applyIncrements(Real *par, int *ipar)
     cnc[1] += cnc[4];
     cnc[2] += cnc[5];
   }
+}
+
+/**
+ * Create positions and parameter values for new segment pair. This consist
+ * of the original segment and a new segment
+ * @param pos_orig, pos_new1, pos_new2 positions of original and new segments
+ * @param par_orig, par_new1, par_new2 real parameter values of original
+ *        and new segments
+ * @param ipar_orig, ipar_new1, ipar_new2 integer parameter values of
+ *        original and new segments
+ * @param num_reals, num_ints number of real and integer parameters
+ * @param split_len length of parent segment after split
+ * @param id1, cpu1, id2, cpu2, ID and cpu of new segments
+ * @param engine object for implementing random number generator
+ */
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void 
+setNewSegments(Real *pos_orig, Real *pos_new1, Real *pos_new2,
+               Real *par_orig, Real *par_new1, Real *par_new2,
+               int *ipar_orig, int *ipar_new1, int *ipar_new2,
+               int num_reals, int num_ints, Real split_len,
+               int id1, int cpu1, int id2, int cpu2,
+               amrex::RandomEngine const& engine)
+{
+  // Copy values from original particle to children
+  copyChildParameters(par_orig, ipar_orig, par_new1, ipar_new1,
+      num_reals, num_ints);
+  copyChildParameters(par_orig, ipar_orig, par_new2, ipar_new2,
+      num_reals, num_ints);
+  printf("Adding new segments id1: %d cpu1: %d id2: %d cpu2: %d\n",id1,cpu1,id2,cpu2);
+
+  //Check out if this is an interior or terminal segment
+  int nbnd = ipar_orig[intIdx::n_bnds];
+  int position = ipar_orig[intIdx::position];
+
+  // Terminal segment (growth tip)
+  // Find out which end is bonded to a segment
+  int bsite = ipar_orig[intIdx::site1];
+  if (nbnd == 2) {
+    // Check to make sure second bonding site is equal to first bonding
+    // site (in case where TIP is generated by side branching)
+    if (ipar_orig[intIdx::site2] != bsite) {
+      amrex::Abort("ERROR: bonds at both ends of tip segment");
+    }
+  }
+
+  // Find orientation of existing segment
+  Real theta = par_orig[realIdx::theta];
+  Real phi = par_orig[realIdx::phi];
+  Real ct = cos(theta);
+  Real st = sin(theta);
+  Real cp = cos(phi);
+  Real sp = sin(phi);
+  Real nx = st*cp;
+  Real ny = st*sp;
+  Real nz = ct;
+
+  // Pick directions parallel to the xy plane and
+  // at a +/-45 degree angle to the growth direction
+  Real da = 0.25*M_PI;
+  Real tphi1 = phi+da;
+  Real tphi2 = phi-da;
+  Real gx1 = cos(tphi1);
+  Real gy1 = sin(tphi1);
+  Real gz1 = 0.0;
+  Real gx2 = cos(tphi2);
+  Real gy2 = sin(tphi2);
+  Real gz2 = 0.0;
+
+  // create unit vector in direction of first segment
+  Real gtheta = acos(gz1);
+  Real gst = sin(gtheta);
+  Real gct = gz1;
+  Real gphi = 0.0;
+  if (gst != 0.0) {
+    gphi = acos(gx1/gst);
+    if (gy1 < 0.0) gphi = 2.0 * M_PI - gphi;
+  }
+  Real gcp = cos(gphi);
+  Real gsp = sin(gphi);
+  // Find matrix that rotates x-axis to first particle direction
+  Real rotx1[3][3];
+  rotx1[0][0] = gcp*gst;
+  rotx1[0][1] = -gsp;
+  rotx1[0][2] = -gcp*gct;
+  rotx1[1][0] = gsp*gst;
+  rotx1[1][1] = gcp;
+  rotx1[1][2] = -gsp*gct;
+  rotx1[2][0] = gct;
+  rotx1[2][1] = 0.0;
+  rotx1[2][2] = gst;
+
+  // create unit vector in direction of second segment
+  gtheta = acos(gz2);
+  gst = sin(gtheta);
+  gct = gz2;
+  gphi = 0.0;
+  if (gst != 0.0) {
+    gphi = acos(gx2/gst);
+    if (gy2 < 0.0) gphi = 2.0 * M_PI - gphi;
+  }
+  gcp = cos(gphi);
+  gsp = sin(gphi);
+  // Find matrix that rotates x-axis to first particle direction
+  Real rotx2[3][3];
+  rotx2[0][0] = gcp*gst;
+  rotx2[0][1] = -gsp;
+  rotx2[0][2] = -gcp*gct;
+  rotx2[1][0] = gsp*gst;
+  rotx2[1][1] = gcp;
+  rotx2[1][2] = -gsp*gct;
+  rotx2[2][0] = gct;
+  rotx2[2][1] = 0.0;
+  rotx2[2][2] = gst;
+
+  // Choose directions for the new segments from a distribution of directions
+  // around the x-axis
+  Real rtheta = 0.1 * amrex::Random(engine);
+  Real rphi = 2.0 * M_PI * amrex::Random(engine);
+  Real rct = cos(rtheta);
+  Real rst = sin(rtheta);
+  Real rcp = cos(rphi);
+  Real rsp = sin(rphi);
+  Real rx = rct;
+  Real ry = rst*rsp;
+  Real rz = rst*rcp;
+  // Rotate random vector so that it is approximately oriented in the direction
+  // of direction 1
+  Real gnx1 = rotx1[0][0]*rx+rotx1[0][1]*ry+rotx1[0][2]*rz;
+  Real gny1 = rotx1[1][0]*rx+rotx1[1][1]*ry+rotx1[1][2]*rz;
+  Real gnz1 = rotx1[2][0]*rx+rotx1[2][1]*ry+rotx1[2][2]*rz;
+
+  rtheta = 0.1 * amrex::Random(engine);
+  rphi = 2.0 * M_PI * amrex::Random(engine);
+  rct = cos(rtheta);
+  rst = sin(rtheta);
+  rcp = cos(rphi);
+  rsp = sin(rphi);
+  rx = rct;
+  ry = rst*rsp;
+  rz = rst*rcp;
+  // Rotate random vector so that it is approximately oriented in the direction
+  // of direction 2
+  Real gnx2 = rotx2[0][0]*rx+rotx2[0][1]*ry+rotx2[0][2]*rz;
+  Real gny2 = rotx2[1][0]*rx+rotx2[1][1]*ry+rotx2[1][2]*rz;
+  Real gnz2 = rotx2[2][0]*rx+rotx2[2][1]*ry+rotx2[2][2]*rz;
+
+  //TODO finish splitting algorithm
+  Real gntheta1 = acos(gnz1);
+  Real gnst1 = sin(gntheta1);
+  Real gnphi1 = 0.0;
+  if (gnst1 != 0.0) {
+    gnphi1 = acos(gnx1/gnst1);
+    if (gny1 < 0.0) gnphi1 = 2.0 * M_PI - gnphi1;
+  }
+  Real gntheta2 = acos(gnz2);
+  Real gnst2 = sin(gntheta2);
+  Real gnphi2 = 0.0;
+  if (gnst2 != 0.0) {
+    gnphi2 = acos(gnx2/gnst2);
+    if (gny2 < 0.0) gnphi2 = 2.0 * M_PI - gnphi2;
+  }
+  // Now have orientation of old segment (nx,ny,nz) and new segments
+  // (gnx1,gny1,gnz1) and (gnx2,gny2,gnz2). Finish constructing new
+  // configuration.
+  Real x = pos_orig[0];
+  Real y = pos_orig[1];
+  Real z = pos_orig[2];
+  Real c_length = par_orig[realIdx::c_length];
+  Real x1, y1, z1, x2, y2, z2;
+  // Create two branches
+  x1 = x - 0.5*c_length*nx;
+  y1 = y - 0.5*c_length*ny;
+  z1 = z - 0.5*c_length*nz;
+  x2 = x + 0.5*c_length*nx;
+  y2 = y + 0.5*c_length*ny;
+  z2 = z + 0.5*c_length*nz;
+  Real seg_len = 0.5*(c_length-split_len);
+  Real new_len = c_length-2.0*seg_len;
+  Real ax, ay, az;
+  Real newx, newy, newz;
+  if (ipar_orig[intIdx::site1] == 1) {
+    // Attach new segments to site 2 of old segment
+    // find new location of Site 2 on old segment segment
+    newx = x1 + new_len*nx;
+    newy = y1 + new_len*ny;
+    newz = z1 + new_len*nz;
+    pos_orig[0] = 0.5*(x1 + newx);
+    pos_orig[1] = 0.5*(y1 + newy);
+    pos_orig[2] = 0.5*(z1 + newz);
+    // Site 2 on old segment corresponds to site 1 on new segments
+    ax = newx + gnx1*seg_len;
+    ay = newy + gny1*seg_len;
+    az = newz + gnz1*seg_len;
+    pos_new1[0] = 0.5*(newx + ax);
+    pos_new1[1] = 0.5*(newy + ay);
+    pos_new1[2] = 0.5*(newz + az);
+    ipar_new1[intIdx::site1] = 1;
+    ipar_new1[intIdx::seg1_id1] = ipar_orig[intIdx::id];
+    ipar_new1[intIdx::seg1_id2] = ipar_orig[intIdx::cpu];
+    ipar_new1[intIdx::site2] = 1;
+    ipar_new1[intIdx::seg2_id1] = id2;
+    ipar_new1[intIdx::seg2_id2] = cpu2;
+    ipar_new1[intIdx::n_bnds] = 2;
+    // Attach second segment
+    ax = newx + gnx2*seg_len;
+    ay = newy + gny2*seg_len;
+    az = newz + gnz2*seg_len;
+    pos_new2[0] = 0.5*(newx + ax);
+    pos_new2[1] = 0.5*(newy + ay);
+    pos_new2[2] = 0.5*(newz + az);
+    ipar_new2[intIdx::site1] = 1;
+    ipar_new2[intIdx::seg1_id1] = ipar_orig[intIdx::id];
+    ipar_new2[intIdx::seg1_id2] = ipar_orig[intIdx::cpu];
+    ipar_new2[intIdx::site2] = 1;
+    ipar_new2[intIdx::seg2_id1] = id1;
+    ipar_new2[intIdx::seg2_id2] = cpu1;
+    ipar_new2[intIdx::n_bnds] = 2;
+    if (ipar_orig[intIdx::n_bnds] == 1) {
+      ipar_orig[intIdx::site2] = 2;
+      ipar_orig[intIdx::seg2_id1] = id1;
+      ipar_orig[intIdx::seg2_id2] = cpu1;
+      ipar_orig[intIdx::site3] = 2;
+      ipar_orig[intIdx::seg3_id1] = id2;
+      ipar_orig[intIdx::seg3_id2] = cpu2;
+      ipar_orig[intIdx::n_bnds] = 3;
+    } else {
+      ipar_orig[intIdx::site3] = 2;
+      ipar_orig[intIdx::seg3_id1] = id1;
+      ipar_orig[intIdx::seg3_id2] = cpu1;
+      ipar_orig[intIdx::site4] = 2;
+      ipar_orig[intIdx::seg4_id1] = id2;
+      ipar_orig[intIdx::seg4_id2] = cpu2;
+      ipar_orig[intIdx::n_bnds] = 4;
+    }
+  } else {
+    // Attach new segments to site 1 of old segment
+    // find new location of Site 1 on old segment segment
+    newx = x2 - new_len*nx;
+    newy = y2 - new_len*ny;
+    newz = z2 - new_len*nz;
+    pos_orig[0] = 0.5*(x2 + newx);
+    pos_orig[1] = 0.5*(y2 + newy);
+    pos_orig[2] = 0.5*(z2 + newz);
+    // Site 1 on old segment corresponds to site 2 on new segment
+    ax = newx - gnx1*seg_len;
+    ay = newy - gny1*seg_len;
+    az = newz - gnz1*seg_len;
+    pos_new1[0] = 0.5*(newx + ax);
+    pos_new1[1] = 0.5*(newy + ay);
+    pos_new1[2] = 0.5*(newz + az);
+    ipar_new1[intIdx::site1] = 2;
+    ipar_new1[intIdx::seg1_id1] = ipar_orig[intIdx::id];
+    ipar_new1[intIdx::seg1_id2] = ipar_orig[intIdx::cpu];
+    ipar_new1[intIdx::site2] = 2;
+    ipar_new1[intIdx::seg2_id1] = id2;
+    ipar_new1[intIdx::seg2_id2] = cpu2;
+    ipar_new1[intIdx::n_bnds] = 2;
+    ax = newx - gnx2*seg_len;
+    ay = newy - gny2*seg_len;
+    az = newz - gnz2*seg_len;
+    pos_new2[0] = 0.5*(newx + ax);
+    pos_new2[1] = 0.5*(newy + ay);
+    pos_new2[2] = 0.5*(newz + az);
+    ipar_new2[intIdx::site1] = 2;
+    ipar_new2[intIdx::seg1_id1] = ipar_orig[intIdx::id];
+    ipar_new2[intIdx::seg1_id2] = ipar_orig[intIdx::cpu];
+    ipar_new2[intIdx::site2] = 2;
+    ipar_new2[intIdx::seg2_id1] = id1;
+    ipar_new2[intIdx::seg2_id2] = cpu1;
+    ipar_new2[intIdx::n_bnds] = 2;
+    if (ipar_orig[intIdx::n_bnds] == 1) {
+      ipar_orig[intIdx::site2] = 1;
+      ipar_orig[intIdx::seg2_id1] = id1;
+      ipar_orig[intIdx::seg2_id2] = cpu1;
+      ipar_orig[intIdx::site3] = 1;
+      ipar_orig[intIdx::seg3_id1] = id2;
+      ipar_orig[intIdx::seg3_id2] = cpu2;
+      ipar_orig[intIdx::n_bnds] = 3;
+    } else {
+      ipar_orig[intIdx::site3] = 1;
+      ipar_orig[intIdx::seg3_id1] = id1;
+      ipar_orig[intIdx::seg3_id2] = cpu1;
+      ipar_orig[intIdx::site4] = 1;
+      ipar_orig[intIdx::seg4_id1] = id2;
+      ipar_orig[intIdx::seg4_id2] = cpu2;
+      ipar_orig[intIdx::n_bnds] = 4;
+    }
+  }
+  // set lengths
+  par_orig[realIdx::c_length] = new_len;
+  par_new1[realIdx::c_length] = seg_len;
+  par_new2[realIdx::c_length] = seg_len;
+  // set angles
+  par_new1[realIdx::theta] = gntheta1;
+  par_new1[realIdx::phi] = gnphi1;
+  par_new2[realIdx::theta] = gntheta2;
+  par_new2[realIdx::phi] = gnphi2;
+  ipar_new1[intIdx::position] = siteLocation::TIP;
+  ipar_new2[intIdx::position] = siteLocation::TIP;
+  ipar_orig[intIdx::position] = siteLocation::INTERIOR;
+  ipar_new1[intIdx::id] = id1;
+  ipar_new1[intIdx::cpu] = cpu1;
+  ipar_new2[intIdx::id] = id2;
+  ipar_new2[intIdx::cpu] = cpu2;
+  // Calculate area and volume of all three segments
+  Real clen = par_orig[realIdx::c_length];
+  Real rad = par_orig[realIdx::radius];
+  par_orig[realIdx::vol] = M_PI*rad*rad*clen;
+  par_orig[realIdx::area] = 2.0*M_PI*rad*clen+2.0*M_PI*rad*rad;
+  clen = par_new1[realIdx::c_length];
+  rad = par_new1[realIdx::radius];
+  par_new1[realIdx::vol] = M_PI*rad*rad*clen;
+  par_new1[realIdx::area] = 2.0*M_PI*rad*clen+2.0*M_PI*rad*rad;
+  clen = par_new2[realIdx::c_length];
+  rad = par_new2[realIdx::radius];
+  par_new2[realIdx::vol] = M_PI*rad*rad*clen;
+  par_new2[realIdx::area] = 2.0*M_PI*rad*clen+2.0*M_PI*rad*rad;
+#if 0
+  printf("Old seg id: %d cpu %d site1: %d id1: %d cpu1: %d site2: %d id2: %d cpu2: %d site3: %d id3: %d cpu3: %d\n",
+      ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],
+      ipar_orig[intIdx::site1],ipar_orig[intIdx::seg1_id1],ipar_orig[intIdx::seg1_id2],
+      ipar_orig[intIdx::site2],ipar_orig[intIdx::seg2_id1],ipar_orig[intIdx::seg2_id2],
+      ipar_orig[intIdx::site3],ipar_orig[intIdx::seg3_id1],ipar_orig[intIdx::seg3_id2]);
+  printf("New seg 1 id: %d cpu %d site1: %d id1: %d cpu1: %d site2: %d id2: %d cpu2: %d\n",
+      id1,cpu1,ipar_new1[intIdx::site1],ipar_new1[intIdx::seg1_id1],ipar_new1[intIdx::seg1_id2],
+      ipar_new1[intIdx::site2],ipar_new1[intIdx::seg2_id1],ipar_new1[intIdx::seg2_id2]);
+  printf("New seg 2 id: %d cpu %d site1: %d id1: %d cpu1: %d site2: %d id2: %d cpu2: %d\n",
+      id2,cpu2,ipar_new2[intIdx::site1],ipar_new2[intIdx::seg1_id1],ipar_new2[intIdx::seg1_id2],
+      ipar_new2[intIdx::site2],ipar_new2[intIdx::seg2_id1],ipar_new2[intIdx::seg2_id2]);
+#endif
 }

@@ -51,6 +51,9 @@ namespace SPECIES
   // Branching probability
   extern amrex::Real brnch_prob;
 
+  // Tip-splitting probability
+  extern amrex::Real split_prob;
+
   struct SPECIES_t {
     // Constructor
     SPECIES_t() :

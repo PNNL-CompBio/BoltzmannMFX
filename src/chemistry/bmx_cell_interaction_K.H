@@ -140,8 +140,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     int icpu = ipar1[intIdx::cpu];
     int jid = ipar2[intIdx::id];
     int jcpu = ipar2[intIdx::cpu];
+    //printf("PAIR iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
 #if 0
-    printf("PAIR iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
     printf("BONDS on segment id: %d cpu: %d\n",iid,icpu);
     for (i=0; i<i_bnds; i++) {
       printf("Bonded to id: %d cpu: %d at site %d\n",
@@ -417,6 +417,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         r = sqrt(rx*rx+ry*ry+rz*rz);
         if (r<bond_cutoff) {
           // Might be bonded. Check further
+//          printf("Found bond iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
           f1_s1[0] -= bond_strength*rx;
           f1_s1[1] -= bond_strength*ry;
           f1_s1[2] -= bond_strength*rz;
