@@ -226,6 +226,7 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
         real_comp_names.push_back("grad_z");
         real_comp_names.push_back("cell_surface_area_growth_rate");
         real_comp_names.push_back("cell_volume_growth_rate");
+        real_comp_names.push_back("splitting_fraction");
         Vector<int> write_real_comp = Vector<int>(MAX_CHEM_REAL_VAR,1);
         int i;
         for (i=realIdx::count-1; i<MAX_CHEM_REAL_VAR; i++) {
@@ -254,6 +255,9 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
         int_comp_names.push_back("site_3");
         int_comp_names.push_back("site_4");
         int_comp_names.push_back("position");
+        int_comp_names.push_back("fusion_flag");
+        int_comp_names.push_back("fusion_id");
+        int_comp_names.push_back("fusion_cpu");
         int_comp_names.push_back("unique_id");
         int_comp_names.push_back("home_cpu");
         for (i=intIdx::count-1; i<MAX_CHEM_INT_VAR; i++) {

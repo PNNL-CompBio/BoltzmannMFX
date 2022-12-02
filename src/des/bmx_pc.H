@@ -118,6 +118,12 @@ public:
                            std::string& knapsack_weight_type,
                            int& nsubsteps);
 
+    void EvaluateTipFusion(const amrex::Vector<amrex::MultiFab*> cost,
+                                   std::string& knapsack_weight_type);
+
+    void EvaluateInteriorFusion(const amrex::Vector<amrex::MultiFab*> cost,
+                                   std::string& knapsack_weight_type);
+
     ///
     /// Write out all particles in the format of the particle_input.dat files so we
     ///       can initialize a run with them

@@ -17,6 +17,8 @@ amrex::Real BMXChemistry::mtC = 0.0;
 amrex::Real BMXChemistry::radius_max = 0.0;
 amrex::Real BMXChemistry::length_max = 0.0;
 amrex::Real BMXChemistry::p_overlap = 0.0;
+amrex::Real BMXChemistry::fusion_prob= 0.0;
+amrex::Real BMXChemistry::max_fusion_separation= 0.0;
 
 int BMXChemistry::p_num_reals = 0;
 int BMXChemistry::p_num_ints = 0;
@@ -95,6 +97,10 @@ void BMXChemistry::setParams(const char* /*file*/)
   pp.query("mass_transfer_B",mtB);
   mtC = 0.0;
   pp.query("mass_transfer_C",mtC);
+  fusion_prob = 0.0;
+  pp.query("fusion_probability",fusion_prob);
+  max_fusion_separation = 5.0e-4;
+  pp.query("max_fusion_separation",max_fusion_separation);
   p_overlap = 0.2;
   /* figure out cutoff for neighbor list */
   Real vol = SPECIES::max_vol;
@@ -209,5 +215,17 @@ std::vector<Real> BMXChemistry::getExchangeParameters()
   ret.push_back(mtA);
   ret.push_back(mtB);
   ret.push_back(mtC);
+  return ret;
+}
+
+/**
+ * Return a vector containing parameters for segment fusion
+ * @return vector of fusion parameters
+ */
+std::vector<Real> BMXChemistry::getFusionParameters()
+{
+  std::vector<Real> ret;
+  ret.push_back(fusion_prob);
+  ret.push_back(max_fusion_separation);
   return ret;
 }

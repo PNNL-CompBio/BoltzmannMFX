@@ -29,6 +29,188 @@ maxInteractionDistance(const Real *p1, const Real *p2, const int *i1,
   }
   return 0.0;
 }
+
+/**
+ * calculate the minimum distance between two line segments defined by
+ * the points (xi1,yi1,zi1) and (xi2,yi2,zi2) on segment i and
+ * the points (xj1,yj1,zj1) and (xj2,yj2,zj2) on segment j
+ * @param xi1,yi1,zi1,xi2,yi2,zi2 endpoints of segment i
+ * @param xj1,yj1,zj1,xj2,yj2,zj2 endpoints of segment j
+ * @param tau_i, tau_j location of along segments representing location
+ *                     of minimum separation
+ */
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void 
+evaluateMinimumDistance(Real xi1, Real yi1, Real zi1,
+    Real xi2, Real yi2, Real zi2, Real xj1, Real yj1, Real zj1,
+    Real xj2, Real yj2, Real zj2, Real *tau_i, Real *tau_j)
+{
+  // Calculate segment vectors
+  Real rho_i[3];
+  Real rho_j[3];
+  rho_i[0] = xi2-xi1;
+  rho_i[1] = yi2-yi1;
+  rho_i[2] = zi2-zi1;
+  rho_j[0] = xj2-xj1;
+  rho_j[1] = yj2-yj1;
+  rho_j[2] = zj2-zj1;
+  Real rirj = 0.0;
+
+  for (int ii=0; ii<3; ii++) {
+    rirj += rho_i[ii]*rho_j[ii];
+  } // ii
+
+  // Find tau_i and tau_j corresponding to minimum distance between
+  // cylinder segments
+  Real Aii = rho_i[0]*rho_i[0]+rho_i[1]*rho_i[1]+rho_i[2]*rho_i[2];
+  Real Aij = -rirj;
+  Real Aji = Aij;
+  Real Ajj = rho_j[0]*rho_j[0]+rho_j[1]*rho_j[1]+rho_j[2]*rho_j[2];
+  Real det = Aii*Ajj-Aij*Aji;
+  Real Bi = -((xi1-xj1)*rho_i[0]+(yi1-yj1)*rho_i[1]+(zi1-zj1)*rho_i[2]);
+  Real Bj = (xi1-xj1)*rho_j[0]+(yi1-yj1)*rho_j[1]+(zi1-zj1)*rho_j[2];
+  // First two cases are unlikely
+  bool search = false;
+  if (Aij == 0.0) {
+    // segments are perpendicular to each other
+    *tau_i = Bi/Aii; 
+    *tau_j = Bj/Ajj; 
+  } else if (det == 0.0) {
+    // segments are parallel to each other. Try setting tau_i to 0 and 1
+    // tau_i = 0.0;
+    Real tau_j0 = Bj/Ajj;
+    if (tau_j0 >= 0.0 && tau_j0 <= 1.0) {
+      *tau_i = 0.0;
+      *tau_j = tau_j0;
+    } else {
+      // tau_i = 1.0;
+      Real tau_j1 = (Bj+rirj)/Ajj;
+      if (tau_j1 >= 0.0 && tau_j1 <= 1.0) {
+        *tau_i = 1.0;
+        *tau_j = tau_j1;
+      } else {
+        // Check all four combinations of endpoints
+        search = true;
+      }
+    }
+  } else {
+    // Find minimum distance ignoring constraints
+    *tau_i = (Ajj*Bi-Aij*Bj)/det;
+    *tau_j = (Aii*Bj-Aji*Bi)/det;
+    if (*tau_i >= 0.0 && *tau_i <= 1.0) {
+      // tau_i satisfies constraints. Check tau_j
+      if (*tau_j < 0.0 ||  *tau_j > 1.0) {
+        // tau_j is outside limits, Need to try tau_j = 0.0 and
+        // tau_j = 1.0 and find minimum separation
+        Real tau_i0 = Bi/Aii;
+        Real tau_i1 = (Bi+rirj)/Aii;
+        if (tau_i0 >= 0.0 && tau_i0 <= 1.0 && tau_i1 >= 0.0 && tau_i1 <= 1.0) {
+          // both new values of tau_i are within limits. Compare distances
+          Real rix = xi1 + tau_i0*rho_i[0];
+          Real riy = yi1 + tau_i0*rho_i[1];
+          Real riz = zi1 + tau_i0*rho_i[2];
+          Real sep0 = (rix-xj1)*(rix-xj1)+(riy-yj1)*(riy-yj1)
+            +(riz-zj1)*(riz-zj1);
+          rix = xi1 + tau_i1*rho_i[0];
+          riy = yi1 + tau_i1*rho_i[1];
+          riz = zi1 + tau_i1*rho_i[2];
+          Real sep1 = (rix-xj2)*(rix-xj2)+(riy-yj2)*(riy-yj2)
+            +(riz-zj2)*(riz-zj2);
+          if (sep0 < sep1) {
+            *tau_j = 0.0;
+            *tau_i = tau_i0;
+          } else {
+            *tau_j = 1.0;
+            *tau_i = tau_i1;
+          }
+        } else if (tau_i0 >= 0.0 && tau_i0 <= 1.0) {
+          // only tau_i0 is within bounds
+          *tau_j = 0.0;
+          *tau_i = tau_i0;
+        } else if (tau_i1 >= 0.0 && tau_i1 <= 1.0) {
+          // only tau_i1 is within bounds
+          *tau_j = 1.0;
+          *tau_i = tau_i1;
+        } else {
+          // Neither solution is within bounds
+          search = true;
+        }
+      }
+    } else if (*tau_j >= 0.0 && *tau_j <= 1.0) {
+      // already know that tao_i is out of bounds
+      Real tau_j0 = Bj/Ajj;
+      Real tau_j1 = (Bj+rirj)/Ajj;
+      if (tau_j0 >= 0.0 && tau_j0 <= 1.0 && tau_j1 >= 0.0 && tau_j1 <= 1.0) {
+        // both new values of tau_j are within limits. Compare distances
+        Real rjx = xj1 + tau_j0*rho_j[0];
+        Real rjy = yj1 + tau_j0*rho_j[1];
+        Real rjz = zj1 + tau_j0*rho_j[2];
+        Real sep0 = (rjx-xi1)*(rjx-xi1)+(rjy-yi1)*(rjy-yi1)+(rjz-zi1)*(rjz-zi1);
+        rjx = xj1 + tau_j1*rho_j[0];
+        rjy = yj1 + tau_j1*rho_j[1];
+        rjz = zj1 + tau_j1*rho_j[2];
+        Real sep1 = (rjx-xi2)*(rjx-xi2)+(rjy-yi2)*(rjy-yi2)+(rjz-zi2)*(rjz-zi2);
+        if (sep0 < sep1) {
+          *tau_i = 0.0;
+          *tau_j = tau_j0;
+        } else {
+          *tau_i = 1.0;
+          *tau_j = tau_j1;
+        }
+      } else if (tau_j0 >= 0.0 && tau_j0 <= 1.0) {
+        // only tau_j0 is within bounds
+        *tau_i = 0.0;
+        *tau_j = tau_j0;
+      } else if (tau_j1 >= 0.0 && tau_j1 <= 1.0) {
+        // only tau_j1 is within bounds
+        *tau_i = 1.0;
+        *tau_j = tau_j1;
+      } else {
+        // Neither solution is within bounds
+        search = true;
+      }
+    } else {
+      // if we reach this point, both tau_i and tau_j are outside
+      // the constraints. Try all four end points for minimum distance
+      search = true;
+    }
+  }
+  if (search) {
+    // try all four endpoints to find minimum distance
+    Real min0 = (xi1-xj1)*(xi1-xj1)+(yi1-yj1)*(yi1-yj1)+(zi1-zj1)*(zi1-zj1);
+    Real min1 = (xi1-xj2)*(xi1-xj2)+(yi1-yj2)*(yi1-yj2)+(zi1-zj2)*(zi1-zj2);
+    Real min2 = (xi2-xj1)*(xi2-xj1)+(yi2-yj1)*(yi2-yj1)+(zi2-zj1)*(zi2-zj1);
+    Real min3 = (xi2-xj2)*(xi2-xj2)+(yi2-yj2)*(yi2-yj2)+(zi2-zj2)*(zi2-zj2);
+    int imin = 0;
+    Real min = min0;
+    if (min1 < min) {
+      imin = 1;
+      min = min1;
+    }
+    if (min2 < min) {
+      imin = 2;
+      min = min2;
+    }
+    if (min3 < min) {
+      imin = 3;
+      min = min3;
+    }
+    if (imin == 0) {
+      *tau_i = 0.0;
+      *tau_j = 0.0;
+    } else if (imin == 1) {
+      *tau_i = 0.0;
+      *tau_j = 1.0;
+    } else if (imin == 2) {
+      *tau_i = 1.0;
+      *tau_j = 0.0;
+    } else if (imin == 3) {
+      *tau_i = 1.0;
+      *tau_j = 1.0;
+    }
+  }
+}
+
 /**
  * Calculate the force between 2 particles. r12 is computed outside this routine
  * and periodic boundary conditions, if applicable, have already been applied
@@ -504,6 +686,9 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     // Evaluate interactions between cylinders. Only calculate these
     // interactions if cylinders are not bonded.
     if (!bonded) {
+      Real tau_i, tau_j;
+//      evaluateMinimumDistance(xi1, yi1, zi1, xi2, yi2, zi2,
+//          xj1, yj1, zj1, xj2, yj2, zj2, &tau_i, &tau_j);
       // Calculate segment vectors
       Real rho_i[3];
       Real rho_j[3];
@@ -513,6 +698,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       rho_j[0] = xj2-xj1;
       rho_j[1] = yj2-yj1;
       rho_j[2] = zj2-zj1;
+#if 1
       Real rirj = 0.0;
 //    Real rtest = sqrt(r12[0]*r12[0]+r12[1]*r12[1]+r12[2]*r12[0]);
 //    if (rtest > 0.003) {
@@ -526,7 +712,6 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           rirj += rho_i[ii]*rho_j[ii];
       } // ii
 
-      Real tau_i, tau_j;
       // Find tau_i and tau_j corresponding to minimum distance between
       // cylinder segments
       Real Aii = rho_i[0]*rho_i[0]+rho_i[1]*rho_i[1]+rho_i[2]*rho_i[2];
@@ -676,6 +861,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           tau_j = 1.0;
         }
       }
+#endif
       // Evaluate minimum distance and calculate forces. Then
       // distribute forces to individual sites
       Real ri[3], rj[3];
@@ -827,8 +1013,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       dij[1][1] = (c_length1*c_length1+2.0*arad*arad/3.0)/(8.0*M_PI*pow(c_length1,3)*visc);
       dij[2][2] = dij[1][1];
     } else {
-      dij[0][0] = (1.0-3.0*c_length1/(16.0*arad))/(6.0*arad*visc);
-      dij[1][1] = (1.0-9.0*c_length1/(32.0*arad))/(6.0*arad*visc);
+      dij[0][0] = (1.0-3.0*c_length1/(16.0*arad))/(6.0*M_PI*arad*visc);
+      dij[1][1] = (1.0-9.0*c_length1/(32.0*arad))/(6.0*M_PI*arad*visc);
       dij[2][2] = dij[1][1];
     }
 #if 0
@@ -841,10 +1027,29 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     printf("(1) Dij31: %e Dij32: %e Dij33: %e\n",dij[2][0],dij[2][1],dij[2][2]);
 #endif
 
-    // Reorient dij so that it reflects the correct direction (dii is diagonal
-    // so it doesn't change under reorientation). Note the transpose of the
-    // rotation is equal to its inverse
+    // Reorient dii and dij so that it reflects the correct direction (dii is
+    // diagonal but not proportional to the identity, so changes under rotation).
+    // Note the transpose of the rotation is equal to its inverse
     Real dtmp[3][3];
+    for (int ii=0; ii<3; ii++) {
+      for (int jj=0; jj<3; jj++) {
+	dtmp[ii][jj] = 0.0;
+	for (int kk=0; kk<3; kk++) {
+	  // use inverse rotation here
+	  dtmp[ii][jj] += dii[ii][kk]*rot_i[jj][kk];
+	} // kk
+      } // jj 
+    } // ii
+
+    for (int ii=0; ii<3; ii++) {
+      for (int jj=0; jj<3; jj++) {
+	dii[ii][jj] = 0.0;
+	for (int kk=0; kk<3; kk++) {
+	  dii[ii][jj] += rot_i[ii][kk]*dtmp[kk][jj];
+	} // kk
+      } // jj
+    } // ii
+
     for (int ii=0; ii<3; ii++) {
       for (int jj=0; jj<3; jj++) {
 	dtmp[ii][jj] = 0.0;
@@ -896,8 +1101,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       dij[1][1] = (c_length2*c_length2+2.0*arad*arad/3.0)/(8.0*M_PI*pow(c_length2,3)*visc);
       dij[2][2] = dij[1][1];
     } else {
-      dij[0][0] = (1.0-3.0*c_length2/(16.0*arad))/(6.0*arad*visc);
-      dij[1][1] = (1.0-9.0*c_length2/(32.0*arad))/(6.0*arad*visc);
+      dij[0][0] = (1.0-3.0*c_length2/(16.0*arad))/(6.0*M_PI*arad*visc);
+      dij[1][1] = (1.0-9.0*c_length2/(32.0*arad))/(6.0*M_PI*arad*visc);
       dij[2][2] = dij[1][1];
     }
 #if 0
@@ -910,9 +1115,27 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     printf("(2) Dij21: %e Dij22: %e Dij23: %e\n",dij[1][0],dij[1][1],dij[1][2]);
     printf("(2) Dij31: %e Dij32: %e Dij33: %e\n",dij[2][0],dij[2][1],dij[2][2]);
 #endif
-    // Reorient dij so that it reflects the correct direction (dii is diagonal
-    // so it doesn't change under reorientation). Note the transpose of the
-    // rotation is equal to its inverse
+    // Reorient dii and dij so that it reflects the correct direction (dii is
+    // diagonal but not proportional to the identity, so changes under rotation).
+    // Note the transpose of the rotation is equal to its inverse
+    for (int ii=0; ii<3; ii++) {
+      for (int jj=0; jj<3; jj++) {
+	dtmp[ii][jj] = 0.0;
+	for (int kk=0; kk<3; kk++) {
+	  // use inverse rotation here
+	  dtmp[ii][jj] += dii[ii][kk]*rot_j[jj][kk];
+	}
+      }
+    }
+    for (int ii=0; ii<3; ii++) {
+      for (int jj=0; jj<3; jj++) {
+	dii[ii][jj] = 0.0;
+	for (int kk=0; kk<3; kk++) {
+	  dii[ii][jj] += rot_j[ii][kk]*dtmp[kk][jj];
+	} // kk
+      } // jj
+    } // ii
+
     for (int ii=0; ii<3; ii++) {
       for (int jj=0; jj<3; jj++) {
 	dtmp[ii][jj] = 0.0;
@@ -963,7 +1186,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     rotv2[0] += -0.5*(ry_j*vj_2[2]-rz_j*vj_2[1]);
     rotv2[1] += -0.5*(rz_j*vj_2[0]-rx_j*vj_2[2]);
     rotv2[2] += -0.5*(rx_j*vj_2[1]-ry_j*vj_2[0]);
-#endif
+#else
     vel1[0] = 0.5*(f1_s1[0]+f1_s2[0]);
     vel1[1] = 0.5*(f1_s1[1]+f1_s2[1]);
     vel1[2] = 0.5*(f1_s1[2]+f1_s2[2]);
@@ -991,6 +1214,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     rotv2[0] += -0.5*(ry_j*f2_s2[2]-rz_j*f2_s2[1]);
     rotv2[1] += -0.5*(rz_j*f2_s2[0]-rx_j*f2_s2[2]);
     rotv2[2] += -0.5*(rx_j*f2_s2[1]-ry_j*f2_s2[0]);
+#endif
   }
 }
 

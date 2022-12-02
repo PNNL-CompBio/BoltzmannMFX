@@ -100,7 +100,7 @@ amr.par_ascii_file ="vis"
 amr.plot_int       =  400
 amr.plot_file      ="plt"
 
-amr.check_int      = 200000
+amr.check_int      = 20000
 amr.check_file     ="chk"
 
 #! Restart from checkpoint
@@ -137,6 +137,8 @@ chem_species.mass_transfer_C = 2.0e-5
 
 chem_species.branching_probability = 0.0000
 chem_species.splitting_probability = 0.2
+chem_species.fusion_probability = 0.5
+chem_species.max_fusion_separation = 6.0e-4
 
 bmx.substeps = 4
 
@@ -154,7 +156,7 @@ cell_force.neighbor_width = 1.0e-2 #set range of neighbor list
 cell_force.bond_strength = 1.0
 cell_force.bond_cutoff = 5.0e-4
 
-cell_force.viscous_drag = 20.0
+cell_force.viscous_drag = 200.0
 
 cell_force.gravity = 0.01
 

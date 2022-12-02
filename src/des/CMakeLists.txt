@@ -14,5 +14,6 @@ target_sources( bmxcore
    bmx_calc_txfr.cpp
    bmx_split_particles.cpp
    bmx_pc_xchng.cpp
+   bmx_pc_fusion.cpp
    )
 
