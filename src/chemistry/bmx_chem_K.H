@@ -1,3 +1,7 @@
+#ifndef _BMX_CHEM_K
+#define _BMX_CHEM_K
+
+#include "bmx_cell_interaction_K.H"
 /**
  * Check to see if particle meets criteria for splitting
  * @param p_par real particle parameters
@@ -164,6 +168,9 @@ checkTipFusion(Real *rij, Real *i_par, int *i_ipar, Real *j_par,
 
       // calculate minimum distance between tip and segment
       // Calculate segment vectors
+      Real tau_i, tau_j;
+      evaluateMinimumDistance(xi1, yi1, zi1, xi2, yi2, zi2,
+          xj1, yj1, zj1, xj2, yj2, zj2, &tau_i, &tau_j);
       Real rho_i[3];
       Real rho_j[3];
       rho_i[0] = xi2-xi1;
@@ -172,6 +179,7 @@ checkTipFusion(Real *rij, Real *i_par, int *i_ipar, Real *j_par,
       rho_j[0] = xj2-xj1;
       rho_j[1] = yj2-yj1;
       rho_j[2] = zj2-zj1;
+#if 0
       Real rirj = 0.0;
 
       // Calculate dot product between segments
@@ -179,7 +187,6 @@ checkTipFusion(Real *rij, Real *i_par, int *i_ipar, Real *j_par,
         rirj += rho_i[ii]*rho_j[ii];
       } // ii
 
-      Real tau_i, tau_j;
       // Find tau_i and tau_j corresponding to minimum distance between
       // cylinder segments
       Real Aii = rho_i[0]*rho_i[0]+rho_i[1]*rho_i[1]+rho_i[2]*rho_i[2];
@@ -331,6 +338,7 @@ checkTipFusion(Real *rij, Real *i_par, int *i_ipar, Real *j_par,
           tau_j = 1.0;
         }
       }
+#endif
       // Only proceed if tau_j is strictly greater than 0 and less than 1
       // (tip is close to the interior of the segment)
       if (tau_j > 0.0 && tau_j < 1.0) {
@@ -360,7 +368,7 @@ checkTipFusion(Real *rij, Real *i_par, int *i_ipar, Real *j_par,
           if (r < fuse_length) {
             if (amrex::Random(engine) < fuse_prob) {
               // TIP i is fusing to segment j
-              printf("TIP %d,%d is fusing to segment %d %d\n",
+              printf("TIP %d,%d is fusing to segment %d,%d\n",
                   i_ipar[intIdx::id],
                   i_ipar[intIdx::cpu],
                   j_ipar[intIdx::id],
@@ -411,9 +419,10 @@ checkInteriorFusion(Real *i_par, int *i_ipar, Real *j_par, int *j_ipar,
     int *fuse_flag, int me)
 {
   // Determine if segment i might be fused to a tip
+  *fuse_flag = 0;
   if (i_ipar[intIdx::position] != siteLocation::TIP &&
       j_ipar[intIdx::fuse_flag] == 1) {
-    fuse_flag = 0;
+    printf("p[%d] checking for fusion\n",me);
     // check to see if particle j is supposed to fuse to particle i
     int i_id[4];
     int i_cpu[4];
@@ -465,6 +474,8 @@ checkInteriorFusion(Real *i_par, int *i_ipar, Real *j_par, int *j_ipar,
 
       // This particle is supposed to fuse with particle j
       if (!bonded) {
+        printf("Performing fusion on particle id: %d cpu: %d to particle id: %d cpu: %d\n",
+           i_ipar[intIdx::id],i_ipar[intIdx::cpu],j_ipar[intIdx::id],j_ipar[intIdx::cpu]);
         *fuse_flag = 1;
         i_ipar[intIdx::fuse_flag] = 1;
         i_ipar[intIdx::fuse_id] = j_ipar[intIdx::id];
@@ -473,6 +484,7 @@ checkInteriorFusion(Real *i_par, int *i_ipar, Real *j_par, int *j_ipar,
       }
     }
   }
+  printf("p[%d] returning value of fuse_flag: %d\n",me,*fuse_flag);
 }
 
 /**
@@ -2223,3 +2235,4 @@ setNewSegments(Real *pos_orig, Real *pos_new1, Real *pos_new2,
       ipar_new2[intIdx::site2],ipar_new2[intIdx::seg2_id1],ipar_new2[intIdx::seg2_id2]);
 #endif
 }
+#endif
