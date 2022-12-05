@@ -14,8 +14,8 @@ amrex.fpe_trap_invalid = 1
 
 bmx.fixed_dt = 0.5
 
-bmx.max_step = 200000
-#bmx.max_step = 1
+#bmx.max_step = 200000
+bmx.max_step = 5
 
 dem.solve = bacteria
 bmx.particle_init_type = "AsciiFile"
@@ -100,7 +100,7 @@ amr.par_ascii_file ="vis"
 amr.plot_int       =  400
 amr.plot_file      ="plt"
 
-amr.check_int      = 20000
+amr.check_int      = -1
 amr.check_file     ="chk"
 
 #! Restart from checkpoint

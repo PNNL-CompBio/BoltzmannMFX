@@ -201,7 +201,7 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
     int n_at_lev = this->NumberOfParticlesAtLevel(lev);
 
     if (ParallelDescriptor::MyProc()==0 && lev == finest_level) {
-      printf("Number of particles %d\n",this->NumberOfParticlesAtLevel(lev));
+      printf("Number of particles %d\n",n_at_lev);
     }
 
     if (n_at_lev == 0) continue;
@@ -320,9 +320,11 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
             // Check to see if p2 is fused to particle. If it is,
             // then mark particle as being fused to p2 and set
             // fuse_flag to 1.
+            printf("p[%d]  value of do_split[%d] before check: %d\n",me,i,do_split_p[i]);
             checkInteriorFusion(&particle.rdata(0), &particle.idata(0),
                 &p2.rdata(0), &p2.idata(0), &fuse_flag, me);
-            if (fuse_flag) do_split_p[i]++;
+            printf("p[%d]  value of fuse_flag after check: %d\n",me,fuse_flag);
+            if (fuse_flag == 1) do_split_p[i]++;
 
             // TODO: Do we need an OPENMP pragma here?
 
@@ -332,7 +334,7 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
 
       amrex::Gpu::Device::synchronize();
       if (nrp > 0) printf("Number of particles on process %d after check: %d\n",
-          ParallelDescriptor::MyProc(),nrp);
+          ParallelDescriptor::MyProc(),GetParticles(lev)[index].numRealParticles());
 
       // Prefix sum to count total number of new particles to create
       Gpu::DeviceVector<unsigned int> offsets(nrp+1);
@@ -345,10 +347,12 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
       std::memcpy(&num_split,offsets.dataPtr()+nrp,sizeof(unsigned
             int));
 #endif
+      printf("p[%d] num_split: %d\n",me,num_split);
 
       // make room for new particles - invalidates iterators, so get the
       // ptr again
       particle_tile.resize(nrp+num_split);
+      pstruct = particles().dataPtr();
       // Update NextID to include particles created in this function
       Long next_pid;
 #ifdef AMREX_OPENMP
@@ -367,28 +371,29 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
           BMXParticleContainer::ParticleType& p_orig = pstruct[pid];
           // Check to see if particle is splitting
           // into two new particles
-          if (do_split_p[pid] == 1)
-          {
-          ParticleType& p = pstruct[nrp+poffsets[pid]];
-          p.id()  = next_pid + poffsets[pid];
-          p.cpu() = my_proc;
+          printf("p[%d] do_split[%d]: %d\n",me,pid,do_split_p[pid]);
+          if (do_split_p[pid] == 1) {
+            printf("p[%d] Executing do_split == 1\n",me);
+            ParticleType& p = pstruct[nrp+poffsets[pid]];
+            p.id()  = next_pid + poffsets[pid];
+            p.cpu() = my_proc;
 
-          Real *pos_orig = &p_orig.pos(0);
-          Real *pos_new  = &p.pos(0);
+            Real *pos_orig = &p_orig.pos(0);
+            Real *pos_new  = &p.pos(0);
 
-          Real *par_orig = &p_orig.rdata(0);
-          Real *par_new  = &p.rdata(0);
+            Real *par_orig = &p_orig.rdata(0);
+            Real *par_new  = &p.rdata(0);
 
-          int *ipar_orig = &p_orig.idata(0);
-          int *ipar_new  = &p.idata(0);
+            int *ipar_orig = &p_orig.idata(0);
+            int *ipar_new  = &p.idata(0);
 
-          // Set parameters on new particled base on values from
-          // original particle
-          setSplitSegment(pos_orig, pos_new, par_orig,
-              par_new, ipar_orig, ipar_new,
-              l_num_reals, l_num_ints, p.id(), p.cpu());
-          ipar_new[intIdx::id] = p.id();
-          ipar_new[intIdx::cpu] = p.cpu();
+            // Set parameters on new particled base on values from
+            // original particle
+            setSplitSegment(pos_orig, pos_new, par_orig,
+                par_new, ipar_orig, ipar_new,
+                l_num_reals, l_num_ints, p.id(), p.cpu());
+            ipar_new[intIdx::id] = p.id();
+            ipar_new[intIdx::cpu] = p.cpu();
           } else if (do_split_p[pid] > 1) {
             //TODO: Simultaneous fusion happened. We don't know how to
             //handle this.
@@ -419,15 +424,15 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
             (*cost[lev])[pti].plus<RunOn::Device>(wt, tbx);
           }
       if (nrp > 0) printf("Number of particles on process %d after split: %d\n",
-          ParallelDescriptor::MyProc(),nrp);
+          ParallelDescriptor::MyProc(),GetParticles(lev)[index].numRealParticles());
     } // pti
 
-    // Redistribute particles at the end of all substeps (note that the particle
-    // neighbour list needs to be reset when redistributing).
-    clearNeighbors();
-    Redistribute(0, 0, 0, 1);
 
   } // lev
+  // Redistribute particles at the end of all substeps (note that the particle
+  // neighbour list needs to be reset when redistributing).
+  clearNeighbors();
+  Redistribute(0, 0, 0, 1);
 
 #ifdef _OPENMP
 #pragma omp parallel if (amrex::Gpu::notInLaunchRegion())

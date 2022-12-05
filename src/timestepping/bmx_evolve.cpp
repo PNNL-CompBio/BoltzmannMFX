@@ -86,9 +86,9 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
     {
         pc->EvolveParticles(dt, particle_cost, knapsack_weight_type, nsubsteps);
         pc->split_particles(time);
+        pc->EvaluateTipFusion(particle_cost,knapsack_weight_type);
+        pc->EvaluateInteriorFusion(particle_cost,knapsack_weight_type);
         pc->ParticleExchange(dt, particle_cost, knapsack_weight_type, nsubsteps);
-       // pc->EvaluateTipFusion(particle_cost,knapsack_weight_type);
-       // pc->EvaluateInteriorFusion(particle_cost,knapsack_weight_type);
     }
 
     BL_PROFILE_VAR_STOP(particlesSolve);

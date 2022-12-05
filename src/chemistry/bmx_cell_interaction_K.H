@@ -1,3 +1,6 @@
+#ifndef _BMX_CELL_INTERACTION_K
+#define _BMX_CELL_INTERACTION_K
+
 #include <math.h>
 #include <bmx_fluid_parms.H>
 #include <bmx_cell_interaction.H>
@@ -687,8 +690,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     // interactions if cylinders are not bonded.
     if (!bonded) {
       Real tau_i, tau_j;
-//      evaluateMinimumDistance(xi1, yi1, zi1, xi2, yi2, zi2,
-//          xj1, yj1, zj1, xj2, yj2, zj2, &tau_i, &tau_j);
+      evaluateMinimumDistance(xi1, yi1, zi1, xi2, yi2, zi2,
+          xj1, yj1, zj1, xj2, yj2, zj2, &tau_i, &tau_j);
       // Calculate segment vectors
       Real rho_i[3];
       Real rho_j[3];
@@ -698,7 +701,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       rho_j[0] = xj2-xj1;
       rho_j[1] = yj2-yj1;
       rho_j[2] = zj2-zj1;
-#if 1
+#if 0
       Real rirj = 0.0;
 //    Real rtest = sqrt(r12[0]*r12[0]+r12[1]*r12[1]+r12[2]*r12[0]);
 //    if (rtest > 0.003) {
@@ -1492,3 +1495,4 @@ evaluateSurfaceForce(const Real *pos, Real *par, int *ipar, Real *vel, Real *rot
     rotv[2] += -0.5*(rx*f_s2[1]-ry*f_s2[0]);
   }
 }
+#endif
