@@ -116,6 +116,9 @@ BMXParticleContainer::split_particles (Real /*time*/)
                 }
                 ipar_new[intIdx::id] = p.id();
                 ipar_new[intIdx::cpu] = p.cpu();
+                // printf("NEW segment id: %d cpu: %d site1: %d id1: %d cpu1: %d\n",
+                //     ipar_new[intIdx::id],ipar_new[intIdx::cpu],ipar_new[intIdx::site1],
+                //     ipar_new[intIdx::seg1_id1],ipar_new[intIdx::seg1_id2]);
 
                 //                std::printf("OLD VOLUME OUT = %f \n", par_orig[realIdx::vol]);
                 //                std::printf("NEW VOLUME OUT = %f \n", par_new[realIdx::vol]);

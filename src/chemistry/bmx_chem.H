@@ -9,7 +9,7 @@
  * defined in the realIdx and intIdx enumerations, plus the number of
  * variables in the undefined blocks */
 #define MAX_CHEM_REAL_VAR 33
-#define MAX_CHEM_INT_VAR 25
+#define MAX_CHEM_INT_VAR 27
 
 using amrex::Real;
 
@@ -92,12 +92,14 @@ struct intIdx
     site4,          // bonding site of segment 4
     position,       // identify tip, second position, interior segment           20
     fuse_flag,      // flag that this particle is fusing to another particle
+    split_flag,     // flag to identify splitting segment in a fusion event
+    new_flag,       // flag to identify new particle in fusion event
     fuse_id,        // id of particle that this particle is fusing to
-    fuse_cpu,       // cpu of particle that this particle is fusing to
+    fuse_cpu,       // cpu of particle that this particle is fusing to           25
     id,             // unique identifier of segment
-    cpu,            // original process of segment                               25
+    cpu,            // original process of segment
     first_data,     // index of first value of uncharacterized block
-    count           // total number of elements in this enumeration              27
+    count           // total number of elements in this enumeration              29
   };
 };
 

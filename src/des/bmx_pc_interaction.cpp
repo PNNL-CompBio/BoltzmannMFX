@@ -169,6 +169,10 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                   auto& particle = pstruct[i];
 
                   RealVect pos1(particle.pos());
+                  // clean up flags
+                  particle.idata(intIdx::fuse_flag) = 0;
+                  particle.idata(intIdx::split_flag) = 0;
+                  particle.idata(intIdx::new_flag) = 0;
 //                  printf("p[%d] ID: %d CPU: %d RX: %e RY: %e RZ: %e\n",me,
 //                      static_cast<int>(particle.id()),static_cast<int>(particle.cpu()),
 //                      pos1[0],pos1[1],pos1[2]);
@@ -214,6 +218,10 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                           RealVect rot1(0.);
                           RealVect rot2(0.);
 
+                          if (p2.idata(intIdx::fuse_flag) != 0) {
+                            printf("p[%d] Found FUSING particle j in force loop id: %d cpu: %d\n",
+                                me,p2.idata(intIdx::id),p2.idata(intIdx::cpu));
+                          }
                           evaluateForce(&diff[0],&particle.rdata(0),&p2.rdata(0), &particle.idata(0),
                                         &p2.idata(0), &v1[0], &v2[0], &rot1[0], &rot2[0], fpar, me, i, j, n);
 

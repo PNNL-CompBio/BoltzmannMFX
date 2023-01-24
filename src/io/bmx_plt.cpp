@@ -256,6 +256,8 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
         int_comp_names.push_back("site_4");
         int_comp_names.push_back("position");
         int_comp_names.push_back("fusion_flag");
+        int_comp_names.push_back("fusion_split_flag");
+        int_comp_names.push_back("fusion_new_flag");
         int_comp_names.push_back("fusion_id");
         int_comp_names.push_back("fusion_cpu");
         int_comp_names.push_back("unique_id");

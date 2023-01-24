@@ -114,7 +114,14 @@ void BMXParticleContainer::ParticleExchange (Real dt,
                 [nrp,pstruct,nbor_data,subdt,ntot,xpar]
               AMREX_GPU_DEVICE (int i) noexcept
               {
-                  auto& particle = pstruct[i];
+              auto& particle = pstruct[i];
+              if (particle.idata(intIdx::position) == siteLocation::TIP &&
+                  particle.idata(intIdx::n_bnds) > 2) {
+                int *idata = &particle.idata(0);
+                printf("particle id: %d cpu: %d is Tip with %d bonds\n",
+                    idata[intIdx::id],idata[intIdx::cpu],idata[intIdx::n_bnds]);
+              }
+
 
                   // initialize particle before evaluating exchange
                   initExchange(&particle.rdata(0),&particle.idata(0));
