@@ -460,8 +460,8 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
 }
 
 /*******************************************************************************
- *  Check all interior segments to see if they have fused to a tip. Split the  *
- *  segment if fusion has occured                                              *
+ *  Clean up bonding information if an interior split has occured. Additional  *
+ *  cleanup occurs in force loop                                               *
  ******************************************************************************/
 void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
                                               std::string& knapsack_weight_type)

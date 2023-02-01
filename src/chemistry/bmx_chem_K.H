@@ -1032,6 +1032,7 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       if (new_bnds == 2) break;
     }
   }
+  // copy over old bonds bonded to site 1
   ipar_orig[intIdx::site1] = 1;
   ipar_orig[intIdx::seg1_id1] = n_id[0];
   ipar_orig[intIdx::seg1_id2] = n_cpu[0];
@@ -1040,8 +1041,9 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     ipar_orig[intIdx::seg2_id1] = n_id[1];
     ipar_orig[intIdx::seg2_id2] = n_cpu[1];
   }
+  // add bond to new segment and to fusing tip
   ipar_orig[intIdx::n_bnds] = new_bnds+2;
-  if (new_bnds == 3) {
+  if (new_bnds == 1) {
     ipar_orig[intIdx::site2] = 2;
     ipar_orig[intIdx::seg2_id1] = id;
     ipar_orig[intIdx::seg2_id2] = cpu;
@@ -1100,6 +1102,9 @@ void cleanupFusionBond(int *ipar , int *jpar, int me)
 {
   // Find out if I and J are bonded to each other
   int i_bnds = ipar[intIdx::n_bnds];
+  int i_id, i_cpu;
+  i_id = jpar[intIdx::id];
+  i_cpu = jpar[intIdx::cpu];
 
   int isite[4], iid[4], icpu[4];
   iid[0] = ipar[intIdx::seg1_id1];
@@ -1117,46 +1122,53 @@ void cleanupFusionBond(int *ipar , int *jpar, int me)
   isite[2] = ipar[intIdx::site3];
   isite[3] = ipar[intIdx::site4];
 
-  int jid, jcpu;
-  jid = jpar[intIdx::id];
-  jcpu = jpar[intIdx::cpu];
+  int j_id, j_cpu;
+  j_id = jpar[intIdx::id];
+  j_cpu = jpar[intIdx::cpu];
 
   int i;
-  bool bonded = false;
-  int idx = -1;
+  int idx;
   for (i=0; i<i_bnds; i++) {
-    if (iid[i] == jid && icpu[i] == jcpu) {
+    if (iid[i] == j_id && icpu[i] == j_cpu) {
       idx = i;
-      bonded = true;
-      break;
-    }
-  }
-  if (bonded) {
- //   printf("Found bond idx: %d I new: %d J split: %d I site: %d\n",
- //        idx,ipar[intIdx::new_flag],jpar[intIdx::split_flag],isite[idx]);
-    // segments are bonded. Check to see if J just split
-    // and I is not new and isite[idx] = 1
-    if (ipar[intIdx::new_flag] == 0 && ipar[intIdx::fuse_flag] == 0 &&
-        jpar[intIdx::split_flag] == 1 && isite[idx] == 1) {
-      // This is a leftover bond from before the split. Remove it.
-      printf("REMOVE bond id: %d cpu: %d attached to id: %d cpu: %d\n",
-          ipar[intIdx::id],ipar[intIdx::cpu],jpar[intIdx::id],jpar[intIdx::cpu]);
-      if (idx < 1) {
-        ipar[intIdx::seg1_id1] = ipar[intIdx::seg2_id1];
-        ipar[intIdx::seg1_id2] = ipar[intIdx::seg2_id2];
-        ipar[intIdx::site1] = ipar[intIdx::site2];
+      //   printf("Found bond idx: %d I new: %d J split: %d I site: %d\n",
+      //        idx,ipar[intIdx::new_flag],jpar[intIdx::split_flag],isite[idx]);
+      // segments are bonded. Check to see if J just split
+      // and I is not new and isite[idx] = 1
+      if (ipar[intIdx::new_flag] == 0 && ipar[intIdx::fuse_flag] == 0 &&
+          jpar[intIdx::split_flag] == 1 && isite[idx] == 1) {
+        // This is a leftover bond from before the split. Remove it.
+        printf("REMOVE bond %d id: %d cpu: %d attached to id: %d cpu: %d ipar: %p\n",idx+1,
+            ipar[intIdx::id],ipar[intIdx::cpu],jpar[intIdx::id],jpar[intIdx::cpu],ipar);
+        if (idx < 1) {
+          ipar[intIdx::seg1_id1] = ipar[intIdx::seg2_id1];
+          ipar[intIdx::seg1_id2] = ipar[intIdx::seg2_id2];
+          ipar[intIdx::site1] = ipar[intIdx::site2];
+        }
+        if (idx < 2) {
+          ipar[intIdx::seg2_id1] = ipar[intIdx::seg3_id1];
+          ipar[intIdx::seg2_id2] = ipar[intIdx::seg3_id2];
+          ipar[intIdx::site2] = ipar[intIdx::site3];
+        }
+        if (idx < 3) {
+          ipar[intIdx::seg3_id1] = ipar[intIdx::seg4_id1];
+          ipar[intIdx::seg3_id2] = ipar[intIdx::seg4_id2];
+          ipar[intIdx::site3] = ipar[intIdx::site4];
+        }
+        ipar[intIdx::seg4_id1] = 0;
+        ipar[intIdx::seg4_id2] = 0;
+        ipar[intIdx::site4] = 0;
+        i_bnds--;
+        ipar[intIdx::n_bnds] = i_bnds;
+        printf("post REMOVE bond id: %d cpu: %d n_bnds: %d id1: %d cpu1: %d id2: %d cpu2: %d"
+            " id3: %d cpu3: %d id4: %d cpu4: %d\n",
+            ipar[intIdx::id],ipar[intIdx::cpu],ipar[intIdx::n_bnds],
+            ipar[intIdx::seg1_id1],ipar[intIdx::seg1_id2],
+            ipar[intIdx::seg2_id1],ipar[intIdx::seg2_id2],
+            ipar[intIdx::seg3_id1],ipar[intIdx::seg3_id2],
+            ipar[intIdx::seg4_id1],ipar[intIdx::seg4_id2]);
+
       }
-      if (idx < 2) {
-        ipar[intIdx::seg2_id1] = ipar[intIdx::seg3_id1];
-        ipar[intIdx::seg2_id2] = ipar[intIdx::seg3_id2];
-        ipar[intIdx::site2] = ipar[intIdx::site3];
-      }
-      if (idx < 3) {
-        ipar[intIdx::seg3_id1] = ipar[intIdx::seg4_id1];
-        ipar[intIdx::seg3_id2] = ipar[intIdx::seg4_id2];
-        ipar[intIdx::site3] = ipar[intIdx::site4];
-      }
-      ipar[intIdx::n_bnds] = i_bnds-1;
     }
   }
 }

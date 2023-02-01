@@ -365,6 +365,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         ipar1[intIdx::position] = siteLocation::INTERIOR;
       }
     }
+#if 1
     // Is i bonded to j and is j bonded to i? Take action if only one particle
     // recognized the bond
     bool i_bonded_to_j = false;
@@ -388,6 +389,20 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     if (!i_bonded_to_j && j_bonded_to_i) {
       // j has registered i as a bonding partner but i
       // has not registered j as a bonding partner. Fix up i
+      printf("I id: %d cpu: %d nbnds: %d id1: %d cpu1: %d id2: %d cpu: %d"
+          " id3: %d cpu3: %d id4: %d cpu4: %d\n",ipar1[intIdx::id],
+          ipar1[intIdx::cpu],ipar1[intIdx::n_bnds],
+          ipar1[intIdx::seg1_id1],ipar1[intIdx::seg1_id2],
+          ipar1[intIdx::seg2_id1],ipar1[intIdx::seg2_id2],
+          ipar1[intIdx::seg3_id1],ipar1[intIdx::seg3_id2],
+          ipar1[intIdx::seg4_id1],ipar1[intIdx::seg4_id2]);
+      printf("J id: %d cpu: %d nbnds: %d id1: %d cpu1: %d id2: %d cpu: %d"
+          " id3: %d cpu3: %d id4: %d cpu4: %d\n",ipar2[intIdx::id],
+          ipar2[intIdx::cpu],ipar2[intIdx::n_bnds],
+          ipar2[intIdx::seg1_id1],ipar2[intIdx::seg1_id2],
+          ipar2[intIdx::seg2_id1],ipar2[intIdx::seg2_id2],
+          ipar2[intIdx::seg3_id1],ipar2[intIdx::seg3_id2],
+          ipar2[intIdx::seg4_id1],ipar2[intIdx::seg4_id2]);
       if (i_bnds == 1) {
         ipar1[intIdx::seg2_id1] = jid;
         ipar1[intIdx::seg2_id2] = jcpu;
@@ -431,10 +446,25 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         i_bnds++;
         ipar1[intIdx::n_bnds] = i_bnds;
       }
-      printf("FIXING up i id: %d cpu: %d attached to id: %d cpu: %d\n",iid,icpu,jid,jcpu);
+      printf("FIXING up i id: %d cpu: %d attached to id: %d cpu: %d ipar: %p\n",
+          iid,icpu,jid,jcpu,ipar1);
     } else if (i_bonded_to_j && !j_bonded_to_i) {
       // i has registered j as a bonding partner but j
       // has not registered i as a bonding partner. Fix up j
+      printf("I id: %d cpu: %d nbnds: %d id1: %d cpu1: %d id2: %d cpu: %d"
+          " id3: %d cpu3: %d id4: %d cpu4: %d\n",ipar1[intIdx::id],
+          ipar1[intIdx::cpu],ipar1[intIdx::n_bnds],
+          ipar1[intIdx::seg1_id1],ipar1[intIdx::seg1_id2],
+          ipar1[intIdx::seg2_id1],ipar1[intIdx::seg2_id2],
+          ipar1[intIdx::seg3_id1],ipar1[intIdx::seg3_id2],
+          ipar1[intIdx::seg4_id1],ipar1[intIdx::seg4_id2]);
+      printf("J id: %d cpu: %d nbnds: %d id1: %d cpu1: %d id2: %d cpu: %d"
+          " id3: %d cpu3: %d id4: %d cpu4: %d\n",ipar2[intIdx::id],
+          ipar2[intIdx::cpu],ipar2[intIdx::n_bnds],
+          ipar2[intIdx::seg1_id1],ipar2[intIdx::seg1_id2],
+          ipar2[intIdx::seg2_id1],ipar2[intIdx::seg2_id2],
+          ipar2[intIdx::seg3_id1],ipar2[intIdx::seg3_id2],
+          ipar2[intIdx::seg4_id1],ipar2[intIdx::seg4_id2]);
       if (j_bnds == 1) {
         ipar2[intIdx::seg2_id1] = iid;
         ipar2[intIdx::seg2_id2] = icpu;
@@ -478,8 +508,10 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         j_bnds++;
         ipar2[intIdx::n_bnds] = j_bnds;
       }
-      printf("FIXING up j id: %d cpu: %d attached to id: %d cpu: %d\n",jid,jcpu,iid,icpu);
+      printf("FIXING up j id: %d cpu: %d attached to id: %d cpu: %d jpar: %p\n",
+          jid,jcpu,iid,icpu,ipar2);
     }
+#endif
 //    printf("p[%d] ID: %d CPU: %d I_ID: %d %d %d I_CPU: %d %d %d\n",
 //        me,iid,icpu,i_id[0],i_id[1],i_id[2],i_cpu[0],
 //        i_cpu[1],i_cpu[2]);
@@ -1477,6 +1509,149 @@ evaluateSurfaceForce(const Real *pos, Real *par, int *ipar, Real *vel, Real *rot
     rotv[0] += -0.5*(ry*f_s2[2]-rz*f_s2[1]);
     rotv[1] += -0.5*(rz*f_s2[0]-rx*f_s2[2]);
     rotv[2] += -0.5*(rx*f_s2[1]-ry*f_s2[0]);
+  }
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void 
+fixBonds(int *ipar, int *jpar)
+{
+  int i_id[4];
+  int i_cpu[4];
+  int j_id[4];
+  int j_cpu[4];
+  int i_site[4];
+  int j_site[4];
+  int i_bnds = ipar[intIdx::n_bnds];
+  i_id[0] = ipar[intIdx::seg1_id1];
+  i_id[1] = ipar[intIdx::seg2_id1];
+  i_id[2] = ipar[intIdx::seg3_id1];
+  i_id[3] = ipar[intIdx::seg4_id1];
+
+  i_cpu[0] = ipar[intIdx::seg1_id2];
+  i_cpu[1] = ipar[intIdx::seg2_id2];
+  i_cpu[2] = ipar[intIdx::seg3_id2];
+  i_cpu[3] = ipar[intIdx::seg4_id2];
+
+  i_site[0] = ipar[intIdx::site1];
+  i_site[1] = ipar[intIdx::site2];
+  i_site[2] = ipar[intIdx::site3];
+  i_site[3] = ipar[intIdx::site4];
+
+
+  int j_bnds = jpar[intIdx::n_bnds];
+  j_id[0] = jpar[intIdx::seg1_id1];
+  j_id[1] = jpar[intIdx::seg2_id1];
+  j_id[2] = jpar[intIdx::seg3_id1];
+  j_id[3] = jpar[intIdx::seg4_id1];
+
+  j_cpu[0] = jpar[intIdx::seg1_id2];
+  j_cpu[1] = jpar[intIdx::seg2_id2];
+  j_cpu[2] = jpar[intIdx::seg3_id2];
+  j_cpu[3] = jpar[intIdx::seg4_id2];
+
+  j_site[0] = jpar[intIdx::site1];
+  j_site[1] = jpar[intIdx::site2];
+  j_site[2] = jpar[intIdx::site3];
+  j_site[3] = jpar[intIdx::site4];
+
+  int iid = ipar[intIdx::id];
+  int icpu = ipar[intIdx::cpu];
+  int jid = jpar[intIdx::id];
+  int jcpu = jpar[intIdx::cpu];
+
+  // Is i bonded to j and is j bonded to i? Take action if only one particle
+  // recognized the bond
+  bool i_bonded_to_j = false;
+  bool j_bonded_to_i = false;
+  int iidx = -1;
+  int jidx = -1;
+  for (int ib = 0; ib<i_bnds; ib++) {
+    if (i_id[ib] == jid && i_cpu[ib] == jcpu) {
+      iidx = ib;
+      i_bonded_to_j = true;
+      break;
+    }
+  }
+  for (int jb = 0; jb<j_bnds; jb++) {
+    if (j_id[jb] == iid && j_cpu[jb] == icpu) {
+      jidx = jb;
+      j_bonded_to_i = true;
+      break;
+    }
+  }
+  if (!i_bonded_to_j && j_bonded_to_i) {
+    // j has registered i as a bonding partner but i
+    // has not registered j as a bonding partner. Fix up i
+    if (i_bnds == 1) {
+      ipar[intIdx::seg2_id1] = jid;
+      ipar[intIdx::seg2_id2] = jcpu;
+      if (j_site[jidx] == 1) {
+        ipar[intIdx::site2] = 2;
+      } else {
+        ipar[intIdx::site2] = 1;
+      }
+      i_bnds++;
+      ipar[intIdx::n_bnds] = i_bnds;
+    } else if (i_bnds == 2) {
+      ipar[intIdx::seg3_id1] = jid;
+      ipar[intIdx::seg3_id2] = jcpu;
+      if (j_site[jidx] == 1) {
+        ipar[intIdx::site3] = 2;
+      } else {
+        ipar[intIdx::site3] = 1;
+      }
+      i_bnds++;
+      ipar[intIdx::n_bnds] = i_bnds;
+    } else if (i_bnds == 3) {
+      ipar[intIdx::seg4_id1] = jid;
+      ipar[intIdx::seg4_id2] = jcpu;
+      if (j_site[jidx] == 1) {
+        ipar[intIdx::site4] = 2;
+      } else {
+        ipar[intIdx::site4] = 1;
+      }
+      i_bnds++;
+      ipar[intIdx::n_bnds] = i_bnds;
+    }
+    printf("FIXING up i id: %d cpu: %d attached to id: %d cpu: %d\n",
+        iid,icpu,jid,jcpu);
+  } else if (i_bonded_to_j && !j_bonded_to_i) {
+    // i has registered j as a bonding partner but j
+    // has not registered i as a bonding partner. Fix up j
+    if (j_bnds == 1) {
+      jpar[intIdx::seg2_id1] = iid;
+      jpar[intIdx::seg2_id2] = icpu;
+      if (j_site[iidx] == 1) {
+        jpar[intIdx::site2] = 2;
+      } else {
+        jpar[intIdx::site2] = 1;
+      }
+      j_bnds++;
+      jpar[intIdx::n_bnds] = j_bnds;
+    } else if (j_bnds == 2) {
+      jpar[intIdx::seg3_id1] = iid;
+      jpar[intIdx::seg3_id2] = icpu;
+      if (j_site[iidx] == 1) {
+        jpar[intIdx::site3] = 2;
+      } else {
+        jpar[intIdx::site3] = 1;
+      }
+      j_bnds++;
+      jpar[intIdx::n_bnds] = j_bnds;
+    } else if (j_bnds == 3) {
+      jpar[intIdx::seg4_id1] = iid;
+      jpar[intIdx::seg4_id2] = icpu;
+      if (j_site[iidx] == 1) {
+        jpar[intIdx::site4] = 2;
+      } else {
+        jpar[intIdx::site4] = 1;
+      }
+      j_bnds++;
+      jpar[intIdx::n_bnds] = j_bnds;
+    }
+    printf("FIXING up j id: %d cpu: %d attached to id: %d cpu: %d\n",
+        jid,jcpu,iid,icpu);
   }
 }
 #endif
