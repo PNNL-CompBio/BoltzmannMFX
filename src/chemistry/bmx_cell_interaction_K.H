@@ -365,6 +365,13 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         ipar1[intIdx::position] = siteLocation::INTERIOR;
       }
     }
+    // clean up old flags
+    ipar1[intIdx::dltd_site1] = -1;
+    ipar1[intIdx::dltd_site2] = -1;
+    ipar1[intIdx::dltd_id1] = -1;
+    ipar1[intIdx::dltd_id2] = -1;
+    ipar1[intIdx::dltd_cpu1] = -1;
+    ipar1[intIdx::dltd_cpu2] = -1;
 #if 1
     // Is i bonded to j and is j bonded to i? Take action if only one particle
     // recognized the bond

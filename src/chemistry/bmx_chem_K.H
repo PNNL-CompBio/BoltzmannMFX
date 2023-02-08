@@ -493,6 +493,12 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     ipar_orig[intIdx::new_flag] = 0;
     ipar_orig[intIdx::fuse_id] = -1;
     ipar_orig[intIdx::fuse_cpu] = -1;
+    ipar_orig[intIdx::dltd_site1] = -1;
+    ipar_orig[intIdx::dltd_site2] = -1;
+    ipar_orig[intIdx::dltd_id1] = -1;
+    ipar_orig[intIdx::dltd_id2] = -1;
+    ipar_orig[intIdx::dltd_cpu1] = -1;
+    ipar_orig[intIdx::dltd_cpu2] = -1;
 
     ipar_new[intIdx::n_bnds] = 1;
     ipar_new[intIdx::seg1_id1] = ipar_orig[intIdx::id];
@@ -504,6 +510,12 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     ipar_new[intIdx::new_flag] = 0;
     ipar_new[intIdx::fuse_id] = -1;
     ipar_new[intIdx::fuse_cpu] = -1;
+    ipar_new[intIdx::dltd_site1] = -1;
+    ipar_new[intIdx::dltd_site2] = -1;
+    ipar_new[intIdx::dltd_id1] = -1;
+    ipar_new[intIdx::dltd_id2] = -1;
+    ipar_new[intIdx::dltd_cpu1] = -1;
+    ipar_new[intIdx::dltd_cpu2] = -1;
     // Growth is towards site 1
     ipar_new[intIdx::id] = id;
     ipar_new[intIdx::cpu] = cpu;
@@ -646,6 +658,12 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       ipar_new[intIdx::new_flag] = 0;
       ipar_new[intIdx::fuse_id] = -1;
       ipar_new[intIdx::fuse_cpu] = -1;
+      ipar_new[intIdx::dltd_site1] = -1;
+      ipar_new[intIdx::dltd_site2] = -1;
+      ipar_new[intIdx::dltd_id1] = -1;
+      ipar_new[intIdx::dltd_id2] = -1;
+      ipar_new[intIdx::dltd_cpu1] = -1;
+      ipar_new[intIdx::dltd_cpu2] = -1;
     } else {
       //printf("Add to site 1\n");
       x2 = x + 0.5*c_length*nx;
@@ -896,6 +914,13 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     ipar_new[intIdx::new_flag] = 0;
     ipar_new[intIdx::fuse_id] = -1;
     ipar_new[intIdx::fuse_cpu] = -1;
+    ipar_new[intIdx::fuse_cpu] = -1;
+    ipar_new[intIdx::dltd_site1] = -1;
+    ipar_new[intIdx::dltd_site2] = -1;
+    ipar_new[intIdx::dltd_id1] = -1;
+    ipar_new[intIdx::dltd_id2] = -1;
+    ipar_new[intIdx::dltd_cpu1] = -1;
+    ipar_new[intIdx::dltd_cpu2] = -1;
     ipar_orig[intIdx::position] = siteLocation::INTERIOR;
   }
   // Recalculate area and volume
@@ -907,6 +932,8 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
   rad = par_new[realIdx::radius];
   par_new[realIdx::vol] = M_PI*rad*rad*clen;
   par_new[realIdx::area] = 2.0*M_PI*rad*clen+2.0*M_PI*rad*rad;
+  printf("Adding new segment id: %d cpu: %d\n",
+      ipar_new[intIdx::id],ipar_new[intIdx::cpu]);
 }
 
 /**
@@ -1004,14 +1031,29 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
   int i;
   int n_id[2];
   int n_cpu[2];
+  int n_site[2];
   for (i=0; i<old_bnds; i++) {
     if (i_site[i] == 2) {
       n_id[new_bnds] = i_id[i];
       n_cpu[new_bnds] = i_cpu[i];
       new_bnds++;
+      // Store deleted bond information
+      if (new_bnds == 1) {
+        ipar_orig[intIdx::dltd_site1] =2;
+        ipar_orig[intIdx::dltd_id1] = n_id[0];
+        ipar_orig[intIdx::dltd_cpu1] = n_cpu[0];
+      } else if (new_bnds == 2) {
+        ipar_orig[intIdx::dltd_site2] = 2;
+        ipar_orig[intIdx::dltd_id2] = n_id[1];
+        ipar_orig[intIdx::dltd_cpu2] = n_cpu[1];
+      }
       if (new_bnds == 2) break;
     }
   }
+  printf("DELETED: n: %d site1: %d id1: %d cpu1: %d site2: %d id2: %d cpu2: %d\n",
+      new_bnds,ipar_orig[intIdx::dltd_site1],ipar_orig[intIdx::dltd_id1],
+      ipar_orig[intIdx::dltd_cpu1],ipar_orig[intIdx::dltd_site2],
+      ipar_orig[intIdx::dltd_id2],ipar_orig[intIdx::dltd_cpu2]);
   new_bnds += 2;
   ipar_new[intIdx::site3] = 2;
   ipar_new[intIdx::seg3_id1] = n_id[0];
@@ -1032,7 +1074,6 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       if (new_bnds == 2) break;
     }
   }
-  // copy over old bonds bonded to site 1
   ipar_orig[intIdx::site1] = 1;
   ipar_orig[intIdx::seg1_id1] = n_id[0];
   ipar_orig[intIdx::seg1_id2] = n_cpu[0];
@@ -1078,6 +1119,13 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
   ipar_new[intIdx::split_flag] = 0; 
   ipar_new[intIdx::fuse_id] = -1; 
   ipar_new[intIdx::fuse_cpu] = -1; 
+  ipar_new[intIdx::fuse_cpu] = -1;
+  ipar_new[intIdx::dltd_site1] = -1;
+  ipar_new[intIdx::dltd_site2] = -1;
+  ipar_new[intIdx::dltd_id1] = -1;
+  ipar_new[intIdx::dltd_id2] = -1;
+  ipar_new[intIdx::dltd_cpu1] = -1;
+  ipar_new[intIdx::dltd_cpu2] = -1;
 
   // Recalculate area and volume
   Real clen = par_orig[realIdx::c_length];
@@ -1088,6 +1136,8 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
   rad = par_new[realIdx::radius];
   par_new[realIdx::vol] = M_PI*rad*rad*clen;
   par_new[realIdx::area] = 2.0*M_PI*rad*clen+2.0*M_PI*rad*rad;
+  printf("Adding new segment id: %d cpu: %d\n",
+      ipar_new[intIdx::id],ipar_new[intIdx::cpu]);
 
 }
 
@@ -1103,8 +1153,8 @@ void cleanupFusionBond(int *ipar , int *jpar, int me)
   // Find out if I and J are bonded to each other
   int i_bnds = ipar[intIdx::n_bnds];
   int i_id, i_cpu;
-  i_id = jpar[intIdx::id];
-  i_cpu = jpar[intIdx::cpu];
+  i_id = ipar[intIdx::id];
+  i_cpu = ipar[intIdx::cpu];
 
   int isite[4], iid[4], icpu[4];
   iid[0] = ipar[intIdx::seg1_id1];
@@ -1136,38 +1186,50 @@ void cleanupFusionBond(int *ipar , int *jpar, int me)
       // segments are bonded. Check to see if J just split
       // and I is not new and isite[idx] = 1
       if (ipar[intIdx::new_flag] == 0 && ipar[intIdx::fuse_flag] == 0 &&
-          jpar[intIdx::split_flag] == 1 && isite[idx] == 1) {
-        // This is a leftover bond from before the split. Remove it.
-        printf("REMOVE bond %d id: %d cpu: %d attached to id: %d cpu: %d ipar: %p\n",idx+1,
-            ipar[intIdx::id],ipar[intIdx::cpu],jpar[intIdx::id],jpar[intIdx::cpu],ipar);
-        if (idx < 1) {
-          ipar[intIdx::seg1_id1] = ipar[intIdx::seg2_id1];
-          ipar[intIdx::seg1_id2] = ipar[intIdx::seg2_id2];
-          ipar[intIdx::site1] = ipar[intIdx::site2];
-        }
-        if (idx < 2) {
-          ipar[intIdx::seg2_id1] = ipar[intIdx::seg3_id1];
-          ipar[intIdx::seg2_id2] = ipar[intIdx::seg3_id2];
-          ipar[intIdx::site2] = ipar[intIdx::site3];
-        }
-        if (idx < 3) {
-          ipar[intIdx::seg3_id1] = ipar[intIdx::seg4_id1];
-          ipar[intIdx::seg3_id2] = ipar[intIdx::seg4_id2];
-          ipar[intIdx::site3] = ipar[intIdx::site4];
-        }
-        ipar[intIdx::seg4_id1] = 0;
-        ipar[intIdx::seg4_id2] = 0;
-        ipar[intIdx::site4] = 0;
-        i_bnds--;
-        ipar[intIdx::n_bnds] = i_bnds;
-        printf("post REMOVE bond id: %d cpu: %d n_bnds: %d id1: %d cpu1: %d id2: %d cpu2: %d"
-            " id3: %d cpu3: %d id4: %d cpu4: %d\n",
-            ipar[intIdx::id],ipar[intIdx::cpu],ipar[intIdx::n_bnds],
-            ipar[intIdx::seg1_id1],ipar[intIdx::seg1_id2],
-            ipar[intIdx::seg2_id1],ipar[intIdx::seg2_id2],
-            ipar[intIdx::seg3_id1],ipar[intIdx::seg3_id2],
-            ipar[intIdx::seg4_id1],ipar[intIdx::seg4_id2]);
+          jpar[intIdx::split_flag] == 1) {
+        printf("Possible REMOVE iid: %d icpu: %d jid: %d jcpu: %d jid1: %d jcpu1: %d"
+            " jid2: %d jcpu2: %d\n",i_id,i_cpu,j_id,j_cpu,
+            jpar[intIdx::dltd_id1],jpar[intIdx::dltd_cpu1],
+            jpar[intIdx::dltd_id2],jpar[intIdx::dltd_cpu2]);
+        // Check further to see if a bond to this segment was deleted from
+        // segment j
+        if ((jpar[intIdx::dltd_id1] == i_id && jpar[intIdx::dltd_cpu1] == i_cpu) ||
+            (jpar[intIdx::dltd_id2] == i_id && jpar[intIdx::dltd_cpu2] == i_cpu)) {
+          // This is a leftover bond from before the split. Remove it.
+          printf("REMOVE bond %d id: %d cpu: %d attached to"
+              " id: %d cpu: %d ipar: %p\n",idx+1,
+              ipar[intIdx::id],ipar[intIdx::cpu],jpar[intIdx::id],
+              jpar[intIdx::cpu],ipar);
+          if (idx < 1) {
+            ipar[intIdx::seg1_id1] = ipar[intIdx::seg2_id1];
+            ipar[intIdx::seg1_id2] = ipar[intIdx::seg2_id2];
+            ipar[intIdx::site1] = ipar[intIdx::site2];
+          }
+          if (idx < 2) {
+            ipar[intIdx::seg2_id1] = ipar[intIdx::seg3_id1];
+            ipar[intIdx::seg2_id2] = ipar[intIdx::seg3_id2];
+            ipar[intIdx::site2] = ipar[intIdx::site3];
+          }
+          if (idx < 3) {
+            ipar[intIdx::seg3_id1] = ipar[intIdx::seg4_id1];
+            ipar[intIdx::seg3_id2] = ipar[intIdx::seg4_id2];
+            ipar[intIdx::site3] = ipar[intIdx::site4];
+          }
+          ipar[intIdx::seg4_id1] = 0;
+          ipar[intIdx::seg4_id2] = 0;
+          ipar[intIdx::site4] = 0;
+          i_bnds--;
+          ipar[intIdx::n_bnds] = i_bnds;
+          printf("post REMOVE bond id: %d cpu: %d n_bnds: %d"
+              " id1: %d cpu1: %d id2: %d cpu2: %d"
+              " id3: %d cpu3: %d id4: %d cpu4: %d\n",
+              ipar[intIdx::id],ipar[intIdx::cpu],ipar[intIdx::n_bnds],
+              ipar[intIdx::seg1_id1],ipar[intIdx::seg1_id2],
+              ipar[intIdx::seg2_id1],ipar[intIdx::seg2_id2],
+              ipar[intIdx::seg3_id1],ipar[intIdx::seg3_id2],
+              ipar[intIdx::seg4_id1],ipar[intIdx::seg4_id2]);
 
+        }
       }
     }
   }
@@ -2166,11 +2228,23 @@ setNewSegments(Real *pos_orig, Real *pos_new1, Real *pos_new2,
   ipar_new1[intIdx::split_flag] = 0;
   ipar_new1[intIdx::fuse_id] = -1;
   ipar_new1[intIdx::fuse_cpu] = -1;
+  ipar_new1[intIdx::dltd_site1] = -1;
+  ipar_new1[intIdx::dltd_site2] = -1;
+  ipar_new1[intIdx::dltd_id1] = -1;
+  ipar_new1[intIdx::dltd_id2] = -1;
+  ipar_new1[intIdx::dltd_cpu1] = -1;
+  ipar_new1[intIdx::dltd_cpu2] = -1;
   ipar_new2[intIdx::position] = siteLocation::TIP;
   ipar_new2[intIdx::fuse_flag] = 0;
   ipar_new2[intIdx::split_flag] = 0;
   ipar_new2[intIdx::fuse_id] = -1;
   ipar_new2[intIdx::fuse_cpu] = -1;
+  ipar_new2[intIdx::dltd_site1] = -1;
+  ipar_new2[intIdx::dltd_site2] = -1;
+  ipar_new2[intIdx::dltd_id1] = -1;
+  ipar_new2[intIdx::dltd_id2] = -1;
+  ipar_new2[intIdx::dltd_cpu1] = -1;
+  ipar_new2[intIdx::dltd_cpu2] = -1;
   ipar_orig[intIdx::position] = siteLocation::INTERIOR;
   ipar_new1[intIdx::id] = id1;
   ipar_new1[intIdx::cpu] = cpu1;
@@ -2195,6 +2269,10 @@ setNewSegments(Real *pos_orig, Real *pos_new1, Real *pos_new2,
   printf("NEW segment id: %d cpu: %d site1: %d id1: %d cpu1: %d\n",
       ipar_new2[intIdx::id],ipar_new2[intIdx::cpu],ipar_new2[intIdx::site1],
       ipar_new2[intIdx::seg1_id1],ipar_new2[intIdx::seg1_id2]);
+  printf("Adding new segment id: %d cpu: %d\n",
+      ipar_new1[intIdx::id],ipar_new1[intIdx::cpu]);
+  printf("Adding new segment id: %d cpu: %d\n",
+      ipar_new2[intIdx::id],ipar_new2[intIdx::cpu]);
 #if 0
   printf("Old seg id: %d cpu %d site1: %d id1: %d cpu1: %d site2: %d id2: %d cpu2: %d site3: %d id3: %d cpu3: %d\n",
       ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],
