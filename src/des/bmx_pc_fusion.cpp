@@ -270,8 +270,7 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
       const int nrp = GetParticles(lev)[index].numRealParticles();
       const int num_total = GetParticles(lev)[index].numTotalParticles();
 
-      // Number of particles including neighbor particles
-      int ntot = nrp;
+      const int np = particles.size();
 
       /********************************************************************
        * Particle-Particle collision forces (and torques)                 *
@@ -284,11 +283,11 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
 
       // now we loop over the neighbor list and compute the forces
       int me = ParallelDescriptor::MyProc();
-      Gpu::DeviceVector<unsigned int> do_split(nrp+1, 0);
+      Gpu::DeviceVector<unsigned int> do_split(np+1, 0);
       auto do_split_p = do_split.data();
       bool did_fusion = false;
       amrex::ParallelFor(nrp,
-          [nrp,pstruct,nbor_data,ntot,fpar,xpar,me,do_split_p,did_fusion]
+          [nrp,pstruct,nbor_data,fpar,xpar,me,do_split_p,did_fusion]
           AMREX_GPU_DEVICE (int i) noexcept
           {
           auto& particle = pstruct[i];
@@ -347,20 +346,21 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
       amrex::Gpu::Device::synchronize();
 
       // Prefix sum to count total number of new particles to create
-      Gpu::DeviceVector<unsigned int> offsets(nrp+1);
+      Gpu::DeviceVector<unsigned int> offsets(np+1);
       Gpu::exclusive_scan(do_split.begin(), do_split.end(), offsets.begin());
       unsigned int num_split;
 #ifdef AMREX_USE_GPU
-      Gpu::dtoh_memcpy(&num_split,offsets.dataPtr()+nrp,sizeof(unsigned
+      Gpu::dtoh_memcpy(&num_split,offsets.dataPtr()+np,sizeof(unsigned
             int));
 #else
-      std::memcpy(&num_split,offsets.dataPtr()+nrp,sizeof(unsigned
+      std::memcpy(&num_split,offsets.dataPtr()+np,sizeof(unsigned
             int));
 #endif
 
       // make room for new particles - invalidates iterators, so get the
       // ptr again
-      particle_tile.resize(num_total+num_split);
+      particle_tile.resize(np+num_split);
+      particle_tile.setNumNeighbors(0);
       pstruct = particles().dataPtr();
       // Update NextID to include particles created in this function
       Long next_pid;
@@ -372,16 +372,16 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
         ParticleType::NextID(next_pid+num_split);
       }
       // Fill new particle data. If particle pid is split, the new particle
-      // is at index nrp + poffsets[pid]
+      // is at index np + poffsets[pid]
       auto poffsets = offsets.data();
       int my_proc = amrex::ParallelDescriptor::MyProc();
-      amrex::ParallelFor( nrp, [=] AMREX_GPU_DEVICE (int pid) noexcept
+      amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE (int pid) noexcept
           {
           BMXParticleContainer::ParticleType& p_orig = pstruct[pid];
           // Check to see if particle is splitting
           // into two new particles
           if (do_split_p[pid] == 1) {
-            ParticleType& p = pstruct[nrp+poffsets[pid]];
+            ParticleType& p = pstruct[np+poffsets[pid]];
             p.id()  = next_pid + poffsets[pid];
             p.cpu() = my_proc;
 

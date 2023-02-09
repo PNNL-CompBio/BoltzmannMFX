@@ -62,6 +62,7 @@ BMXParticleContainer::split_particles (Real /*time*/)
 
         // make room for new particles - invalidates iterators, so get the ptr again
         particle_tile.resize(np+num_split);
+        particle_tile.setNumNeighbors(0);
         pstruct = particles().dataPtr();
 
         // Update NextID to include particles created in this function
