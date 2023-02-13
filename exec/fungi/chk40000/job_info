@@ -7,7 +7,7 @@ number of MPI processes: 16
 ===============================================================================
  Build Information
 ===============================================================================
-build date:    Feb  9 2023 13:26:58
+build date:    Feb 10 2023 13:42:17
 build machine: Linux constance03.pnl.gov 2.6.32-642.6.2.el6.x86_64 #1 SMP Mon Oct 24 10:22:33 EDT 2016 x86_64
 build dir:     /people/d3g293/bmx_fungi/build/src
 AMReX dir:     /people/d3g293/bmx_fungi/subprojects/amrex
@@ -20,7 +20,7 @@ C++ flags:     -I/people/d3g293/bmx_fungi/src -I/people/d3g293/bmx_fungi/src/int
 
 Link flags:    
 Libraries:     Threads::Threads MPI::MPI_C MPI::MPI_CXX
-BMX git hash: d81dcacf1d36-dirty
+BMX git hash: cca01b4a8b04-dirty
 AMReX git hash: 22.03-249-gf84c7a8f77d6
 
 
