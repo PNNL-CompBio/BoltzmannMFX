@@ -1082,7 +1082,7 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     ipar_orig[intIdx::seg2_id1] = n_id[1];
     ipar_orig[intIdx::seg2_id2] = n_cpu[1];
   }
-  // add bond to new segment and to fusing tip
+  // add bond to new segment
   ipar_orig[intIdx::n_bnds] = new_bnds+2;
   if (new_bnds == 1) {
     ipar_orig[intIdx::site2] = 2;
@@ -1160,12 +1160,12 @@ void cleanupFusionBond(int *ipar , int *jpar, int me)
   iid[0] = ipar[intIdx::seg1_id1];
   iid[1] = ipar[intIdx::seg2_id1];
   iid[2] = ipar[intIdx::seg3_id1];
-  iid[4] = ipar[intIdx::seg4_id1];
+  iid[3] = ipar[intIdx::seg4_id1];
 
   icpu[0] = ipar[intIdx::seg1_id2];
   icpu[1] = ipar[intIdx::seg2_id2];
   icpu[2] = ipar[intIdx::seg3_id2];
-  icpu[4] = ipar[intIdx::seg4_id2];
+  icpu[3] = ipar[intIdx::seg4_id2];
 
   isite[0] = ipar[intIdx::site1];
   isite[1] = ipar[intIdx::site2];
@@ -1928,8 +1928,8 @@ applyIncrements(Real *par, int *ipar)
 }
 
 /**
- * Create positions and parameter values for new segment pair. This consist
- * of the original segment and a new segment
+ * Create positions and parameter values for new segment pair. The input
+ * consists of the original segment and two new segments
  * @param pos_orig, pos_new1, pos_new2 positions of original and new segments
  * @param par_orig, par_new1, par_new2 real parameter values of original
  *        and new segments
@@ -1955,6 +1955,8 @@ setNewSegments(Real *pos_orig, Real *pos_new1, Real *pos_new2,
   copyChildParameters(par_orig, ipar_orig, par_new2, ipar_new2,
       num_reals, num_ints);
   printf("Adding new segments id1: %d cpu1: %d id2: %d cpu2: %d\n",id1,cpu1,id2,cpu2);
+  printf("Old segment id: %d cpu: %d n_bnds: %d\n",ipar_orig[intIdx::id],
+      ipar_orig[intIdx::cpu],ipar_orig[intIdx::n_bnds]);
 
   //Check out if this is an interior or terminal segment
   int nbnd = ipar_orig[intIdx::n_bnds];
@@ -2269,10 +2271,18 @@ setNewSegments(Real *pos_orig, Real *pos_new1, Real *pos_new2,
   printf("NEW segment id: %d cpu: %d site1: %d id1: %d cpu1: %d\n",
       ipar_new2[intIdx::id],ipar_new2[intIdx::cpu],ipar_new2[intIdx::site1],
       ipar_new2[intIdx::seg1_id1],ipar_new2[intIdx::seg1_id2]);
-  printf("Adding new segment id: %d cpu: %d\n",
-      ipar_new1[intIdx::id],ipar_new1[intIdx::cpu]);
-  printf("Adding new segment id: %d cpu: %d\n",
-      ipar_new2[intIdx::id],ipar_new2[intIdx::cpu]);
+  printf("Adding new segment id: %d cpu: %d n_bnds: %d\n",
+      ipar_new1[intIdx::id],ipar_new1[intIdx::cpu],ipar_new1[intIdx::n_bnds]);
+  printf("Adding new segment id: %d cpu: %d n_bnds: %d\n",
+      ipar_new2[intIdx::id],ipar_new2[intIdx::cpu],ipar_new2[intIdx::n_bnds]);
+  printf("After split old segment n_bnds: %d\n",ipar_orig[intIdx::n_bnds]);
+  printf("OLD id: %d cpu: %d nbnds: %d id1: %d cpu1: %d id2: %d cpu2: %d"
+      " id3: %d cpu3: %d id4: %d cpu4: %d\n",
+      ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],ipar_orig[intIdx::n_bnds],
+      ipar_orig[intIdx::seg1_id1],ipar_orig[intIdx::seg1_id2],
+      ipar_orig[intIdx::seg2_id1],ipar_orig[intIdx::seg2_id2],
+      ipar_orig[intIdx::seg3_id1],ipar_orig[intIdx::seg3_id2],
+      ipar_orig[intIdx::seg4_id1],ipar_orig[intIdx::seg4_id2]);
 #if 0
   printf("Old seg id: %d cpu %d site1: %d id1: %d cpu1: %d site2: %d id2: %d cpu2: %d site3: %d id3: %d cpu3: %d\n",
       ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],
