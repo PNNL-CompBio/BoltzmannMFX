@@ -1,3 +1,8 @@
+//
+//     Copyright (c) 2013 Battelle Memorial Institute
+//     Licensed under modified BSD License. A copy of this license can be found
+//     in the LICENSE file in the top level directory of this distribution.
+//
 #ifndef BMX_SPECIES_PARMS_H_
 #define BMX_SPECIES_PARMS_H_
 

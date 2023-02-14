@@ -1,3 +1,9 @@
+#
+#     Copyright (c) 2013 Battelle Memorial Institute
+#     Licensed under modified BSD License. A copy of this license can be found
+#     in the LICENSE file in the top level directory of this distribution.
+#
+
 # AMREX_HOME defines the directory in which we will find all the AMReX code
 AMREX_HOME ?= ../subprojects/amrex
 
