@@ -18,8 +18,17 @@ if( NOT CMAKE_CXX_FLAGS_DEBUG )
    set(CMAKE_CXX_FLAGS_DEBUG "-g")
 endif()
 
+if (BMX_DEBUG EQUAL TRUE)
+  add_compile_definitions(DEBUG)
+endif()
+
+
 if( NOT CMAKE_CXX_FLAGS_RELEASE )
-   set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
+   if (BMX_DEBUG EQUAL TRUE)
+     set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+   else()
+     set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
+   endif()
 endif()
 
 # Load utilities and BMX options module
@@ -93,8 +102,7 @@ elseif (BMX_GPU_BACKEND STREQUAL HIP)
 elseif ()
    set(BMX_DPCPP OFF )
    set(BMX_CUDA  OFF )
-   set(BMX_HIP   OFF )
-endif ()
+endif()
 
 # CSG support
 option( BMX_CSG "Build with CSG support" OFF)
