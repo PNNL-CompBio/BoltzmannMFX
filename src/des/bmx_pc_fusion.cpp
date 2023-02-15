@@ -364,7 +364,7 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
 
       // make room for new particles - invalidates iterators, so get the
       // ptr again
-      particle_tile.resize(nrp+num_split);
+      particle_tile.resize(num_total+num_split);
 //      particle_tile.setNumNeighbors(0);
       pstruct = particles().dataPtr();
       // Update NextID to include particles created in this function
