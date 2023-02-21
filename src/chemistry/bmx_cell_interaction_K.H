@@ -415,7 +415,21 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           ipar2[intIdx::seg2_id1],ipar2[intIdx::seg2_id2],
           ipar2[intIdx::seg3_id1],ipar2[intIdx::seg3_id2],
           ipar2[intIdx::seg4_id1],ipar2[intIdx::seg4_id2]);
-      if (i_bnds == 1) {
+      if (i_bnds == 0) {
+        ipar1[intIdx::seg1_id1] = jid;
+        ipar1[intIdx::seg1_id2] = jcpu;
+        if (j_site[jidx] == 1) {
+          ipar1[intIdx::site1] = 2;
+          i_site[i_bnds] = 2;
+        } else {
+          ipar1[intIdx::site1] = 1;
+          i_site[i_bnds] = 1;
+        }
+        i_id[i_bnds] = jid;
+        i_cpu[i_bnds] = jcpu;
+        i_bnds++;
+        ipar1[intIdx::n_bnds] = i_bnds;
+      } else if (i_bnds == 1) {
         ipar1[intIdx::seg2_id1] = jid;
         ipar1[intIdx::seg2_id2] = jcpu;
         if (j_site[jidx] == 1) {
@@ -477,7 +491,21 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           ipar2[intIdx::seg2_id1],ipar2[intIdx::seg2_id2],
           ipar2[intIdx::seg3_id1],ipar2[intIdx::seg3_id2],
           ipar2[intIdx::seg4_id1],ipar2[intIdx::seg4_id2]);
-      if (j_bnds == 1) {
+      if (j_bnds == 0) {
+        ipar2[intIdx::seg1_id1] = iid;
+        ipar2[intIdx::seg1_id2] = icpu;
+        if (j_site[iidx] == 1) {
+          ipar2[intIdx::site1] = 2;
+          j_site[j_bnds] = 2;
+        } else {
+          ipar2[intIdx::site1] = 1;
+          j_site[j_bnds] = 1;
+        }
+        j_id[j_bnds] = iid;
+        j_cpu[j_bnds] = icpu;
+        j_bnds++;
+        ipar2[intIdx::n_bnds] = j_bnds;
+      } else if (j_bnds == 1) {
         ipar2[intIdx::seg2_id1] = iid;
         ipar2[intIdx::seg2_id2] = icpu;
         if (j_site[iidx] == 1) {
@@ -1595,7 +1623,17 @@ fixBonds(int *ipar, int *jpar)
   if (!i_bonded_to_j && j_bonded_to_i) {
     // j has registered i as a bonding partner but i
     // has not registered j as a bonding partner. Fix up i
-    if (i_bnds == 1) {
+    if (i_bnds == 0) {
+      ipar[intIdx::seg1_id1] = jid;
+      ipar[intIdx::seg1_id2] = jcpu;
+      if (j_site[jidx] == 1) {
+        ipar[intIdx::site1] = 2;
+      } else {
+        ipar[intIdx::site1] = 1;
+      }
+      i_bnds++;
+      ipar[intIdx::n_bnds] = i_bnds;
+    } else if (i_bnds == 1) {
       ipar[intIdx::seg2_id1] = jid;
       ipar[intIdx::seg2_id2] = jcpu;
       if (j_site[jidx] == 1) {
@@ -1631,7 +1669,17 @@ fixBonds(int *ipar, int *jpar)
   } else if (i_bonded_to_j && !j_bonded_to_i) {
     // i has registered j as a bonding partner but j
     // has not registered i as a bonding partner. Fix up j
-    if (j_bnds == 1) {
+    if (j_bnds == 0) {
+      jpar[intIdx::seg1_id1] = iid;
+      jpar[intIdx::seg1_id2] = icpu;
+      if (j_site[iidx] == 1) {
+        jpar[intIdx::site1] = 2;
+      } else {
+        jpar[intIdx::site1] = 1;
+      }
+      j_bnds++;
+      jpar[intIdx::n_bnds] = j_bnds;
+    } else if (j_bnds == 1) {
       jpar[intIdx::seg2_id1] = iid;
       jpar[intIdx::seg2_id2] = icpu;
       if (j_site[iidx] == 1) {
