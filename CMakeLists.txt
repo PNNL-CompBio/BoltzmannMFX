@@ -1,3 +1,9 @@
+#
+#     Copyright (c) 2013 Battelle Memorial Institute
+#     Licensed under modified BSD License. A copy of this license can be found
+#     in the LICENSE file in the top level directory of this distribution.
+#
+
 cmake_minimum_required(VERSION 3.14)
 
 project(BMX-Exa
@@ -18,8 +24,17 @@ if( NOT CMAKE_CXX_FLAGS_DEBUG )
    set(CMAKE_CXX_FLAGS_DEBUG "-g")
 endif()
 
+if (BMX_DEBUG EQUAL TRUE)
+  add_compile_definitions(DEBUG)
+endif()
+
+
 if( NOT CMAKE_CXX_FLAGS_RELEASE )
-   set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
+   if (BMX_DEBUG EQUAL TRUE)
+     set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+   else()
+     set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
+   endif()
 endif()
 
 # Load utilities and BMX options module
@@ -93,8 +108,7 @@ elseif (BMX_GPU_BACKEND STREQUAL HIP)
 elseif ()
    set(BMX_DPCPP OFF )
    set(BMX_CUDA  OFF )
-   set(BMX_HIP   OFF )
-endif ()
+endif()
 
 # CSG support
 option( BMX_CSG "Build with CSG support" OFF)

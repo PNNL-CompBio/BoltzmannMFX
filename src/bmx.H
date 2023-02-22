@@ -1,3 +1,8 @@
+//
+//     Copyright (c) 2013 Battelle Memorial Institute
+//     Licensed under modified BSD License. A copy of this license can be found
+//     in the LICENSE file in the top level directory of this distribution.
+//
 #ifndef BMX_LEVEL_H_
 #define BMX_LEVEL_H_
 
@@ -141,6 +146,9 @@ class bmx : public AmrCore
                            Real time,
                            int ngrow) override;
 
+    // Evaluate gradients of all concentration fields
+    void compute_grad_X (int lev, Real time, MultiFab& gradx_X_k, MultiFab& grady_X_k, MultiFab& gradz_X_k);
+
     ////////////////////////////////////////////////////////////////////////////
     //
     // Diffusion
@@ -196,8 +204,6 @@ class bmx : public AmrCore
                             Vector<Real> & datatime);
     void GetDataVolFrac    (int lev, Real time, Vector<MultiFab *> & data, int icomp,
                             Vector<Real> & datatime);
-
-    void compute_grad_X (int lev, Real time, MultiFab& gradx_X_k, MultiFab& grady_X_k, MultiFab& gradz_X_k);
 
     void AllocateArrays (int lev);
 

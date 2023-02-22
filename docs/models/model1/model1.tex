@@ -17,12 +17,17 @@
 \newcommand{\yvec}{\overline{y}}
 \newcommand{\Yvec}{\overline{Y}}
 \newcommand{\Vvec}{\overline{V}}
+\newcommand{\Rvec}{\overline{R}}
 \newcommand{\Gvec}{\overline{G}}
 \newcommand{\svec}{\overline{s}}
 \newcommand{\Tvec}{\overline{T}}
+\newcommand{\Lvec}{\overline{L}}
 \newcommand{\vvec}{\overline{v}}
+\newcommand{\nhat}{\hat{n}}
+\newcommand{\rhvec}{\overline{\rho}}
 \newcommand{\Dmat}{\overline{\overline{D}}}
 \newcommand{\Rmat}{\overline{\overline{R}}}
+\newcommand{\Omat}{\overline{\overline{1}}}
 \newcommand{\Imat}{\overline{\overline{I}}}
 \newcommand{\Hmat}{\overline{\overline{H}}}
 \newcommand{\Lag}{\mathcal{L}}
@@ -539,13 +544,13 @@ $\xvec$ and $\yvec$. The first derivatives of $\Phi$ have the form
 \end{eqnarray*}
 Similarly, the second derivatives are of the form
 \begin{eqnarray*}
-\nabla_{\xvec}\nabla_{\xvec} \Phi & = & 2\Imat+4\sigma_x\left[(\xvec-\xvec_0)^T\cdot\Rmat_x^T\cdot\Dmat_x
+\nabla_{\xvec}\nabla_{\xvec} \Phi & = & 2\Omat+4\sigma_x\left[(\xvec-\xvec_0)^T\cdot\Rmat_x^T\cdot\Dmat_x
 \cdot\Rmat_x\right]\left[\Rmat_x^T\cdot\Dmat_x\cdot\Rmat_x\cdot(\xvec-\xvec_0)\right] \\
 & + & 2\sigma_x\left[g_x(\xvec)+\theta_x\right]\Rmat_x^T\cdot\Dmat_x\cdot\Rmat_x \\
-\nabla_{\yvec}\nabla_{\yvec} \Phi & = & 2\Imat+4\sigma_y\left[(\yvec-\yvec_0)^T\cdot\Rmat_y^T\cdot\Dmat_y
+\nabla_{\yvec}\nabla_{\yvec} \Phi & = & 2\Omat+4\sigma_y\left[(\yvec-\yvec_0)^T\cdot\Rmat_y^T\cdot\Dmat_y
 \cdot\Rmat_y\right]\left[\Rmat_y^T\cdot\Dmat_y\cdot\Rmat_y\cdot(\yvec-\yvec_0)\right] \\
 & + & 2\sigma_y\left[g_y(\yvec)+\theta_x\right]\Rmat_y^T\cdot\Dmat_y\cdot\Rmat_x \\
-\nabla_{\xvec}\nabla_{\yvec} \Phi & = & -\Imat
+\nabla_{\xvec}\nabla_{\yvec} \Phi & = & -\Omat
 \end{eqnarray*}
 
 Defining the vectors
@@ -618,7 +623,7 @@ defined by $g_y(\yvec)=0$.
 
 \section{Two-Site Model for Filament Segment}
 A two-site model designed to represent a segment of filamentous fungi consists
-of two spheres that are held a fixed distance apart and are chosen to represent
+of two spheres that are held at a fixed distance apart and are chosen to represent
 the hydrodynamic drag on the on the segment as forces from other segments push
 it around. Each sphere is subject to a force, $\fvec_1$, $\fvec_2$, resulting in
 a translational and rotational motion of the segment. For freely interacting
@@ -632,107 +637,106 @@ by the matrix equation
 \]
 The $3\times 3$ matrices $\Dmat_{ij}$ are diffusion matrices for hydrodynamically
 interacting spheres. The details of these matrices can be found in Rotne and
-Prager\cite{RP}. The vectors $\vvec_1$ and $\vvec_2$ represent the represent the
+Prager\cite{RP}. The vectors $\vvec_1$ and $\vvec_2$ are the
 velocities of particles 1 and 2 that represent the filament segment.
 
-For our purposes, it is more convenient to express the equations of motion of the
-system in terms of net force and torque on the particle pair. To simplify this, we
-choose the two particles, separated by a distance $h$ to lie on the $x$-axis at
-positions $\rvec_1 = (h/2,0,0)$ and $\rvec_2 = (-h/2,0,0)$. The more general case
-can be derived by an appropriate rotation of the system. The torque $\Tvec$ and
-net force $\Fvec$ on the system can be written in terms of the forces $\fvec_1$
-and $\fvec_2$ and the positions $\rvec_1$ and $\rvec_2$ as
-\begin{eqnarray*}
-\Tvec & = & \rvec_1\times\fvec_1 + \rvec_2\times\fvec_2 \\
-\Fvec & = & \fvec_1 + \fvec_2
-\end{eqnarray*}
-Breaking these up into individual components gives the equations (for particles
-located at $\rvec_1$ and $\rvec_2$)
-\begin{eqnarray*}
-T_x & = & 0 \\
-T_y & = & \frac{h}{2}(f_{2z}-f_{1z}) \\
-T_z & = & \frac{h}{2}(f_{1y}-f_{2y}) \\
-F_x & = & f_{1x} + f_{2x} \\
-F_y & = & f_{1y} + f_{2y} \\
-F_z & = & f_{1z} + f_{2z}
-\end{eqnarray*}
-The equation for $F_x$ is actually a bit more complicated. The two particles
-cannot move relative to each other so an additional constraint would be
-\[
-f_{1x}-f_{2x} = 0
-\]
-indicating that there is no force pushing the two particles together. This could
-be considered as the result of a constraint force that acts to keep the two particles
-at a fixed distance. If the original $x$ components of the force acting on the two
-particles are considered as $f'_{1x}$ and $f'_{2x}$ and $F_x = f'_{1x} + f'_{2x}$
-then it is possible to use this value of $F_x$ and the two equations involving
-$f_{1x}$ and $f_{2x}$ to solve for $f_{1x}$ and $f_{2x}$.
+%For our purposes, it is more convenient to express the equations of motion of the
+%system in terms of net force and torque on the particle pair. To simplify this, we
+%choose the two particles, separated by a distance $h$ to lie on the $x$-axis at
+%positions $\rvec_1 = (h/2,0,0)$ and $\rvec_2 = (-h/2,0,0)$. The more general case
+%can be derived by an appropriate rotation of the system. The torque $\Tvec$ and
+%net force $\Fvec$ on the system can be written in terms of the forces $\fvec_1$
+%and $\fvec_2$ and the positions $\rvec_1$ and $\rvec_2$ as
+%\begin{eqnarray*}
+%\Tvec & = & \rvec_1\times\fvec_1 + \rvec_2\times\fvec_2 \\
+%\Fvec & = & \fvec_1 + \fvec_2
+%\end{eqnarray*}
+%Breaking these up into individual components gives the equations (for particles
+%located at $\rvec_1$ and $\rvec_2$)
+%\begin{eqnarray*}
+%T_x & = & 0 \\
+%T_y & = & \frac{h}{2}(f_{2z}-f_{1z}) \\
+%T_z & = & \frac{h}{2}(f_{1y}-f_{2y}) \\
+%F_x & = & f_{1x} + f_{2x} \\
+%F_y & = & f_{1y} + f_{2y} \\
+%F_z & = & f_{1z} + f_{2z}
+%\end{eqnarray*}
+%The equation for $F_x$ is actually a bit more complicated. The two particles
+%cannot move relative to each other so an additional constraint would be
+%\[
+%f_{1x}-f_{2x} = 0
+%\]
+%indicating that there is no force pushing the two particles together. This could
+%be considered as the result of a constraint force that acts to keep the two particles
+%at a fixed distance. If the original $x$ components of the force acting on the two
+%particles are considered as $f'_{1x}$ and $f'_{2x}$ and $F_x = f'_{1x} + f'_{2x}$
+%then it is possible to use this value of $F_x$ and the two equations involving
+%$f_{1x}$ and $f_{2x}$ to solve for $f_{1x}$ and $f_{2x}$.
+%
+%The equations for $\Tvec$ and $\Fvec$ can be inverted to solve for $\fvec_1$ and
+%$\fvec_2$ in terms of $\Tvec$ and $\Fvec$. Writing this as a matrix equation gives
+%\[
+%\left[\begin{array}{c}f_{1x} \\ f_{1y} \\ f_{1z} \\ f_{2x} \\ f_{2y} \\ f_{2z}
+% \end{array}\right] =
+%\left[\begin{array}{cccccc}
+%\frac{1}{2} & 0 & 0 & 0 & 0 & 0 \\
+%0 & \frac{1}{2} & 0 & 0 & 0 & \frac{1}{h} \\
+%0 & 0 & \frac{1}{2} & 0 & -\frac{1}{h} & 0 \\
+%\frac{1}{2} & 0 & 0 & 0 & 0 & 0 \\
+%0 & \frac{1}{2} & 0 & 0 & 0 & -\frac{1}{h} \\
+%0 & 0 & \frac{1}{2} & 0  &\frac{1}{h} & 0
+%\end{array}\right]\cdot
+%\left[\begin{array}{c} F_x \\ F_y \\ F_z \\ T_x \\ T_y \\ T_z
+%\end{array}\right]
+%\]
+%
+%It is also useful to decompose the velocities $\vvec_1$ and $vvec_2$ into a velocity
+%of the center of mass, $\Vvec$, and an angular velocity, $\omvec$. The center of mass
+%velocity is given by the relation
+%\[
+%\Vvec = \frac{1}{2}(\vvec_1+\vvec_2)
+%\]
+%The angular velocity must satisfy the relations
+%\[
+%(\vvec_1-\Vvec) = \omvec\times\rvec_1
+%\]
+%Since $\rvec_2=-\rvec_1$ it follows that $\vvec_1-\Vvec=-(\vvec_2-\Vvec)$. This is
+%is equivalent to saying the relative motion of particles 1 and 2 is zero, which is
+%required if the particles remain separated by a fixed distance. Using the
+%coordinates for $\rvec_1$ and $\rvec_2$ as above, the components of $\omvec$ can be
+%written as
+%\begin{eqnarray*}
+%v_{1x}-V_x & = & 0 \\
+%v_{1y}-V_y & = & \frac{h}{2} \omega_z \\
+%v_{1z}-V_z & = & -\frac{h}{2} \omega_y
+%\end{eqnarray*}
+%The equations generated by $\vvec_2$ are essentially that same as the equations
+%generated by $\vvec_1$. The $x$ component of $\omvec$ is indeterminate, but can be
+%set to 0 (the forces in this model are applied to points, so there is no torque
+%about the $x$ axis). These equations can be solved for $\Vvec$ and $\omvec$ to get
+%the matrix equations
+%\[
+%\left[\begin{array}{c}V_x \\ V_y \\ V_z \\ \omega_x \\ \omega_y \\ \omega_z
+% \end{array}\right] =
+%\left[\begin{array}{cccccc}
+%\frac{1}{2} & 0 & 0 & \frac{1}{2} & 0 & 0 \\
+%0 & \frac{1}{2} & 0 & 0 & \frac{1}{2} & 0 \\
+%0 & 0 & \frac{1}{2} & 0 & 0 & \frac{1}{2} \\
+%0 & 0 & 0 & 0 & 0 & 0 \\
+%0 & 0 & -\frac{1}{h} & 0 & 0 & \frac{1}{h} \\
+%0 & \frac{1}{h} & 0 & 0  &-\frac{1}{h} & 0
+%\end{array}\right]\cdot
+%\left[\begin{array}{c} v_{1x} \\ v_{1y} \\ v_{1z} \\ v_{2x} \\ v_{2y} \\ v_{2z}
+%\end{array}\right]
+%\]
+%
 
-The equations for $\Tvec$ and $\Fvec$ can be inverted to solve for $\fvec_1$ and
-$\fvec_2$ in terms of $\Tvec$ and $\Fvec$. Writing this as a matrix equation gives
-\[
-\left[\begin{array}{c}f_{1x} \\ f_{1y} \\ f_{1z} \\ f_{2x} \\ f_{2y} \\ f_{2z}
- \end{array}\right] =
-\left[\begin{array}{cccccc}
-\frac{1}{2} & 0 & 0 & 0 & 0 & 0 \\
-0 & \frac{1}{2} & 0 & 0 & 0 & \frac{1}{h} \\
-0 & 0 & \frac{1}{2} & 0 & -\frac{1}{h} & 0 \\
-\frac{1}{2} & 0 & 0 & 0 & 0 & 0 \\
-0 & \frac{1}{2} & 0 & 0 & 0 & -\frac{1}{h} \\
-0 & 0 & \frac{1}{2} & 0  &\frac{1}{h} & 0
-\end{array}\right]\cdot
-\left[\begin{array}{c} F_x \\ F_y \\ F_z \\ T_x \\ T_y \\ T_z
-\end{array}\right]
-\]
-
-It is also useful to decompose the velocities $\vvec_1$ and $vvec_2$ into a velocity
-of the center of mass, $\Vvec$, and an angular velocity, $\omvec$. The center of mass
-velocity is given by the relation
-\[
-\Vvec = \frac{1}{2}(\vvec_1+\vvec_2)
-\]
-The angular velocity must satisfy the relations
-\[
-(\vvec_1-\Vvec) = \omvec\times\rvec_1
-\]
-Since $\rvec_2=-\rvec_1$ it follows that $\vvec_1-\Vvec=-(\vvec_2-\Vvec)$. This is
-is equivalent to saying the relative motion of particles 1 and 2 is zero, which is
-required if the particles remain separated by a fixed distance. Using the
-coordinates for $\rvec_1$ and $\rvec_2$ as above, the components of $\omvec$ can be
-written as
+From Rotne and Prager, the diffusion tensor for a pair of
+particles of radius $a$ is
 \begin{eqnarray*}
-v_{1x}-V_x & = & 0 \\
-v_{1y}-V_y & = & \frac{h}{2} \omega_z \\
-v_{1z}-V_z & = & -\frac{h}{2} \omega_y
-\end{eqnarray*}
-The equations generated by $\vvec_2$ are essentially that same as the equations
-generated by $\vvec_1$. The $x$ component of $\omvec$ is indeterminate, but can be
-set to 0 (the forces in this model are applied to points, so there is no torque
-about the $x$ axis). These equations can be solved for $\Vvec$ and $\omvec$ to get
-the matrix equations
-\[
-\left[\begin{array}{c}V_x \\ V_y \\ V_z \\ \omega_x \\ \omega_y \\ \omega_z
- \end{array}\right] =
-\left[\begin{array}{cccccc}
-\frac{1}{2} & 0 & 0 & \frac{1}{2} & 0 & 0 \\
-0 & \frac{1}{2} & 0 & 0 & \frac{1}{2} & 0 \\
-0 & 0 & \frac{1}{2} & 0 & 0 & \frac{1}{2} \\
-0 & 0 & 0 & 0 & 0 & 0 \\
-0 & 0 & -\frac{1}{h} & 0 & 0 & \frac{1}{h} \\
-0 & \frac{1}{h} & 0 & 0  &-\frac{1}{h} & 0
-\end{array}\right]\cdot
-\left[\begin{array}{c} v_{1x} \\ v_{1y} \\ v_{1z} \\ v_{2x} \\ v_{2y} \\ v_{2z}
-\end{array}\right]
-\]
-
-The final part of developing a complete picture of the behavior of filament
-segments is to come up with complete set of formulas for the diffusion tensors.
-From Rotne and Prager the diffusion tensor, the diffusion tensor for a pair of
-radius $a$ is
-\begin{eqnarray*}
-\Dmat_{ii} & = & \frac{kT}{6\pi\mu a}\Imat \\
-\Dmat_{ij} & = & \frac{kT}{8\pi\mu r_{ij}^3}\left[\left(\Imat r_{ij}^2 +\rvec_{ij}
-\rvec_{ij}\right) +\frac{2a^2}{r_{ij}^2}\left(\frac{1}{3}\Imat r_{ij}^2
+\Dmat_{ii} & = & \frac{kT}{6\pi\mu a}\Omat \\
+\Dmat_{ij} & = & \frac{kT}{8\pi\mu r_{ij}^3}\left[\left(\Omat r_{ij}^2 +\rvec_{ij}
+\rvec_{ij}\right) +\frac{2a^2}{r_{ij}^2}\left(\frac{1}{3}\Omat r_{ij}^2
 -\rvec_{ij}\rvec_{ij}\right)\right] \;\;\;\; \mbox{if}\;\; r_{ij} > 2a \\
 \Dmat_{ij} & = & \frac{kT}{6\pi\mu a}\left[\left(1-\frac{9}{32}\frac{r_{ij}}{a}\right)
 +\frac{3}{32}\frac{\rvec_{ij}\rvec_{ij}}{ar_{ij}}\right] \;\;\;\; \mbox{if} \;\; r_{ij}<2a
@@ -740,20 +744,103 @@ radius $a$ is
 Assuming that the two particles lie at points $(h/2,0,0)$ and $(-h/2,0,0)$,
 the equations for the off-diagonal matrices reduce to
 \begin{eqnarray*}
-(\Dmat_{ij})_{xx,yy} & = & \frac{kT}{8\pi\mu h^3}\left[h^2+\frac{2}{3}a^2\right]
+(\Dmat_{ij})_{xx} & = & \frac{kT}{4\pi\mu h^3}\left[h^2-\frac{2}{3}a^2\right]
  \;\;\;\;\mbox{if}\;\;h>2a \\
-(\Dmat_{ij})_{zz} & = & \frac{kT}{4\pi\mu h^3}\left[h^2-\frac{2}{3}a^2\right]
+(\Dmat_{ij})_{yy,zz} & = & \frac{kT}{8\pi\mu h^3}\left[h^2+\frac{2}{3}a^2\right]
  \;\;\;\;\mbox{if}\;\;h>2a \\
-(\Dmat_{ij})_{xx,yy} & = & \frac{kT}{6\pi\mu a}\left[1-\frac{9}{32}\frac{h}{a}\right]
+(\Dmat_{ij})_{xx} & = & \frac{kT}{6\pi\mu a}\left[1-\frac{3}{16}\frac{h}{a}\right]
  \;\;\;\;\mbox{if}\;\;h<2a \\
-(\Dmat_{ij})_{zz} & = & \frac{kT}{6\pi\mu a}\left[1-\frac{3}{16}\frac{h}{a}\right]
- \;\;\;\;\mbox{if}\;\;h<2a \\
+(\Dmat_{ij})_{yy,zz} & = & \frac{kT}{6\pi\mu a}\left[1-\frac{9}{32}\frac{h}{a}\right]
+ \;\;\;\;\mbox{if}\;\;h<2a
 \end{eqnarray*}
 All other matrix elements are zero in this orientation. Note that these matrix
-elements are continuous at the contact value of $h=2a$. The only remaining detail
+elements are continuous at the contact value of $h=2a$. This formula can be used to
+calculate the diffusion tensor in the frame of reference where the cylinder is located
+along the $x$ axis and then the tensor can be rotated back to the actual orientation.
+
+The only remaining detail
 is to choose a relation between the radius $a$ of the two particles representing
 the ends of the segment, the separation distance $h$ between the particles and
-the dimensions of the cylinder representing the fungi segment.
+the dimensions of the cylinder representing the fungi segment. For these simulations
+we choose the radius $a$ so that the total area of the two spheres is equal to the
+area of the area of the cylinder represented by the segment.
+
+The simulation code actually uses the translational velocity of the center of mass and
+the angular rotational velocity, $\omvec$, of the cylinder to update the position of the system.
+The two fictitious particles used to  calculate the hydrodynamic drag are assumed to
+have the same mass, which leads immediately to the relation
+\[
+\Vvec = \frac{\vvec_1+\vvec_2}{2}
+\]
+between the center of mass velocity $\Vvec$ and the individual particle velocities.
+The angular velocity is more complicated. The relationship between angular velocity
+and the velocity of the individual particles in the cylinder is given by
+\[
+\Imat\cdot\omvec = \Lvec
+\]
+where $\Lvec$ is the angular momentum
+\begin{eqnarray*}
+\Lvec & = & \sum_i m\rvec_i\times\vvec_i\\
+& = & \frac{m}{2}\rvec_{12}\times(\vvec_1-\vvec_2)
+\end{eqnarray*}
+and $\Imat$ is the moment of inertia tensor
+\begin{eqnarray*}
+\Imat & = & \sum_i m (\Omat r_i^2-\rvec_i\rvec_i) \\
+& = & \frac{m}{4}(\Omat\; 2r_{12}^2-2\rvec_{12}\rvec_{12}) \\
+& = & \frac{m}{2}(\Omat r_{12}^2-\rvec_{12}\rvec_{12}) \\
+\end{eqnarray*}
+Note that in all these equations, the particles are assumed to be located at
+$\pm \rvec_{12}/2$.
+
+If the cylinder is oriented parallel to the $x$ axis, then the moment of inertia tensor
+has the simple form
+\[
+\Imat = \frac{mh^2}{2}\left[\begin{array}{ccc}
+0 & 0 & 0\\
+0 & 1 & 0\\
+0 & 0 & 1\\
+\end{array}\right]
+\]
+Note that this has a zero eigenvalue so that it is not invertible. However, in this
+orientation, the $x$ component of $\Lvec$ also vanishes, implying that $\omega_x$ can be
+set to any value. For convenience, we set it equal to zero. The angular momentum in this
+orientation is
+\[
+\Lvec = \frac{mh}{2}(0,\;-v'_z,\;v'_y)
+\]
+where $\vvec'$ is the vector $\vvec_1-\vvec_2$ after rotating to the frame where
+$\rvec_{12}$ is parallel to the $x$ axis. In this frame, the remaining two components
+of $\omvec$ are given by 
+\begin{eqnarray*}
+\omega_y & = & -v'_z/h \\
+\omega_z & = & v'_y/h
+\end{eqnarray*}
+
+These equations have all relied on the fact that $\rvec_{12}$ is oriented along the
+$x$ axis. To use these equations in practice, it is necessary to construct the rotation
+that orients $\rvec_{12}$ along the $x$ axis. Assume polar coordinates with polar
+angle $\phi$ and azimuthal angle $\theta$ such that $\theta = 0$ implies that a vector
+is parallel to the $z$ axis and $\phi = 0$, $\theta = \pi/2$ implies that a vector is
+parallel to the $x$ axis. The vector $\rvec_{12}$ is described by the coordinates
+$h(\cos\phi\sin\theta,\sin\phi\sin\theta,\cos\theta)$. The matrix to rotate the $x$ axis
+to this orientation is
+\[
+\Rmat=\left[\begin{array}{ccc}
+\cos\phi\sin\theta & -\sin\phi & -\cos\phi\cos\theta \\
+\sin\phi\sin\theta & \cos\phi & -\sin\phi\cos\theta \\
+\cos\theta & 0 & \sin\theta
+\end{array}\right]
+=\left[\begin{array}{ccc}
+\cos\phi & -\sin\phi & 0 \\
+\sin\phi & \cos\phi & 0 \\
+0 & 0 & 1\end{array}\right]
+\left[\begin{array}{ccc}
+\sin\theta & 0 & -\cos\theta \\
+0 & 1 & 0 \\
+\cos\theta & 0 & \sin\theta
+\end{array}\right]
+\]
+The inverse rotation is just the transpose of this matrix.
 
 \section{Creating a Bond List}
 To model filamentous fungi, it is necessary to maintain bonds between
@@ -836,6 +923,76 @@ the bonded interaction between the two segments is evaluated
 \item If there is no match, the non-bonded interaction between the two segments is
 evaluated
 \end{list}
+
+\section{Cylinder interactions}
+Our model for interacting cylinders is based on the minimum distance between two
+line segments. The segments are defined by the line joining the centers of the two
+end caps for each cylinder. If these two points are defined as $\rvec_1$ and $\rvec_2$
+and the separation between them is defined as $\rhvec = \rvec_2-\rvec_1$ then the line
+segment $\Rvec(\tau)$ joining the endpoints is defined as
+\[
+\Rvec(\tau) = \rvec_1 +\tau\rhvec\;\;\;\;\;\;\;\mbox{for}\;\;\tau\in [0,1]
+\]
+For two cylinders $i$ and $j$ defined by the line segments $\Rvec_i(\tau_i)$ and
+$\Rvec_j(\tau_j)$ we can find the minimum separation distance by minimizing
+\begin{eqnarray*}
+\chi & = & \left|\Rvec_i(\tau_i)-\Rvec_j(\tau_j)\right|^2 \\
+     & = & \left|\rvec_{i1}-\rvec_{j1}\right|^2+2\tau_i(\rvec_{i1}-\rvec_{j1})\cdot\rhvec_i
+          -2\tau_j(\rvec_{i1}-\rvec_{j1})\cdot\rhvec_j \\
+     & + & \tau_i^2\left|\rhvec_i\right|^2 + \tau_j^2\left|\rhvec_j\right|^2
+           - 2\tau_i\tau_j\rhvec_i\cdot\rhvec_j
+\end{eqnarray*}
+subject to the constraints $0\le\tau_i\le 1$ and $0\le\tau_j\le 1$.
+
+Setting the gradients of $\chi$ with respect to $\tau_i$ and $\tau_j$ equal to
+zero gives the coupled linear equations
+\begin{eqnarray*}
+-(\rvec_{i1}-\rvec_{j1})\cdot\rhvec_i & = & \tau_i\left|\rhvec_i\right|^2
+                                        - \tau_j\rhvec_i\cdot\rhvec_j \\
+(\rvec_{i1}-\rvec_{j1})\cdot\rhvec_j & = & - \tau_i\rhvec_i\cdot\rhvec_j
+                                       + \tau_j\left|\rhvec_j\right|^2
+\end{eqnarray*}
+This can easily be solved in most cases for $\tau_i$ and $\tau_j$.
+After a solution is found, it is necessary to check that the $\tau_i$ and $\tau_j$
+satisfy the constraints. If they don't then the solution can be found by setting the
+values of $\tau_i$ and $\tau_j$ to the limits 0 and 1 and optimizing the remaining
+variable to find a minimum distance value. This may require and exhaustive search through
+up to four values.
+
+A corner case occurs when $\rhvec_i$ and $\rhvec_j$ are parallel. In this case the
+determinant vanishes and there is no unique solution. An {\em ad hoc} solution can be
+found by fixing $\tau_i$ to 0 and 1 and then minimizing $\tau_j$. Based on the values
+of $\tau_j$, a pair of values can be chosen the represent the minimum distance between
+the line segments.
+
+The force between the two cylinders is some function $\Fvec(R)$ of the minimal
+distance $R=|\Rvec_i(\tau_i)-\Rvec_j(\tau_j)|$ between the two cylinders. The
+force must still be partitioned between the sites defining the cylinder. To do
+this, we assume that $F(R)$ is generated from a potential $U(R)$. The force is
+then
+\[
+\nabla_{\Rvec}U(R) = \Fvec(R)
+\]
+If we write $\Rvec_j(\tau_j)$ as
+\[
+\Rvec_i(\tau_i) = \rvec_i + \tau_i (\rvec_{i2}-\rvec_{i1})
+\]
+then the gradient of $U(R)$ with respect to $\rvec_{i1}$ is
+\begin{eqnarray*}
+\nabla_{\rvec_{i1}}U(R) & = & \frac{\partial U}{\partial R}\nabla_{\rvec_{i1}}R\
+ = \frac{\partial U}{\partial R}\frac{\Rvec}{R} (1-\tau_i)
+\end{eqnarray*}
+Identifying $-\partial U/\partial R$ as some function $F(R)$ gives the final
+relation
+\[
+\fvec_{i1} = F(R)\frac{\Rvec}{R}(1-\tau_i)
+\]
+for the force acting on site 1 of segment $i$. The force acting on site 2 of segment
+$i$ is just
+\[
+\fvec_{i2} = F(R)\frac{\Rvec}{R}\tau_j
+\]
+The expressions for the forces on the two sites of segment $j$ are similar.
 \bibliographystyle{unsrt}
 \bibliography{bmx}
 \end{document}

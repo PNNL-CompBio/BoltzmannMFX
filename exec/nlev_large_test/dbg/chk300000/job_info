@@ -1,0 +1,46 @@
+===============================================================================
+ BMX Job Information
+===============================================================================
+number of MPI processes: 16
+
+
+===============================================================================
+ Build Information
+===============================================================================
+build date:    Mar 30 2022 10:44:52
+build machine: Linux constance03.pnl.gov 2.6.32-642.6.2.el6.x86_64 #1 SMP Mon Oct 24 10:22:33 EDT 2016 x86_64
+build dir:     /people/d3g293/bmx_dev/build/src
+AMReX dir:     /people/d3g293/bmx_dev/subprojects/amrex
+
+COMP:          GNU
+COMP version:  6.1.0
+
+C++ compiler:  /share/apps/gcc/6.1.0/bin/g++
+C++ flags:     -I/people/d3g293/bmx_dev/src -I/people/d3g293/bmx_dev/src/interpolation -I/people/d3g293/bmx_dev/src/deposition -I/people/d3g293/bmx_dev/src/des -I/people/d3g293/bmx_dev/src/diffusion -I/people/d3g293/bmx_dev/src/leveldata -I/people/d3g293/bmx_dev/src/setup -I/people/d3g293/bmx_dev/src/util -I/people/d3g293/bmx_dev/src/mods -I/people/d3g293/bmx_dev/src/timestepping -I/people/d3g293/bmx_dev/src/chemistry -I/people/d3g293/bmx_dev/subprojects/amrex/Src/Base -I/people/d3g293/bmx_dev/subprojects/amrex/Src/Base/Parser -I/people/d3g293/bmx_dev/subprojects/amrex/Src/Boundary -I/people/d3g293/bmx_dev/subprojects/amrex/Src/AmrCore -I/people/d3g293/bmx_dev/subprojects/amrex/Src/Amr -I/people/d3g293/bmx_dev/subprojects/amrex/Src/EB -I/people/d3g293/bmx_dev/subprojects/amrex/Src/LinearSolvers/MLMG -I/people/d3g293/bmx_dev/subprojects/amrex/Src/Particle -I/people/d3g293/bmx_dev/build/subprojects/amrex -O2 -g -DNDEBUG -pthread
+
+Link flags:    
+Libraries:     Threads::Threads MPI::MPI_C MPI::MPI_CXX
+BMX git hash: 2c6d4a9d3824-dirty
+AMReX git hash: 22.03-21-g336ca7002b45
+
+
+===============================================================================
+ Grid Information
+===============================================================================
+ level: 0
+   number of boxes = 16
+   maximum zones   = 32 32 16 
+
+ level: 1
+   number of boxes = 16
+   maximum zones   = 64 64 32 
+
+ level: 2
+   number of boxes = 16
+   maximum zones   = 128 128 64 
+
+
+
+===============================================================================
+ Inputs File Parameters
+===============================================================================

@@ -1,3 +1,8 @@
+//
+//     Copyright (c) 2013 Battelle Memorial Institute
+//     Licensed under modified BSD License. A copy of this license can be found
+//     in the LICENSE file in the top level directory of this distribution.
+//
 #include <AMReX_PlotFileUtil.H>
 #include <AMReX_VisMF.H>    // amrex::VisMF::Write(MultiFab)
 #include <AMReX_VectorIO.H> // amrex::[read,write]IntData(array_of_ints)
