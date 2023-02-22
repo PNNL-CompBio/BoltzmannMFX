@@ -16,6 +16,10 @@ amrex::Real BMXCellInteraction::p_stiffness = 0.0;
 amrex::Real BMXCellInteraction::p_z_bndry_width = 0.0;
 amrex::Real BMXCellInteraction::p_z_stiffness = 0.0;
 amrex::Real BMXCellInteraction::p_z_wall = 0.0;
+amrex::Real BMXCellInteraction::p_bond_strength = 0.0;
+amrex::Real BMXCellInteraction::p_bond_cutoff = 5.0;
+amrex::Real BMXCellInteraction::p_viscosity = 20.0;
+std::vector<amrex::Real> BMXCellInteraction::p_force_params;
 
 /**
  * Retrieve instance of BMXCellInteraction object
@@ -47,7 +51,7 @@ BMXCellInteraction::~BMXCellInteraction()
  * Setup chemistry model by reading a parameter file
  * @param file name of parameter file used by chemistry model
  */
-void BMXCellInteraction::setParams(const char *file)
+void BMXCellInteraction::setParams(const char* /*file*/)
 {
   ParmParse pp("cell_force");
 
@@ -67,7 +71,34 @@ void BMXCellInteraction::setParams(const char *file)
   pp.get("wall_repulsion_stiffness",p_z_r_stiffness);
   pp.get("wall_adhesion_stiffness",p_z_a_stiffness);
 #endif
+  pp.get("viscous_drag",p_viscosity);
+
+  p_bond_strength = 5.0;
+  pp.get("bond_strength",p_bond_strength);
+
+  p_bond_cutoff = 0.00001;
+  pp.get("bond_cutoff",p_bond_cutoff);
 
   p_z_wall = FLUID::surface_location;
+
+  p_force_params.clear();
+  p_force_params.push_back(p_bndry_width);
+  p_force_params.push_back(p_stiffness);
+  p_force_params.push_back(p_z_wall);
+  p_force_params.push_back(p_z_bndry_width);
+  p_force_params.push_back(p_z_stiffness);
+  p_force_params.push_back(p_z_gravity);
+  p_force_params.push_back(p_bond_strength);
+  p_force_params.push_back(p_bond_cutoff);
+  p_force_params.push_back(p_viscosity);
   amrex::Print() << "SURFACE LOCATION: "<<p_z_wall<<'\n';
+}
+
+/**
+ * Return a vector containing force parameters
+ * @return force parameters
+ */
+std::vector<Real> BMXCellInteraction::getForceParams()
+{
+  return p_force_params;
 }

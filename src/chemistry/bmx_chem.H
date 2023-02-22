@@ -9,8 +9,12 @@
 #include <AMReX.H>
 #include <AMReX_REAL.H>
 
-#define MAX_CHEM_REAL_VAR 31
-#define MAX_CHEM_INT_VAR 5
+/**
+ * These two values need to be coordinated with the number of variables
+ * defined in the realIdx and intIdx enumerations, plus the number of
+ * variables in the undefined blocks */
+#define MAX_CHEM_REAL_VAR 33
+#define MAX_CHEM_INT_VAR 33
 
 using amrex::Real;
 
@@ -28,35 +32,37 @@ using amrex::Real;
  * force on the center of mass and a torque. The cell is also characterized by a
  * volume V. The cell has linear velocity and angular velocity and the cell
  * volume is also growing or shrinking with some rate. For spherical cells,
- * a=b=c=radius and the Euler angles, rotation velocity and torques are all
- * zero.
+ * a=b=c=radius and the orientation angles, rotation velocity and torques are
+ * all zero.
  */
 struct realIdx
 {
   enum { // Locations of real particle data stored in particle type
-    a_size,      // first ellipsoid dimension
-    b_size,      // second ellipsoid dimension
-    c_size,      // third ellipsoid dimension
-    psi,         // first Euler angle
-    theta,       // second Euler angle                             4
-    phi,         // third Euler angle
-    area,        // cell surface area
-    vol,         // cell volume
+    radius,      // radius of particle or cylinder
+    c_length,    // length of cylinder
+    theta,       // polar angle
+    phi,         // azimuthal angle
+    area,        // surface area of sphere or segment                   5
+    vol,         // volume of sphere or segment
     velx,        // x-component of linear velocity
-    vely,        // y-component of linear velocity                 9
+    vely,        // y-component of linear velocity
     velz,        // z-component of linear velocity
-    wx,          // x-component of angular velocity
+    wx,          // x-component of angular velocity                     10
     wy,          // y-component of angular velocity
     wz,          // z-component of angular velocity
-    fx,          // x-component of linear force                   14
+    fx,          // x-component of linear force
     fy,          // y-component of linear force
-    fz,          // z-component of linear force
+    fz,          // z-component of linear force                         15
     taux,        // x-component of torque
     tauy,        // y-component of torque
-    tauz,        // z-component of torque                         19
-    dadt,        // rate of change of the cell area
-    dvdt,        // rate of change of the cell volume
-    first_data,  // index of first value in uncharacterized block 22
+    tauz,        // z-component of torque
+    gx,          // x-component of chemical gradient
+    gy,          // y-component of chemical gradient                    20
+    gz,          // z-component of chemical gradient
+    dadt,        // rate of change of the area
+    dvdt,        // rate of change of the volume
+    tau_split,   // value of tau to use if fusion occurs                24
+    first_data,  // index of first value in uncharacterized block
     count        // total number of elements in this enumeration
   };
 };
@@ -74,11 +80,58 @@ struct intIdx
     num_ints,       // Number unique integers in uncharacterized block of intger data
     real_tot,       // Total number reals (unique plus temporary values)
     int_tot,        // Total number of integers (unique plus temporary values)
-    first_real_inc, // Location of first value of concentration increments
+    first_real_inc, // Location of first value of concentration increments        5
+    cell_type,      // Enumeration to distinguish between different cell types
+    n_bnds,         // Number of segments bonded to this segment
+    seg1_id1,       // unique identifier of bonded segment 1
+    seg2_id1,       // unique identifier of bonded segment 2
+    seg3_id1,       // unique identifier of bonded segment 3                     10
+    seg4_id1,       // unique identifier of bonded segment 4
+    seg1_id2,       // original process of bonded segment 1
+    seg2_id2,       // original process of bonded segment 2
+    seg3_id2,       // original process of bonded segment 3
+    seg4_id2,       // original process of bonded segment 4                      15
+    site1,          // bonding site of segment 1
+    site2,          // bonding site of segment 2
+    site3,          // bonding site of segment 3
+    site4,          // bonding site of segment 4
+    position,       // identify tip, second position, interior segment           20
+    fuse_flag,      // flag that this particle is fusing to another particle
+    split_flag,     // flag to identify splitting segment in a fusion event
+    new_flag,       // flag to identify new particle in fusion event
+    fuse_id,        // id of particle that this particle is fusing to
+    fuse_cpu,       // cpu of particle that this particle is fusing to           25
+    dltd_site1,     // deleted site 1
+    dltd_site2,     // deleted site 2
+    dltd_id1,       // deleted id 1
+    dltd_id2,       // deleted id 2
+    dltd_cpu1,      // deleted cpu 1                                             30
+    dltd_cpu2,      // deleted cpu 2
+    id,             // unique identifier of segment
+    cpu,            // original process of segment
     first_data,     // index of first value of uncharacterized block
-    count           // total number of elements in this enumeration
+    count           // total number of elements in this enumeration              35
   };
 };
+
+struct cellType
+{
+  enum { // Different cell types in simulation
+    YEAST = 0, // Spherical, unconnected cells
+    FUNGI      // Segment of filamentous fungi
+  };
+};
+
+struct siteLocation
+{
+  enum { // Different locations of fungi segments
+    TIP = 0,   // Growth tip filament
+    SECOND_1,  // Segment behind growth tip, tip is bound to site 1
+    SECOND_2,  // Segment behind growth tip, tip is bound to site 2
+    INTERIOR   // 
+  };
+};
+
 
 class BMXChemistry
 {
@@ -148,11 +201,16 @@ class BMXChemistry
    */
   void getChemParams(std::vector<Real> &chempar);
 
-  // Hardwired variables for ABC model
-  static Real k1, kr1;   // rate coefficients for species A into and out of biological cell
-  static Real k2, kr2;   // rate coefficients for converting A into B and C inside biological cell
-  static Real k3, kr3;   // rate coefficients for species C into and out of biological cell
-  static Real kg;        // cell growth coefficient
+  /** Return a vector containing exchange parameters
+   * @return vector of exchange parameters
+   */
+  std::vector<Real> getExchangeParameters();
+
+  /**
+   * Return a vector containing parameters for segment fusion
+   * @return vector of fusion parameters
+   */
+  std::vector<Real> getFusionParameters();
 
   // Fraction of overlap
   static Real p_overlap;
@@ -173,9 +231,27 @@ class BMXChemistry
 
   private:
 
+  // Hardwired variables for ABC model
+  static Real k1, kr1;   // rate coefficients for species A into and out of biological cell
+  static Real k2, kr2;   // rate coefficients for converting A into B and C inside biological cell
+  static Real k3, kr3;   // rate coefficients for species C into and out of biological cell
+  static Real kg, kv;        // cell growth coefficients
+
+  static Real radius_max;  // maximum value of cylinder radius for fungi segment
+  static Real length_max;  // maximum value of cylinder length for fungi segment
+  static Real brnch_prob;  // probability of side branching
+  static Real split_prob;  // probability of tip splitting
+
+  static Real mtA;  // Septum mass transfer coefficient for A
+  static Real mtB;  // Septum mass transfer coefficient for B
+  static Real mtC;  // Septum mass transfer coefficient for C
+
   int p_num_species; // Total number chemical species in model
   int p_num_ivals;   // Total number integer settings in model
   int p_inc_offset;  // Offset of increments relative to start of species data
+
+  static Real fusion_prob; // probability of segments fusing
+  static Real max_fusion_separation; // maximum separtion when fusion can occur
 
   std::vector<int> p_int_vals; // stored values of integers
 

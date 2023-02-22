@@ -27,6 +27,12 @@ class BMXCellInteraction
    */
   void setParams(const char *file);
 
+  /**
+   * Return a vector containing force parameters
+   * @return force parameters
+   */
+  std::vector<Real> getForceParams();
+
   protected:
   /**
    * Constructor
@@ -62,6 +68,14 @@ class BMXCellInteraction
 #endif
 
   static Real p_z_gravity;     // factor for gravity
+
+  static Real p_bond_strength; // strength of harmonic bond linking fungi segments
+
+  static Real p_bond_cutoff;   // cutoff radius for detecting a bond
+
+  static Real p_viscosity;     // drag parameter for segments
+
+  static std::vector<Real> p_force_params;  // vector containing all force params
 
   private:
 

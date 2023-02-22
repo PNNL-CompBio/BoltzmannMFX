@@ -36,12 +36,36 @@ namespace SPECIES
   // Maximum cell volume
   amrex::Real max_vol;
 
+  // Maximum segment length
+  amrex::Real max_len;
+
+  // Post-split length
+  amrex::Real split_len;
+
+  // Maximum segment radius
+  amrex::Real max_rad;
+
+  // Branching probability
+  amrex::Real brnch_prob;
+
+  // Tip-splitting probability
+  amrex::Real split_prob;
 
   void Initialize ()
   {
     amrex::ParmParse pp("chem_species");
 
     pp.get("max_vol", max_vol);
+    max_len = 0.0035;
+    pp.query("max_seg_length", max_len);
+    split_len = 0.0030;
+    pp.query("seg_split_length", split_len);
+    max_rad = 0.00025;
+    pp.query("max_seg_radius", max_rad);
+    brnch_prob = 0.0001;
+    pp.query("branching_probability", brnch_prob);
+    split_prob = 0.1;
+    pp.query("splitting_probability", split_prob);
 
     if (pp.contains("solve"))
     {

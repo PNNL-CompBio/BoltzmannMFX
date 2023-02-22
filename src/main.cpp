@@ -220,14 +220,14 @@ int main (int argc, char* argv[])
 
     // Read in chemistry parameters. Currently hardwiring these so file
     // name is set to arbitrary string
-#ifdef NEW_CHEM
     SPECIES::Initialize();
     amrex::Print() << "Volume threshold for cell division:  " << SPECIES::max_vol << std::endl;
+    amrex::Print() << "Length threshold for segment division:  " << SPECIES::max_len << std::endl;
+    amrex::Print() << "Maximum segment radius:  " << SPECIES::max_rad << std::endl;
     BMXChemistry *bmxchem = BMXChemistry::instance();
     bmxchem->setParams("NullFile");
     BMXCellInteraction *interaction = BMXCellInteraction::instance();
     interaction->setParams("NullFile");
-#endif
 
     // Either init from scratch or from the checkpoint file
     int restart_flag = 0;

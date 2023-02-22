@@ -44,6 +44,21 @@ namespace SPECIES
   // Maximum cell volume
   extern amrex::Real max_vol;
 
+  // Maximum segment length
+  extern amrex::Real max_len;
+
+  // Post split length
+  extern amrex::Real split_len;
+
+  // Maximum segment radius
+  extern amrex::Real max_rad;
+
+  // Branching probability
+  extern amrex::Real brnch_prob;
+
+  // Tip-splitting probability
+  extern amrex::Real split_prob;
+
   struct SPECIES_t {
     // Constructor
     SPECIES_t() :
