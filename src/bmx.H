@@ -3,6 +3,7 @@
 //     Licensed under modified BSD License. A copy of this license can be found
 //     in the LICENSE file in the top level directory of this distribution.
 //
+
 #ifndef BMX_LEVEL_H_
 #define BMX_LEVEL_H_
 
@@ -66,6 +67,8 @@ class bmx : public AmrCore
                         int nstep = 0, Real time = 0.0);
 
     void Restart (std::string& restart_chkfile, int* nstep, Real* dt, Real* time);
+
+    void WriteAsciiVTK (const std::string & name, int nstep, amrex::Real time) const;
 
     void WriteParticleAscii (std::string& par_ascii_file_name, int nstep = 0) const;
 

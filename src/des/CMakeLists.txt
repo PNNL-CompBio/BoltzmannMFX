@@ -14,8 +14,11 @@ target_sources( bmxcore
    bmx_pc.H
    bmx_pc_init.cpp
    bmx_pc_interaction.cpp
+   bmx_pc_write.cpp
    bmx_calc_volume_fraction.cpp
    bmx_calc_txfr.cpp
    bmx_split_particles.cpp
+   bmx_pc_xchng.cpp
+   bmx_pc_fusion.cpp
    )
 

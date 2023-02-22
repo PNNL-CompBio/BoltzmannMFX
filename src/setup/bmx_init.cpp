@@ -84,7 +84,7 @@ bmx::InitParams ()
     // Read in number of substeps in chemistry integration
     m_nloop = 4;
     pp.query("substeps",m_nloop);
-    printf("SUBSTEPS: %d\n",m_nloop);
+    amrex::Print() << "SUBSTEPS: " <<m_nloop<<std::endl;
 
     // We can still turn it off explicitly even if we passed chem_species inputs
     pp.query("advect_fluid_chem_species", advect_fluid_chem_species);
@@ -410,14 +410,10 @@ void bmx::InitLevelData (Real /*time*/)
 
       if (particle_init_type == "AsciiFile")
       {
-        amrex::Print() << "Reading particles from particle_input.dat ..." << std::endl;
-#ifdef NEW_CHEM
         std::string filename;
         pp.query("input_file",filename);
+        amrex::Print() << "Reading particles from "<<filename<<" ..." << std::endl;
         pc->InitParticlesAscii(filename);
-#else
-        pc->InitParticlesAscii("particle_input.dat");
-#endif
 
       } else { 
 

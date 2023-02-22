@@ -44,6 +44,12 @@ bmx::InitIOPltData ()
 }
 
 void
+bmx::WriteAsciiVTK (const std::string& vtk_file, int nstep, Real time) const
+{
+    pc->WriteToAscii(vtk_file, nstep, time);
+}
+
+void
 bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
 {
     // If we've already written this plotfile, don't do it again!
@@ -51,6 +57,9 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
 
     // Now set last_plt to nstep ...
     last_plt = nstep;
+
+    std::string vtk_ascii_file = "vtkfile";
+    WriteAsciiVTK(vtk_ascii_file,nstep,time);
 
     BL_PROFILE("bmx::WritePlotFile()");
 
@@ -199,11 +208,8 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
         Vector<std::string> real_comp_names;
         Vector<std::string>  int_comp_names;
 
-#ifdef NEW_CHEM
-        real_comp_names.push_back("a_axis");
-        real_comp_names.push_back("b_axis");
-        real_comp_names.push_back("c_axis");
-        real_comp_names.push_back("psi");
+        real_comp_names.push_back("radius");
+        real_comp_names.push_back("cylinder_length");
         real_comp_names.push_back("theta");
         real_comp_names.push_back("phi");
         real_comp_names.push_back("cell_surface_area");
@@ -220,8 +226,12 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
         real_comp_names.push_back("torque_x");
         real_comp_names.push_back("torque_y");
         real_comp_names.push_back("torque_z");
+        real_comp_names.push_back("grad_x");
+        real_comp_names.push_back("grad_y");
+        real_comp_names.push_back("grad_z");
         real_comp_names.push_back("cell_surface_area_growth_rate");
         real_comp_names.push_back("cell_volume_growth_rate");
+        real_comp_names.push_back("splitting_fraction");
         Vector<int> write_real_comp = Vector<int>(MAX_CHEM_REAL_VAR,1);
         int i;
         for (i=realIdx::count-1; i<MAX_CHEM_REAL_VAR; i++) {
@@ -235,6 +245,34 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
         int_comp_names.push_back("total_reals");
         int_comp_names.push_back("total_ints");
         int_comp_names.push_back("first_conc_inc");
+        int_comp_names.push_back("cell_type");
+        int_comp_names.push_back("number_bonds");
+        int_comp_names.push_back("unique_id_1");
+        int_comp_names.push_back("unique_id_2");
+        int_comp_names.push_back("unique_id_3");
+        int_comp_names.push_back("unique_id_4");
+        int_comp_names.push_back("home_proc_1");
+        int_comp_names.push_back("home_proc_2");
+        int_comp_names.push_back("home_proc_3");
+        int_comp_names.push_back("home_proc_4");
+        int_comp_names.push_back("site_1");
+        int_comp_names.push_back("site_2");
+        int_comp_names.push_back("site_3");
+        int_comp_names.push_back("site_4");
+        int_comp_names.push_back("position");
+        int_comp_names.push_back("fusion_flag");
+        int_comp_names.push_back("fusion_split_flag");
+        int_comp_names.push_back("fusion_new_flag");
+        int_comp_names.push_back("fusion_id");
+        int_comp_names.push_back("fusion_cpu");
+        int_comp_names.push_back("deleted_site_1");
+        int_comp_names.push_back("deleted_site_2");
+        int_comp_names.push_back("deleted_id_1");
+        int_comp_names.push_back("deleted_id_2");
+        int_comp_names.push_back("deleted_cpu_1");
+        int_comp_names.push_back("deleted_cpu_2");
+        int_comp_names.push_back("unique_id");
+        int_comp_names.push_back("home_cpu");
         for (i=intIdx::count-1; i<MAX_CHEM_INT_VAR; i++) {
           char c[2];
           c[1] = '\0';
@@ -242,23 +280,6 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
           int_comp_names.push_back(c);
         }
         Vector<int> write_int_comp  = Vector<int>(MAX_CHEM_INT_VAR,1);
-#else
-        real_comp_names.push_back("velx");
-        real_comp_names.push_back("vely");
-        real_comp_names.push_back("velz");
-        real_comp_names.push_back("radius");
-        real_comp_names.push_back("volume");
-        real_comp_names.push_back("fluid_A");
-        real_comp_names.push_back("fluid_B");
-        real_comp_names.push_back("consume_A");
-        real_comp_names.push_back("consume_B");
-
-        int_comp_names.push_back("phase");
-        int_comp_names.push_back("state");
-
-        Vector<int> write_int_comp  = Vector<int>(intData::count,1);
-        Vector<int> write_real_comp = Vector<int>(realData::count,1);
-#endif
 
         pc->WritePlotFile(plotfilename, "particles", write_real_comp,
                           write_int_comp, real_comp_names, int_comp_names);

@@ -55,7 +55,10 @@ struct intData
 struct BMXCheckPair
 {
   amrex::Real neighborhood;
-  BMXCheckPair (amrex::Real neighborhood_) : neighborhood(neighborhood_) {}
+  bool single_pass;
+  BMXCheckPair (amrex::Real neighborhood_) : neighborhood(neighborhood_), single_pass(true) {}
+  BMXCheckPair (amrex::Real neighborhood_, bool single_pass_) : neighborhood(neighborhood_),
+      single_pass(single_pass_) {}
 
   template <class P>
   AMREX_GPU_DEVICE AMREX_INLINE
@@ -64,9 +67,15 @@ struct BMXCheckPair
     const P& p1 = particles[i];
     const P& p2 = particles[j];
 
-    if (i < j)
+    if (single_pass) {
+      if (i < j) {
+        if ((p1.pos() - p2.pos()).radSquared() <= neighborhood)
+          return true;  
+      }
+    } else { 
       if ((p1.pos() - p2.pos()).radSquared() <= neighborhood)
         return true;  
+    }
 
     return false;
   }
@@ -102,6 +111,8 @@ public:
 
     void InitParticlesAscii (const std::string& file);
 
+    void WriteToAscii (const std::string& file,int nstep,amrex::Real time);
+
     void printParticles ();
 
     Real computeParticleVolume () const;
@@ -116,6 +127,25 @@ public:
                           const amrex::Vector<amrex::MultiFab *> cost,
                           std::string & knapsack_weight_type,
                           int & nsubsteps);
+    void ParticleExchange (Real dt,
+                           const amrex::Vector<amrex::MultiFab*> cost,
+                           std::string& knapsack_weight_type,
+                           int& nsubsteps);
+
+    void EvaluateTipFusion(const amrex::Vector<amrex::MultiFab*> cost,
+                                   std::string& knapsack_weight_type);
+
+    void EvaluateInteriorFusion(const amrex::Vector<amrex::MultiFab*> cost,
+                                   std::string& knapsack_weight_type);
+
+    void CleanupFusion(const amrex::Vector<amrex::MultiFab*> cost,
+                                   std::string& knapsack_weight_type);
+
+    void CleanBonds(const amrex::Vector<amrex::MultiFab*> cost,
+                                   std::string& knapsack_weight_type);
+
+    void PrintConnectivity(const amrex::Vector<amrex::MultiFab*> cost,
+                                   std::string& knapsack_weight_type);
 
     ///
     /// Write out all particles in the format of the particle_input.dat files so we
@@ -128,7 +158,7 @@ public:
     ///
     void writeAllAtLevel (int lev = 0);
 
-    void split_particles ();
+    void split_particles (Real time);
 
   private:
     int nlev;

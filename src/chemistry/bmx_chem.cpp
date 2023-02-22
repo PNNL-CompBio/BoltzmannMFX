@@ -15,7 +15,15 @@ amrex::Real BMXChemistry::kr1 = 0.0;
 amrex::Real BMXChemistry::kr2 = 0.0;
 amrex::Real BMXChemistry::kr3 = 0.0;
 amrex::Real BMXChemistry::kg = 0.0;
+amrex::Real BMXChemistry::kv = 0.0;
+amrex::Real BMXChemistry::mtA = 0.0;
+amrex::Real BMXChemistry::mtB = 0.0;
+amrex::Real BMXChemistry::mtC = 0.0;
+amrex::Real BMXChemistry::radius_max = 0.0;
+amrex::Real BMXChemistry::length_max = 0.0;
 amrex::Real BMXChemistry::p_overlap = 0.0;
+amrex::Real BMXChemistry::fusion_prob= 0.0;
+amrex::Real BMXChemistry::max_fusion_separation= 0.0;
 
 int BMXChemistry::p_num_reals = 0;
 int BMXChemistry::p_num_ints = 0;
@@ -73,10 +81,11 @@ void BMXChemistry::setIntegers(int *ipar)
 }
 
 /**
- * Setup chemistry model by reading a parameter file
+ * Setup chemistry model by reading a parameter file (a file is not currently
+ * being used but probably will be at some point).
  * @param file name of parameter file used by chemistry model
  */
-void BMXChemistry::setParams(const char *file)
+void BMXChemistry::setParams(const char* /*file*/)
 {
   ParmParse pp("chem_species");
   pp.get("k1",k1);
@@ -86,13 +95,28 @@ void BMXChemistry::setParams(const char *file)
   pp.get("k3",k3);
   pp.get("kr3",kr3);
   pp.get("kg",kg);
+  pp.get("kv",kv);
+  mtA = 0.0;
+  pp.query("mass_transfer_A",mtA);
+  mtB = 0.0;
+  pp.query("mass_transfer_B",mtB);
+  mtC = 0.0;
+  pp.query("mass_transfer_C",mtC);
+  fusion_prob = 0.0;
+  pp.query("fusion_probability",fusion_prob);
+  max_fusion_separation = 5.0e-4;
+  pp.query("max_fusion_separation",max_fusion_separation);
   p_overlap = 0.2;
   /* figure out cutoff for neighbor list */
   Real vol = SPECIES::max_vol;
+  radius_max = SPECIES::max_rad;
+  length_max = SPECIES::max_len;
   Real radius = pow((3.0*vol/(4.0*M_PI)),1.0/3.0);
   ParmParse ppF("cell_force");
   Real width;
-  ppF.get("boundary_width",width);
+  ppF.get("neighbor_width",width);
+  // TODO: Come up with correct neighborhood value base on what types of cells
+  //       are being simulated
   DEM::neighborhood = 1.1*(2.0*radius+width);
   ParmParse ppV("bmx");
   int verbose = 0;
@@ -182,4 +206,31 @@ void BMXChemistry::getChemParams(std::vector<Real> &chempar)
   chempar.push_back(kr2);
   chempar.push_back(kr3);
   chempar.push_back(kg);
+  chempar.push_back(kv);
+  chempar.push_back(radius_max);
+  chempar.push_back(length_max);
+}
+
+/** Returen a vector containing exchange parameters
+ * @return vector of exchange parameters
+ */
+std::vector<Real> BMXChemistry::getExchangeParameters()
+{
+  std::vector<Real> ret;
+  ret.push_back(mtA);
+  ret.push_back(mtB);
+  ret.push_back(mtC);
+  return ret;
+}
+
+/**
+ * Return a vector containing parameters for segment fusion
+ * @return vector of fusion parameters
+ */
+std::vector<Real> BMXChemistry::getFusionParameters()
+{
+  std::vector<Real> ret;
+  ret.push_back(fusion_prob);
+  ret.push_back(max_fusion_separation);
+  return ret;
 }
