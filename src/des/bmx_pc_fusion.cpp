@@ -507,7 +507,7 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
     // the neighbour list with fresh data
 #if 1
       clearNeighbors();
-      //Redistribute(0, 0, 0, 1);
+      Redistribute(0, 0, 0, 1);
       fillNeighbors();
       // send in "false" for sort_neighbor_list option
 
