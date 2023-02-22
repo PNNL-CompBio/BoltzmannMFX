@@ -1,3 +1,8 @@
+//
+//     Copyright (c) 2013 Battelle Memorial Institute
+//     Licensed under modified BSD License. A copy of this license can be found
+//     in the LICENSE file in the top level directory of this distribution.
+//
 #include <bmx_pc.H>
 #include <bmx_dem_parms.H>
 #include <bmx_bc_parms.H>
@@ -95,7 +100,7 @@ void BMXParticleContainer::EvolveParticles (Real dt,
             fillNeighbors();
             // send in "false" for sort_neighbor_list option
 
-            buildNeighborList(BMXCheckPair(DEM::neighborhood), false);
+            buildNeighborList(BMXCheckPair(DEM::neighborhood,false), false);
         } else {
             updateNeighbors();
         }
@@ -169,6 +174,10 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                   auto& particle = pstruct[i];
 
                   RealVect pos1(particle.pos());
+                  // clean up flags
+                  particle.idata(intIdx::fuse_flag) = 0;
+                  particle.idata(intIdx::split_flag) = 0;
+                  particle.idata(intIdx::new_flag) = 0;
 //                  printf("p[%d] ID: %d CPU: %d RX: %e RY: %e RZ: %e\n",me,
 //                      static_cast<int>(particle.id()),static_cast<int>(particle.cpu()),
 //                      pos1[0],pos1[1],pos1[2]);
@@ -214,6 +223,10 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                           RealVect rot1(0.);
                           RealVect rot2(0.);
 
+                          if (p2.idata(intIdx::fuse_flag) != 0) {
+                            printf("p[%d] Found FUSING particle j in force loop id: %d cpu: %d\n",
+                                me,p2.idata(intIdx::id),p2.idata(intIdx::cpu));
+                          }
                           evaluateForce(&diff[0],&particle.rdata(0),&p2.rdata(0), &particle.idata(0),
                                         &p2.idata(0), &v1[0], &v2[0], &rot1[0], &rot2[0], fpar, me, i, j, n);
 
@@ -232,6 +245,7 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                             amrex::Gpu::Atomic::Add(&fc_ptr[i + 4*ntot], rot1[1]);
                             amrex::Gpu::Atomic::Add(&fc_ptr[i + 5*ntot], rot1[2]);
 
+#if 0
                             if (j < nrp)
                             {
                               amrex::Gpu::Atomic::Add(&fc_ptr[j         ], v2[0]);
@@ -241,6 +255,7 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                               amrex::Gpu::Atomic::Add(&fc_ptr[j + 4*ntot], rot2[1]);
                               amrex::Gpu::Atomic::Add(&fc_ptr[j + 5*ntot], rot2[2]);
                             }
+#endif
 #ifdef _OPENMP
                           }
 #endif
@@ -515,4 +530,182 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 #endif
 
     BL_PROFILE_REGION_STOP("bmx_dem::EvolveParticles()");
+}
+
+/*******************************************************************************
+ *  clean up bonding information.                                              *
+ ******************************************************************************/
+void BMXParticleContainer::CleanBonds (const Vector<MultiFab*> cost,
+                                              std::string& knapsack_weight_type)
+{
+    BL_PROFILE_REGION_START("bmx_dem::CleanBonds()");
+    BL_PROFILE("bmx_dem::CleanBonds()");
+
+    Real eps = std::numeric_limits<Real>::epsilon();
+
+    for (int lev = 0; lev <= finest_level; lev++)
+    {
+
+    int n_at_lev = this->NumberOfParticlesAtLevel(lev);
+
+    if (n_at_lev == 0) continue;
+
+    BMXCellInteraction *interaction = BMXCellInteraction::instance();
+    std::vector<Real> xpar_vec = interaction->getForceParams();
+    Real *xpar = &xpar_vec[0];
+    /****************************************************************************
+     * DEBUG flag toggles:                                                      *
+     *   -> Print number of collisions                                          *
+     *   -> Print max (over substeps) particle velocity at each time step       *
+     *   -> Print max particle-wall and particle-particle forces                *
+     ***************************************************************************/
+
+    // Debug level controls the detail of debug output:
+    //   -> debug_level = 0 : no debug output
+    //   -> debug_level = 1 : debug output for every fluid step
+    //   -> debug_level = 2 : debug output for every substep
+    const int debug_level = 0;
+
+    // Don't redistribute particles since that gets done elsewhere but update
+    // the neighbour list with fresh data
+    //if (n % 25 == 0) {
+      clearNeighbors();
+      Redistribute(0, 0, 0, 1);
+      fillNeighbors();
+      // send in "false" for sort_neighbor_list option
+
+      buildNeighborList(BMXCheckPair(DEM::neighborhood, false), false);
+    // } else {
+    //   updateNeighbors();
+    // }
+
+    /********************************************************************
+     * Particles routines                                               *
+     *******************************************************************/
+#ifdef _OPENMP
+#pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
+#endif
+    for (BMXParIter pti(*this, lev); pti.isValid(); ++pti)
+    {
+      // Timer used for load-balancing
+      Real wt = ParallelDescriptor::second();
+
+      //const Box& bx = pti.tilebox(); // UNUSED_VARIABLE
+      PairIndex index(pti.index(), pti.LocalTileIndex());
+
+      auto& plev = GetParticles(lev);
+      auto& ptile = plev[index];
+      auto& aos   = ptile.GetArrayOfStructs();
+      ParticleType* pstruct = aos().dataPtr();
+
+      const int nrp = GetParticles(lev)[index].numRealParticles();
+
+      // Number of particles including neighbor particles
+      int ntot = nrp;
+
+      /********************************************************************
+       * Particle-Particle collision forces (and torques)                 *
+       *******************************************************************/
+
+      BL_PROFILE_VAR("clean_bonds()", clean_bonds);
+
+      auto nbor_data = m_neighbor_list[lev][index].data();
+
+      constexpr Real small_number = 1.0e-15;
+
+      // now we loop over the neighbor list and compute the forces
+      int me = ParallelDescriptor::MyProc();
+      amrex::ParallelForRNG(nrp,
+          [nrp,pstruct,nbor_data,xpar,me]
+          AMREX_GPU_DEVICE (int i, amrex::RandomEngine const& engine) noexcept
+//            [=] AMREX_GPU_DEVICE (int i, amrex::RandomEngine const& engine) noexcept
+          {
+          auto& particle = pstruct[i];
+
+          /*
+          if (particle.idata(intIdx::position) == siteLocation::TIP &&
+              particle.idata(intIdx::n_bnds) > 2) {
+          int *idata = &particle.idata(0);
+          printf("particle id: %d cpu: %d is Tip with %d bonds\n",
+              idata[intIdx::id],idata[intIdx::cpu],idata[intIdx::n_bnds]);
+          }
+          */
+          RealVect pos1(particle.pos());
+
+          const auto neighbs = nbor_data.getNeighbors(i);
+          for (auto mit = neighbs.begin(); mit != neighbs.end(); ++mit)
+          {
+          auto p2 = *mit;
+          const int j = mit.index();
+
+          Real dist_x = pos1[0] - p2.pos(0);
+          Real dist_y = pos1[1] - p2.pos(1);
+          Real dist_z = pos1[2] - p2.pos(2);
+
+          Real r2 = dist_x*dist_x +
+            dist_y*dist_y +
+            dist_z*dist_z;
+
+          RealVect diff(dist_x,dist_y,dist_z);
+
+          Real r_lm = maxInteractionDistance(&particle.rdata(0),&p2.rdata(0),
+              &particle.idata(0),&p2.idata(0),xpar[0]);
+
+          AMREX_ASSERT_WITH_MESSAGE(
+              not (particle.id() == p2.id() and
+                particle.cpu() == p2.cpu()),
+              "A particle should not be its own neighbor!");
+
+          if ( r2 <= (r_lm - small_number)*(r_lm - small_number) )
+          {
+
+            // Fix up any bond interactions that are only showing up on
+            // one particle but not the other
+            fixBonds(&particle.idata(0), &p2.idata(0));
+
+            // TODO: Do we need an OPENMP pragma here?
+
+          }
+          } // end of neighbor loop
+          }); // end of loop over particles
+
+      amrex::Gpu::Device::synchronize();
+
+      BL_PROFILE_VAR_STOP(clean_bonds);
+
+      /********************************************************************
+       * Update runtime cost (used in load-balancing)                     *
+       *******************************************************************/
+
+      if (cost[lev])
+      {
+        // Runtime cost is either (weighted by tile box size):
+        //   * time spent
+        //   * number of particles
+        const Box& tbx = pti.tilebox();
+        if (knapsack_weight_type == "RunTimeCosts")
+        {
+          wt = (ParallelDescriptor::second() - wt) / tbx.d_numPts();
+        }
+        else if (knapsack_weight_type == "NumParticles")
+        {
+          wt = nrp / tbx.d_numPts();
+        }
+        (*cost[lev])[pti].plus<RunOn::Device>(wt, tbx);
+      }
+    }
+
+    // Redistribute particles at the end of all substeps (note that the particle
+    // neighbour list needs to be reset when redistributing).
+    //clearNeighbors();
+    //Redistribute(0, 0, 0, 1);
+    //updateNeighbors();
+
+    } // lev
+
+#ifdef _OPENMP
+#pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
+#endif
+
+    BL_PROFILE_REGION_STOP("bmx_dem::CleanBonds()");
 }

@@ -1,3 +1,8 @@
+//
+//     Copyright (c) 2013 Battelle Memorial Institute
+//     Licensed under modified BSD License. A copy of this license can be found
+//     in the LICENSE file in the top level directory of this distribution.
+//
 #include <bmx.H>
 #include <bmx_fluid_parms.H>
 #include <bmx_dem_parms.H>
@@ -84,11 +89,13 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
 
     if (DEM::solve)
     {
+       // if (time == 44000.0) pc->PrintConnectivity(particle_cost,knapsack_weight_type);
         pc->EvolveParticles(dt, particle_cost, knapsack_weight_type, nsubsteps);
         pc->split_particles(time);
         pc->ParticleExchange(dt, particle_cost, knapsack_weight_type, nsubsteps);
-       // pc->EvaluateTipFusion(particle_cost,knapsack_weight_type);
-       // pc->EvaluateInteriorFusion(particle_cost,knapsack_weight_type);
+        pc->EvaluateTipFusion(particle_cost,knapsack_weight_type);
+        pc->EvaluateInteriorFusion(particle_cost,knapsack_weight_type);
+        pc->CleanupFusion(particle_cost,knapsack_weight_type);
     }
 
     BL_PROFILE_VAR_STOP(particlesSolve);

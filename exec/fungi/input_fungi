@@ -12,9 +12,9 @@ amrex.fpe_trap_invalid = 1
 #! Fluid solver
 #!-----------------------------------------------------------//
 
-bmx.fixed_dt = 0.5
+bmx.fixed_dt = 0.25
 
-bmx.max_step = 200000
+bmx.max_step = 400000
 #bmx.max_step = 1
 
 dem.solve = bacteria
@@ -97,15 +97,15 @@ amr.regrid_int         = -1
 amr.par_ascii_int  = -1
 amr.par_ascii_file ="vis"
 
-amr.plot_int       =  400
+amr.plot_int       = 400
 amr.plot_file      ="plt"
 
-amr.check_int      = 20000
+amr.check_int      = 100
 amr.check_file     ="chk"
 
 #! Restart from checkpoint
 #!-----------------------------------------------------------//
-#amr.restart   ="chk200000"
+amr.restart   ="chk357900"
 
 #_______________________________________________________________________
 # Fluid model settings
@@ -137,7 +137,7 @@ chem_species.mass_transfer_C = 2.0e-5
 
 chem_species.branching_probability = 0.0000
 chem_species.splitting_probability = 0.2
-chem_species.fusion_probability = 0.5
+chem_species.fusion_probability = 0.01
 chem_species.max_fusion_separation = 6.0e-4
 
 bmx.substeps = 4

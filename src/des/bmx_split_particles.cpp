@@ -1,3 +1,8 @@
+//
+//     Copyright (c) 2013 Battelle Memorial Institute
+//     Licensed under modified BSD License. A copy of this license can be found
+//     in the LICENSE file in the top level directory of this distribution.
+//
 #include <bmx.H>
 #include <bmx_chem.H>
 #include <bmx_chem_K.H>
@@ -62,6 +67,7 @@ BMXParticleContainer::split_particles (Real /*time*/)
 
         // make room for new particles - invalidates iterators, so get the ptr again
         particle_tile.resize(np+num_split);
+        particle_tile.setNumNeighbors(0);
         pstruct = particles().dataPtr();
 
         // Update NextID to include particles created in this function
@@ -116,6 +122,9 @@ BMXParticleContainer::split_particles (Real /*time*/)
                 }
                 ipar_new[intIdx::id] = p.id();
                 ipar_new[intIdx::cpu] = p.cpu();
+                // printf("NEW segment id: %d cpu: %d site1: %d id1: %d cpu1: %d\n",
+                //     ipar_new[intIdx::id],ipar_new[intIdx::cpu],ipar_new[intIdx::site1],
+                //     ipar_new[intIdx::seg1_id1],ipar_new[intIdx::seg1_id2]);
 
                 //                std::printf("OLD VOLUME OUT = %f \n", par_orig[realIdx::vol]);
                 //                std::printf("NEW VOLUME OUT = %f \n", par_new[realIdx::vol]);

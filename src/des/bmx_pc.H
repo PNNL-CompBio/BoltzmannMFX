@@ -1,3 +1,8 @@
+//
+//     Copyright (c) 2013 Battelle Memorial Institute
+//     Licensed under modified BSD License. A copy of this license can be found
+//     in the LICENSE file in the top level directory of this distribution.
+//
 #ifndef _BMX_PC_H_
 #define _BMX_PC_H_
 
@@ -50,7 +55,10 @@ struct intData
 struct BMXCheckPair
 {
   amrex::Real neighborhood;
-  BMXCheckPair (amrex::Real neighborhood_) : neighborhood(neighborhood_) {}
+  bool single_pass;
+  BMXCheckPair (amrex::Real neighborhood_) : neighborhood(neighborhood_), single_pass(true) {}
+  BMXCheckPair (amrex::Real neighborhood_, bool single_pass_) : neighborhood(neighborhood_),
+      single_pass(single_pass_) {}
 
   template <class P>
   AMREX_GPU_DEVICE AMREX_INLINE
@@ -59,9 +67,15 @@ struct BMXCheckPair
     const P& p1 = particles[i];
     const P& p2 = particles[j];
 
-    if (i < j)
+    if (single_pass) {
+      if (i < j) {
+        if ((p1.pos() - p2.pos()).radSquared() <= neighborhood)
+          return true;  
+      }
+    } else { 
       if ((p1.pos() - p2.pos()).radSquared() <= neighborhood)
         return true;  
+    }
 
     return false;
   }
@@ -122,6 +136,15 @@ public:
                                    std::string& knapsack_weight_type);
 
     void EvaluateInteriorFusion(const amrex::Vector<amrex::MultiFab*> cost,
+                                   std::string& knapsack_weight_type);
+
+    void CleanupFusion(const amrex::Vector<amrex::MultiFab*> cost,
+                                   std::string& knapsack_weight_type);
+
+    void CleanBonds(const amrex::Vector<amrex::MultiFab*> cost,
+                                   std::string& knapsack_weight_type);
+
+    void PrintConnectivity(const amrex::Vector<amrex::MultiFab*> cost,
                                    std::string& knapsack_weight_type);
 
     ///

@@ -1,3 +1,12 @@
+//
+//     Copyright (c) 2013 Battelle Memorial Institute
+//     Licensed under modified BSD License. A copy of this license can be found
+//     in the LICENSE file in the top level directory of this distribution.
+//
+#ifndef _BMX_CHEM_K
+#define _BMX_CHEM_K
+
+#include "bmx_cell_interaction_K.H"
 /**
  * Check to see if particle meets criteria for splitting
  * @param p_par real particle parameters
@@ -164,6 +173,9 @@ checkTipFusion(Real *rij, Real *i_par, int *i_ipar, Real *j_par,
 
       // calculate minimum distance between tip and segment
       // Calculate segment vectors
+      Real tau_i, tau_j;
+      evaluateMinimumDistance(xi1, yi1, zi1, xi2, yi2, zi2,
+          xj1, yj1, zj1, xj2, yj2, zj2, &tau_i, &tau_j);
       Real rho_i[3];
       Real rho_j[3];
       rho_i[0] = xi2-xi1;
@@ -172,165 +184,6 @@ checkTipFusion(Real *rij, Real *i_par, int *i_ipar, Real *j_par,
       rho_j[0] = xj2-xj1;
       rho_j[1] = yj2-yj1;
       rho_j[2] = zj2-zj1;
-      Real rirj = 0.0;
-
-      // Calculate dot product between segments
-      for (int ii=0; ii<3; ii++) {
-        rirj += rho_i[ii]*rho_j[ii];
-      } // ii
-
-      Real tau_i, tau_j;
-      // Find tau_i and tau_j corresponding to minimum distance between
-      // cylinder segments
-      Real Aii = rho_i[0]*rho_i[0]+rho_i[1]*rho_i[1]+rho_i[2]*rho_i[2];
-      Real Aij = -rirj;
-      Real Aji = Aij;
-      Real Ajj = rho_j[0]*rho_j[0]+rho_j[1]*rho_j[1]+rho_j[2]*rho_j[2];
-      Real det = Aii*Ajj-Aij*Aji;
-      Real Bi = -((xi1-xj1)*rho_i[0]+(yi1-yj1)*rho_i[1]+(zi1-zj1)*rho_i[2]);
-      Real Bj = (xi1-xj1)*rho_j[0]+(yi1-yj1)*rho_j[1]+(zi1-zj1)*rho_j[2];
-      // First two cases are unlikely
-      bool search = false;
-      if (Aij == 0.0) {
-        // segments are perpendicular to each other
-        tau_i = Bi/Aii;
-        tau_j = Bj/Ajj;
-      } else if (det == 0.0) {
-        // segments are parallel to each other. Try setting tau_i to 0 and 1
-        // tau_i = 0.0;
-        Real tau_j0 = Bj/Ajj;
-        if (tau_j0 >= 0.0 && tau_j0 <= 1.0) {
-          tau_i = 0.0;
-          tau_j = tau_j0;
-        } else {
-          // tau_i = 1.0;
-          Real tau_j1 = (Bj+rirj)/Ajj;
-          if (tau_j1 >= 0.0 && tau_j1 <= 1.0) {
-            tau_i = 1.0;
-            tau_j = tau_j1;
-          } else {
-            // Check all four combinations of endpoints
-              search = true;
-          }
-        }
-      } else {
-        // Find minimum distance ignoring constraints
-        tau_i = (Ajj*Bi-Aij*Bj)/det;
-        tau_j = (Aii*Bj-Aji*Bi)/det;
-        if (tau_i >= 0.0 && tau_i <= 1.0) {
-          // tau_i satisfies constraints. Check tau_j
-          if (tau_j < 0.0 ||  tau_j > 1.0)
-          {
-            // tau_j is outside limits, Need to try tau_j = 0.0 and
-            // tau_j = 1.0 and find minimum separation
-            Real tau_i0 = Bi/Aii;
-            Real tau_i1 = (Bi+rirj)/Aii;
-            if (tau_i0 >= 0.0 && tau_i0 <= 1.0 &&
-                tau_i1 >= 0.0 && tau_i1 <= 1.0) {
-              // both new values of tau_i are within limits. Compare distances
-              Real rix = xi1 + tau_i0*rho_i[0];
-              Real riy = yi1 + tau_i0*rho_i[1];
-              Real riz = zi1 + tau_i0*rho_i[2];
-              Real sep0 = (rix-xj1)*(rix-xj1)+(riy-yj1)*(riy-yj1)
-                +(riz-zj1)*(riz-zj1);
-              rix = xi1 + tau_i1*rho_i[0];
-              riy = yi1 + tau_i1*rho_i[1];
-              riz = zi1 + tau_i1*rho_i[2];
-              Real sep1 = (rix-xj2)*(rix-xj2)+(riy-yj2)*(riy-yj2)
-                +(riz-zj2)*(riz-zj2);
-              if (sep0 < sep1) {
-                tau_j = 0.0;
-                tau_i = tau_i0;
-              } else {
-                tau_j = 1.0;
-                tau_i = tau_i1;
-              }
-            } else if (tau_i0 >= 0.0 && tau_i0 <= 1.0) {
-              // only tau_i0 is within bounds
-              tau_j = 0.0;
-              tau_i = tau_i0;
-            } else if (tau_i1 >= 0.0 && tau_i1 <= 1.0) {
-              // only tau_i1 is within bounds
-              tau_j = 1.0;
-              tau_i = tau_i1;
-            } else {
-              // Neither solution is within bound
-              search = true;
-            }
-          }
-        } else if (tau_j >= 0.0 && tau_j <= 1.0) {
-          // already know that tao_i is out of bounds
-          Real tau_j0 = Bj/Ajj;
-          Real tau_j1 = (Bj+rirj)/Ajj;
-          if (tau_j0 >= 0.0 && tau_j0 <= 1.0 && tau_j1 >= 0.0 && tau_j1 <= 1.0) {
-            // both new values of tau_j are within limits. Compare distances
-            Real rjx = xj1 + tau_j0*rho_j[0];
-            Real rjy = yj1 + tau_j0*rho_j[1];
-            Real rjz = zj1 + tau_j0*rho_j[2];
-            Real sep0 = (rjx-xi1)*(rjx-xi1)+(rjy-yi1)*(rjy-yi1)+(rjz-zi1)*(rjz-zi1);
-            rjx = xj1 + tau_j1*rho_j[0];
-            rjy = yj1 + tau_j1*rho_j[1];
-            rjz = zj1 + tau_j1*rho_j[2];
-            Real sep1 = (rjx-xi2)*(rjx-xi2)+(rjy-yi2)*(rjy-yi2)+(rjz-zi2)*(rjz-zi2);
-            if (sep0 < sep1) {
-              tau_i = 0.0;
-              tau_j = tau_j0;
-            } else {
-              tau_i = 1.0;
-              tau_j = tau_j1;
-            }
-          } else if (tau_j0 >= 0.0 && tau_j0 <= 1.0) {
-            // only tau_j0 is within bounds
-            tau_i = 0.0;
-            tau_j = tau_j0;
-          } else if (tau_j1 >= 0.0 && tau_j1 <= 1.0) {
-            // only tau_j1 is within bounds
-            tau_i = 1.0;
-            tau_j = tau_j1;
-          } else {
-            // Neither solution is within bounds
-            search = true;
-          }
-        } else {
-          // if we reach this point, both tau_i and tau_j are outside
-          // the constraints. Try all four end points for minimum distance
-          search = true;
-        }
-      }
-      if (search) {
-        // try all four endpoints to find minimum distance
-        Real min0 = (xi1-xj1)*(xi1-xj1)+(yi1-yj1)*(yi1-yj1)+(zi1-zj1)*(zi1-zj1);
-        Real min1 = (xi1-xj2)*(xi1-xj2)+(yi1-yj2)*(yi1-yj2)+(zi1-zj2)*(zi1-zj2);
-        Real min2 = (xi2-xj1)*(xi2-xj1)+(yi2-yj1)*(yi2-yj1)+(zi2-zj1)*(zi2-zj1);
-        Real min3 = (xi2-xj2)*(xi2-xj2)+(yi2-yj2)*(yi2-yj2)+(zi2-zj2)*(zi2-zj2);
-        int imin = 0;
-        Real min = min0;
-        if (min1 < min) {
-          imin = 1;
-          min = min1;
-        }
-        if (min2 < min) {
-          imin = 2;
-          min = min2;
-        }
-        if (min3 < min) {
-          imin = 3;
-          min = min3;
-        }
-        if (imin == 0) {
-          tau_i = 0.0;
-          tau_j = 0.0;
-        } else if (imin == 1) {
-          tau_i = 0.0;
-          tau_j = 1.0;
-        } else if (imin == 2) {
-          tau_i = 1.0;
-          tau_j = 0.0;
-        } else if (imin == 3) {
-          tau_i = 1.0;
-          tau_j = 1.0;
-        }
-      }
       // Only proceed if tau_j is strictly greater than 0 and less than 1
       // (tip is close to the interior of the segment)
       if (tau_j > 0.0 && tau_j < 1.0) {
@@ -360,16 +213,20 @@ checkTipFusion(Real *rij, Real *i_par, int *i_ipar, Real *j_par,
           if (r < fuse_length) {
             if (amrex::Random(engine) < fuse_prob) {
               // TIP i is fusing to segment j
-              printf("TIP %d,%d is fusing to segment %d %d\n",
+              printf("TIP %d,%d is fusing to segment %d,%d n_bnds: %d site1: %d\n",
                   i_ipar[intIdx::id],
                   i_ipar[intIdx::cpu],
                   j_ipar[intIdx::id],
-                  j_ipar[intIdx::cpu]);
+                  j_ipar[intIdx::cpu],
+                  i_bnds,i_ipar[intIdx::site1]);
+      printf("ibnds: %d i1: %d,%d i2: %d,%d i3: %d,%d i4: %d,%d jbnds: %d j1: %d,%d j2: %d,%d j3: %d,%d j4: %d,%d\n",
+          i_bnds,i_id[0],i_cpu[0],i_id[1],i_cpu[1],i_id[2],i_cpu[2],i_id[3],i_cpu[3],
+          j_bnds,j_id[0],j_cpu[0],j_id[1],j_cpu[1],j_id[2],j_cpu[2],j_id[3],j_cpu[3]);
               i_ipar[intIdx::fuse_flag] = 1;
               i_ipar[intIdx::fuse_id] = j_ipar[intIdx::id];
               i_ipar[intIdx::fuse_cpu] = j_ipar[intIdx::cpu];
+              i_ipar[intIdx::position] = siteLocation::INTERIOR;
               i_par[realIdx::tau_split] = tau_j;
-              i_par[intIdx::position] = siteLocation::INTERIOR;
               int site;
               if (i_ipar[intIdx::site1] == 1) {
                 site = 2;
@@ -377,11 +234,11 @@ checkTipFusion(Real *rij, Real *i_par, int *i_ipar, Real *j_par,
                 site = 1;
               }
               if (i_bnds == 1) {
-                i_ipar[intIdx::site2] == site;
+                i_ipar[intIdx::site2] = site;
                 i_ipar[intIdx::seg2_id1] = j_ipar[intIdx::id];
                 i_ipar[intIdx::seg2_id2] = j_ipar[intIdx::cpu];
               } else if (i_bnds == 2) {
-                i_ipar[intIdx::site3] == site;
+                i_ipar[intIdx::site3] = site;
                 i_ipar[intIdx::seg3_id1] = j_ipar[intIdx::id];
                 i_ipar[intIdx::seg3_id2] = j_ipar[intIdx::cpu];
               }
@@ -402,46 +259,49 @@ checkTipFusion(Real *rij, Real *i_par, int *i_ipar, Real *j_par,
  * @param i_ipar integer particle parameters of particle i
  * @param j_par real particle parameters of particle j
  * @param j_ipar integer particle parameters of particle j
- * @param fuse_flag indicate that this segment is fusing to a tip
+ * @param split_flag indicate that this segment is fusing to a tip
  * @param me processor rank (for debugging)
  */
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void 
 checkInteriorFusion(Real *i_par, int *i_ipar, Real *j_par, int *j_ipar,
-    int *fuse_flag, int me)
+    int *split_flag, int me)
 {
   // Determine if segment i might be fused to a tip
+  *split_flag = 0;
   if (i_ipar[intIdx::position] != siteLocation::TIP &&
       j_ipar[intIdx::fuse_flag] == 1) {
-    fuse_flag = 0;
     // check to see if particle j is supposed to fuse to particle i
-    int i_id[4];
-    int i_cpu[4];
-    int i_bnds = i_ipar[intIdx::n_bnds];
-    i_id[0] = i_ipar[intIdx::seg1_id1];
-    i_id[1] = i_ipar[intIdx::seg2_id1];
-    i_id[2] = i_ipar[intIdx::seg3_id1];
-    i_id[3] = i_ipar[intIdx::seg4_id1];
-
-    i_cpu[0] = i_ipar[intIdx::seg1_id2];
-    i_cpu[1] = i_ipar[intIdx::seg2_id2];
-    i_cpu[2] = i_ipar[intIdx::seg3_id2];
-    i_cpu[3] = i_ipar[intIdx::seg4_id2];
     bool do_fuse = false;
     int i, j;
-    for (i=0; i<i_bnds; i++) {
-      if (i_id[i] == j_ipar[intIdx::fuse_id] &&
-          i_cpu[i] == j_ipar[intIdx::fuse_cpu]) {
-        do_fuse = true;
-        break;
-      }
+        printf("Possible FUSION between particles id: %d cpu: %d to particle id: %d cpu: %d\n",
+           i_ipar[intIdx::id],i_ipar[intIdx::cpu],j_ipar[intIdx::id],j_ipar[intIdx::cpu]);
+    if (i_ipar[intIdx::id] == j_ipar[intIdx::fuse_id] &&
+        i_ipar[intIdx::cpu] == j_ipar[intIdx::fuse_cpu]) {
+      do_fuse = true;
     }
 
     if (do_fuse) {
       // find out if particle i is already bonded to particle j
+      // TODO: We already checked for bond in checkTipFusion so this may be
+      // unecessarty. Might help if not everything gets properly set after
+      // the first pass.
+      int i_id[4];
+      int i_cpu[4];
+      int i_bnds = i_ipar[intIdx::n_bnds];
       int j_id[4];
       int j_cpu[4];
       int j_bnds = j_ipar[intIdx::n_bnds];
+      i_id[0] = i_ipar[intIdx::seg1_id1];
+      i_id[1] = i_ipar[intIdx::seg2_id1];
+      i_id[2] = i_ipar[intIdx::seg3_id1];
+      i_id[3] = i_ipar[intIdx::seg4_id1];
+
+      i_cpu[0] = i_ipar[intIdx::seg1_id2];
+      i_cpu[1] = i_ipar[intIdx::seg2_id2];
+      i_cpu[2] = i_ipar[intIdx::seg3_id2];
+      i_cpu[3] = i_ipar[intIdx::seg4_id2];
+
       j_id[0] = j_ipar[intIdx::seg1_id1];
       j_id[1] = j_ipar[intIdx::seg2_id1];
       j_id[2] = j_ipar[intIdx::seg3_id1];
@@ -459,14 +319,16 @@ checkInteriorFusion(Real *i_par, int *i_ipar, Real *j_par, int *j_ipar,
             bonded = true;
             break;
           }
-        }
+        } // j
         if (bonded) break;
-      }
+      } // i
 
       // This particle is supposed to fuse with particle j
       if (!bonded) {
-        *fuse_flag = 1;
-        i_ipar[intIdx::fuse_flag] = 1;
+        printf("Performing FUSION to tip on particle id: %d cpu: %d to particle id: %d cpu: %d\n",
+           i_ipar[intIdx::id],i_ipar[intIdx::cpu],j_ipar[intIdx::id],j_ipar[intIdx::cpu]);
+        *split_flag = 1;
+        i_ipar[intIdx::split_flag] = 1;
         i_ipar[intIdx::fuse_id] = j_ipar[intIdx::id];
         i_ipar[intIdx::fuse_cpu] = j_ipar[intIdx::cpu];
         i_par[realIdx::tau_split] = j_par[realIdx::tau_split];
@@ -486,6 +348,7 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void 
 copyChildParameters(Real *p_real_orig, int *p_int_orig,
                    Real *p_real_child, int *p_int_child,
+
                    int num_reals, int num_ints) 
 {
   int i;
@@ -631,8 +494,16 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     ipar_orig[intIdx::site1] = 1;
     ipar_orig[intIdx::position] = siteLocation::TIP;
     ipar_orig[intIdx::fuse_flag] = 0;
+    ipar_orig[intIdx::split_flag] = 0;
+    ipar_orig[intIdx::new_flag] = 0;
     ipar_orig[intIdx::fuse_id] = -1;
     ipar_orig[intIdx::fuse_cpu] = -1;
+    ipar_orig[intIdx::dltd_site1] = -1;
+    ipar_orig[intIdx::dltd_site2] = -1;
+    ipar_orig[intIdx::dltd_id1] = -1;
+    ipar_orig[intIdx::dltd_id2] = -1;
+    ipar_orig[intIdx::dltd_cpu1] = -1;
+    ipar_orig[intIdx::dltd_cpu2] = -1;
 
     ipar_new[intIdx::n_bnds] = 1;
     ipar_new[intIdx::seg1_id1] = ipar_orig[intIdx::id];
@@ -640,8 +511,16 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     ipar_new[intIdx::site1] = 2;
     ipar_new[intIdx::position] = siteLocation::TIP;
     ipar_new[intIdx::fuse_flag] = 0;
+    ipar_new[intIdx::split_flag] = 0;
+    ipar_new[intIdx::new_flag] = 0;
     ipar_new[intIdx::fuse_id] = -1;
     ipar_new[intIdx::fuse_cpu] = -1;
+    ipar_new[intIdx::dltd_site1] = -1;
+    ipar_new[intIdx::dltd_site2] = -1;
+    ipar_new[intIdx::dltd_id1] = -1;
+    ipar_new[intIdx::dltd_id2] = -1;
+    ipar_new[intIdx::dltd_cpu1] = -1;
+    ipar_new[intIdx::dltd_cpu2] = -1;
     // Growth is towards site 1
     ipar_new[intIdx::id] = id;
     ipar_new[intIdx::cpu] = cpu;
@@ -780,8 +659,16 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       ipar_new[intIdx::site1] = 1;
       ipar_new[intIdx::position] = siteLocation::TIP;
       ipar_new[intIdx::fuse_flag] = 0;
+      ipar_new[intIdx::split_flag] = 0;
+      ipar_new[intIdx::new_flag] = 0;
       ipar_new[intIdx::fuse_id] = -1;
       ipar_new[intIdx::fuse_cpu] = -1;
+      ipar_new[intIdx::dltd_site1] = -1;
+      ipar_new[intIdx::dltd_site2] = -1;
+      ipar_new[intIdx::dltd_id1] = -1;
+      ipar_new[intIdx::dltd_id2] = -1;
+      ipar_new[intIdx::dltd_cpu1] = -1;
+      ipar_new[intIdx::dltd_cpu2] = -1;
     } else {
       //printf("Add to site 1\n");
       x2 = x + 0.5*c_length*nx;
@@ -825,6 +712,8 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       ipar_new[intIdx::site1] = 2;
       ipar_new[intIdx::position] = siteLocation::TIP;
       ipar_new[intIdx::fuse_flag] = 0;
+      ipar_new[intIdx::split_flag] = 0;
+      ipar_new[intIdx::new_flag] = 0;
       ipar_new[intIdx::fuse_id] = -1;
       ipar_new[intIdx::fuse_cpu] = -1;
     }
@@ -1026,8 +915,17 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     }
     ipar_new[intIdx::position] = siteLocation::TIP;
     ipar_new[intIdx::fuse_flag] = 0;
+    ipar_new[intIdx::split_flag] = 0;
+    ipar_new[intIdx::new_flag] = 0;
     ipar_new[intIdx::fuse_id] = -1;
     ipar_new[intIdx::fuse_cpu] = -1;
+    ipar_new[intIdx::fuse_cpu] = -1;
+    ipar_new[intIdx::dltd_site1] = -1;
+    ipar_new[intIdx::dltd_site2] = -1;
+    ipar_new[intIdx::dltd_id1] = -1;
+    ipar_new[intIdx::dltd_id2] = -1;
+    ipar_new[intIdx::dltd_cpu1] = -1;
+    ipar_new[intIdx::dltd_cpu2] = -1;
     ipar_orig[intIdx::position] = siteLocation::INTERIOR;
   }
   // Recalculate area and volume
@@ -1039,7 +937,8 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
   rad = par_new[realIdx::radius];
   par_new[realIdx::vol] = M_PI*rad*rad*clen;
   par_new[realIdx::area] = 2.0*M_PI*rad*clen+2.0*M_PI*rad*rad;
-
+  printf("Adding new segment id: %d cpu: %d\n",
+      ipar_new[intIdx::id],ipar_new[intIdx::cpu]);
 }
 
 /**
@@ -1137,14 +1036,29 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
   int i;
   int n_id[2];
   int n_cpu[2];
+  int n_site[2];
   for (i=0; i<old_bnds; i++) {
     if (i_site[i] == 2) {
       n_id[new_bnds] = i_id[i];
       n_cpu[new_bnds] = i_cpu[i];
       new_bnds++;
+      // Store deleted bond information
+      if (new_bnds == 1) {
+        ipar_orig[intIdx::dltd_site1] =2;
+        ipar_orig[intIdx::dltd_id1] = n_id[0];
+        ipar_orig[intIdx::dltd_cpu1] = n_cpu[0];
+      } else if (new_bnds == 2) {
+        ipar_orig[intIdx::dltd_site2] = 2;
+        ipar_orig[intIdx::dltd_id2] = n_id[1];
+        ipar_orig[intIdx::dltd_cpu2] = n_cpu[1];
+      }
       if (new_bnds == 2) break;
     }
   }
+  printf("DELETED: n: %d site1: %d id1: %d cpu1: %d site2: %d id2: %d cpu2: %d\n",
+      new_bnds,ipar_orig[intIdx::dltd_site1],ipar_orig[intIdx::dltd_id1],
+      ipar_orig[intIdx::dltd_cpu1],ipar_orig[intIdx::dltd_site2],
+      ipar_orig[intIdx::dltd_id2],ipar_orig[intIdx::dltd_cpu2]);
   new_bnds += 2;
   ipar_new[intIdx::site3] = 2;
   ipar_new[intIdx::seg3_id1] = n_id[0];
@@ -1166,13 +1080,14 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     }
   }
   ipar_orig[intIdx::site1] = 1;
-  ipar_orig[intIdx::seg1_id1] = i_id[0];
-  ipar_orig[intIdx::seg1_id2] = i_cpu[0];
+  ipar_orig[intIdx::seg1_id1] = n_id[0];
+  ipar_orig[intIdx::seg1_id2] = n_cpu[0];
   if (new_bnds > 1) {
     ipar_orig[intIdx::site2] = 1;
-    ipar_orig[intIdx::seg2_id1] = i_id[1];
-    ipar_orig[intIdx::seg2_id2] = i_cpu[1];
+    ipar_orig[intIdx::seg2_id1] = n_id[1];
+    ipar_orig[intIdx::seg2_id2] = n_cpu[1];
   }
+  // add bond to new segment
   ipar_orig[intIdx::n_bnds] = new_bnds+2;
   if (new_bnds == 1) {
     ipar_orig[intIdx::site2] = 2;
@@ -1193,14 +1108,29 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
   par_new[realIdx::c_length] = (1.0-tau_split)*c_length;
   ipar_orig[intIdx::position] = siteLocation::INTERIOR;
   ipar_new[intIdx::position] = siteLocation::INTERIOR;
+  ipar_new[intIdx::id] = id;
+  ipar_new[intIdx::cpu] = cpu;
+
+  printf("Particle split old id: %d cpu: %d new id: %d cpu: %d\n",
+      ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],ipar_new[intIdx::id],
+      ipar_new[intIdx::cpu]);
 
   // Reset fusion parameters
   ipar_orig[intIdx::fuse_flag] = 0; 
+  ipar_orig[intIdx::split_flag] = 0; 
   ipar_orig[intIdx::fuse_id] = -1; 
   ipar_orig[intIdx::fuse_cpu] = -1; 
   ipar_new[intIdx::fuse_flag] = 0; 
+  ipar_new[intIdx::split_flag] = 0; 
   ipar_new[intIdx::fuse_id] = -1; 
   ipar_new[intIdx::fuse_cpu] = -1; 
+  ipar_new[intIdx::fuse_cpu] = -1;
+  ipar_new[intIdx::dltd_site1] = -1;
+  ipar_new[intIdx::dltd_site2] = -1;
+  ipar_new[intIdx::dltd_id1] = -1;
+  ipar_new[intIdx::dltd_id2] = -1;
+  ipar_new[intIdx::dltd_cpu1] = -1;
+  ipar_new[intIdx::dltd_cpu2] = -1;
 
   // Recalculate area and volume
   Real clen = par_orig[realIdx::c_length];
@@ -1211,7 +1141,103 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
   rad = par_new[realIdx::radius];
   par_new[realIdx::vol] = M_PI*rad*rad*clen;
   par_new[realIdx::area] = 2.0*M_PI*rad*clen+2.0*M_PI*rad*rad;
+  printf("Adding new segment id: %d cpu: %d\n",
+      ipar_new[intIdx::id],ipar_new[intIdx::cpu]);
 
+}
+
+/**
+ * Routine for fixing up bonds after fusion event
+ * @param integer parameters for particle I
+ * @param integer parameters for particle J
+ * @param processor rank (for debugging)
+ */
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void cleanupFusionBond(int *ipar , int *jpar, int me)
+{
+  // Find out if I and J are bonded to each other
+  int i_bnds = ipar[intIdx::n_bnds];
+  int i_id, i_cpu;
+  i_id = ipar[intIdx::id];
+  i_cpu = ipar[intIdx::cpu];
+
+  int isite[4], iid[4], icpu[4];
+  iid[0] = ipar[intIdx::seg1_id1];
+  iid[1] = ipar[intIdx::seg2_id1];
+  iid[2] = ipar[intIdx::seg3_id1];
+  iid[3] = ipar[intIdx::seg4_id1];
+
+  icpu[0] = ipar[intIdx::seg1_id2];
+  icpu[1] = ipar[intIdx::seg2_id2];
+  icpu[2] = ipar[intIdx::seg3_id2];
+  icpu[3] = ipar[intIdx::seg4_id2];
+
+  isite[0] = ipar[intIdx::site1];
+  isite[1] = ipar[intIdx::site2];
+  isite[2] = ipar[intIdx::site3];
+  isite[3] = ipar[intIdx::site4];
+
+  int j_id, j_cpu;
+  j_id = jpar[intIdx::id];
+  j_cpu = jpar[intIdx::cpu];
+
+  int i;
+  int idx;
+  for (i=0; i<i_bnds; i++) {
+    if (iid[i] == j_id && icpu[i] == j_cpu) {
+      idx = i;
+      //   printf("Found bond idx: %d I new: %d J split: %d I site: %d\n",
+      //        idx,ipar[intIdx::new_flag],jpar[intIdx::split_flag],isite[idx]);
+      // segments are bonded. Check to see if J just split
+      // and I is not new and isite[idx] = 1
+      if (ipar[intIdx::new_flag] == 0 && ipar[intIdx::fuse_flag] == 0 &&
+          jpar[intIdx::split_flag] == 1) {
+        printf("Possible REMOVE iid: %d icpu: %d jid: %d jcpu: %d jid1: %d jcpu1: %d"
+            " jid2: %d jcpu2: %d\n",i_id,i_cpu,j_id,j_cpu,
+            jpar[intIdx::dltd_id1],jpar[intIdx::dltd_cpu1],
+            jpar[intIdx::dltd_id2],jpar[intIdx::dltd_cpu2]);
+        // Check further to see if a bond to this segment was deleted from
+        // segment j
+        if ((jpar[intIdx::dltd_id1] == i_id && jpar[intIdx::dltd_cpu1] == i_cpu) ||
+            (jpar[intIdx::dltd_id2] == i_id && jpar[intIdx::dltd_cpu2] == i_cpu)) {
+          // This is a leftover bond from before the split. Remove it.
+          printf("REMOVE bond %d id: %d cpu: %d attached to"
+              " id: %d cpu: %d ipar: %p\n",idx+1,
+              ipar[intIdx::id],ipar[intIdx::cpu],jpar[intIdx::id],
+              jpar[intIdx::cpu],ipar);
+          if (idx < 1) {
+            ipar[intIdx::seg1_id1] = ipar[intIdx::seg2_id1];
+            ipar[intIdx::seg1_id2] = ipar[intIdx::seg2_id2];
+            ipar[intIdx::site1] = ipar[intIdx::site2];
+          }
+          if (idx < 2) {
+            ipar[intIdx::seg2_id1] = ipar[intIdx::seg3_id1];
+            ipar[intIdx::seg2_id2] = ipar[intIdx::seg3_id2];
+            ipar[intIdx::site2] = ipar[intIdx::site3];
+          }
+          if (idx < 3) {
+            ipar[intIdx::seg3_id1] = ipar[intIdx::seg4_id1];
+            ipar[intIdx::seg3_id2] = ipar[intIdx::seg4_id2];
+            ipar[intIdx::site3] = ipar[intIdx::site4];
+          }
+          ipar[intIdx::seg4_id1] = 0;
+          ipar[intIdx::seg4_id2] = 0;
+          ipar[intIdx::site4] = 0;
+          i_bnds--;
+          ipar[intIdx::n_bnds] = i_bnds;
+          printf("post REMOVE bond id: %d cpu: %d n_bnds: %d"
+              " id1: %d cpu1: %d id2: %d cpu2: %d"
+              " id3: %d cpu3: %d id4: %d cpu4: %d\n",
+              ipar[intIdx::id],ipar[intIdx::cpu],ipar[intIdx::n_bnds],
+              ipar[intIdx::seg1_id1],ipar[intIdx::seg1_id2],
+              ipar[intIdx::seg2_id1],ipar[intIdx::seg2_id2],
+              ipar[intIdx::seg3_id1],ipar[intIdx::seg3_id2],
+              ipar[intIdx::seg4_id1],ipar[intIdx::seg4_id2]);
+
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -1859,10 +1885,29 @@ evaluateExchange(Real *par1, Real *par2, int *ipar1, int *ipar2, Real *xpar, Rea
        Real dB = (cB_1-cB_2)*area*mtB*dt;
        Real dC = (cC_1-cC_2)*area*mtC*dt;
 
+       // Check to see if anything might go negative
+       if (dA/vol1 > cnc1[3]/static_cast<Real>(i_bnds)) {
+         dA = cnc1[3]*vol1/static_cast<Real>(i_bnds);
+       }
+       if (-dA/vol2 > cnc2[3]/static_cast<Real>(j_bnds)) {
+         dA = -cnc2[3]*vol2/static_cast<Real>(j_bnds);
+       }
+       if (dB/vol1 > cnc1[4]/static_cast<Real>(i_bnds)) {
+         dB = cnc1[4]*vol1/static_cast<Real>(i_bnds);
+       }
+       if (-dB/vol2 > cnc2[4]/static_cast<Real>(j_bnds)) {
+         dB = -cnc2[4]*vol2/static_cast<Real>(j_bnds);
+       }
+       if (dC/vol1 > cnc1[5]/static_cast<Real>(i_bnds)) {
+         dC = cnc1[5]*vol1/static_cast<Real>(i_bnds);
+       }
+       if (-dC/vol2 > cnc2[5]/static_cast<Real>(j_bnds)) {
+         dC = -cnc2[5]*vol2/static_cast<Real>(j_bnds);
+       }
        // Update increments
        cnc1[3] -= dA/vol1;
        cnc1[4] -= dB/vol1;
-       cnc1[5] -= dC/vol1;
+       cnc1[5] -= dC/vol2;
        cnc2[3] += dA/vol2;
        cnc2[4] += dB/vol2;
        cnc2[5] += dC/vol2;
@@ -1888,8 +1933,8 @@ applyIncrements(Real *par, int *ipar)
 }
 
 /**
- * Create positions and parameter values for new segment pair. This consist
- * of the original segment and a new segment
+ * Create positions and parameter values for new segment pair. The input
+ * consists of the original segment and two new segments
  * @param pos_orig, pos_new1, pos_new2 positions of original and new segments
  * @param par_orig, par_new1, par_new2 real parameter values of original
  *        and new segments
@@ -1915,6 +1960,8 @@ setNewSegments(Real *pos_orig, Real *pos_new1, Real *pos_new2,
   copyChildParameters(par_orig, ipar_orig, par_new2, ipar_new2,
       num_reals, num_ints);
   printf("Adding new segments id1: %d cpu1: %d id2: %d cpu2: %d\n",id1,cpu1,id2,cpu2);
+  printf("Old segment id: %d cpu: %d n_bnds: %d\n",ipar_orig[intIdx::id],
+      ipar_orig[intIdx::cpu],ipar_orig[intIdx::n_bnds]);
 
   //Check out if this is an interior or terminal segment
   int nbnd = ipar_orig[intIdx::n_bnds];
@@ -2185,12 +2232,26 @@ setNewSegments(Real *pos_orig, Real *pos_new1, Real *pos_new2,
   par_new2[realIdx::phi] = gnphi2;
   ipar_new1[intIdx::position] = siteLocation::TIP;
   ipar_new1[intIdx::fuse_flag] = 0;
+  ipar_new1[intIdx::split_flag] = 0;
   ipar_new1[intIdx::fuse_id] = -1;
   ipar_new1[intIdx::fuse_cpu] = -1;
+  ipar_new1[intIdx::dltd_site1] = -1;
+  ipar_new1[intIdx::dltd_site2] = -1;
+  ipar_new1[intIdx::dltd_id1] = -1;
+  ipar_new1[intIdx::dltd_id2] = -1;
+  ipar_new1[intIdx::dltd_cpu1] = -1;
+  ipar_new1[intIdx::dltd_cpu2] = -1;
   ipar_new2[intIdx::position] = siteLocation::TIP;
   ipar_new2[intIdx::fuse_flag] = 0;
+  ipar_new2[intIdx::split_flag] = 0;
   ipar_new2[intIdx::fuse_id] = -1;
   ipar_new2[intIdx::fuse_cpu] = -1;
+  ipar_new2[intIdx::dltd_site1] = -1;
+  ipar_new2[intIdx::dltd_site2] = -1;
+  ipar_new2[intIdx::dltd_id1] = -1;
+  ipar_new2[intIdx::dltd_id2] = -1;
+  ipar_new2[intIdx::dltd_cpu1] = -1;
+  ipar_new2[intIdx::dltd_cpu2] = -1;
   ipar_orig[intIdx::position] = siteLocation::INTERIOR;
   ipar_new1[intIdx::id] = id1;
   ipar_new1[intIdx::cpu] = cpu1;
@@ -2209,6 +2270,24 @@ setNewSegments(Real *pos_orig, Real *pos_new1, Real *pos_new2,
   rad = par_new2[realIdx::radius];
   par_new2[realIdx::vol] = M_PI*rad*rad*clen;
   par_new2[realIdx::area] = 2.0*M_PI*rad*clen+2.0*M_PI*rad*rad;
+  printf("NEW segment id: %d cpu: %d site1: %d id1: %d cpu1: %d\n",
+      ipar_new1[intIdx::id],ipar_new1[intIdx::cpu],ipar_new1[intIdx::site1],
+      ipar_new1[intIdx::seg1_id1],ipar_new1[intIdx::seg1_id2]);
+  printf("NEW segment id: %d cpu: %d site1: %d id1: %d cpu1: %d\n",
+      ipar_new2[intIdx::id],ipar_new2[intIdx::cpu],ipar_new2[intIdx::site1],
+      ipar_new2[intIdx::seg1_id1],ipar_new2[intIdx::seg1_id2]);
+  printf("Adding new segment id: %d cpu: %d n_bnds: %d\n",
+      ipar_new1[intIdx::id],ipar_new1[intIdx::cpu],ipar_new1[intIdx::n_bnds]);
+  printf("Adding new segment id: %d cpu: %d n_bnds: %d\n",
+      ipar_new2[intIdx::id],ipar_new2[intIdx::cpu],ipar_new2[intIdx::n_bnds]);
+  printf("After split old segment n_bnds: %d\n",ipar_orig[intIdx::n_bnds]);
+  printf("OLD id: %d cpu: %d nbnds: %d id1: %d cpu1: %d id2: %d cpu2: %d"
+      " id3: %d cpu3: %d id4: %d cpu4: %d\n",
+      ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],ipar_orig[intIdx::n_bnds],
+      ipar_orig[intIdx::seg1_id1],ipar_orig[intIdx::seg1_id2],
+      ipar_orig[intIdx::seg2_id1],ipar_orig[intIdx::seg2_id2],
+      ipar_orig[intIdx::seg3_id1],ipar_orig[intIdx::seg3_id2],
+      ipar_orig[intIdx::seg4_id1],ipar_orig[intIdx::seg4_id2]);
 #if 0
   printf("Old seg id: %d cpu %d site1: %d id1: %d cpu1: %d site2: %d id2: %d cpu2: %d site3: %d id3: %d cpu3: %d\n",
       ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],
@@ -2223,3 +2302,4 @@ setNewSegments(Real *pos_orig, Real *pos_new1, Real *pos_new2,
       ipar_new2[intIdx::site2],ipar_new2[intIdx::seg2_id1],ipar_new2[intIdx::seg2_id2]);
 #endif
 }
+#endif

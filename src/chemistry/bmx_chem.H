@@ -1,3 +1,8 @@
+//
+//     Copyright (c) 2013 Battelle Memorial Institute
+//     Licensed under modified BSD License. A copy of this license can be found
+//     in the LICENSE file in the top level directory of this distribution.
+//
 #ifndef _BMX_CHEM_H_
 #define _BMX_CHEM_H_
 
@@ -9,7 +14,7 @@
  * defined in the realIdx and intIdx enumerations, plus the number of
  * variables in the undefined blocks */
 #define MAX_CHEM_REAL_VAR 33
-#define MAX_CHEM_INT_VAR 25
+#define MAX_CHEM_INT_VAR 33
 
 using amrex::Real;
 
@@ -79,12 +84,12 @@ struct intIdx
     cell_type,      // Enumeration to distinguish between different cell types
     n_bnds,         // Number of segments bonded to this segment
     seg1_id1,       // unique identifier of bonded segment 1
-    seg1_id2,       // original process of bonded segment 1
-    seg2_id1,       // unique identifier of bonded segment 2                     10
-    seg2_id2,       // original process of bonded segment 2
-    seg3_id1,       // unique identifier of bonded segment 3
-    seg3_id2,       // original process of bonded segment 3
+    seg2_id1,       // unique identifier of bonded segment 2
+    seg3_id1,       // unique identifier of bonded segment 3                     10
     seg4_id1,       // unique identifier of bonded segment 4
+    seg1_id2,       // original process of bonded segment 1
+    seg2_id2,       // original process of bonded segment 2
+    seg3_id2,       // original process of bonded segment 3
     seg4_id2,       // original process of bonded segment 4                      15
     site1,          // bonding site of segment 1
     site2,          // bonding site of segment 2
@@ -92,12 +97,20 @@ struct intIdx
     site4,          // bonding site of segment 4
     position,       // identify tip, second position, interior segment           20
     fuse_flag,      // flag that this particle is fusing to another particle
+    split_flag,     // flag to identify splitting segment in a fusion event
+    new_flag,       // flag to identify new particle in fusion event
     fuse_id,        // id of particle that this particle is fusing to
-    fuse_cpu,       // cpu of particle that this particle is fusing to
+    fuse_cpu,       // cpu of particle that this particle is fusing to           25
+    dltd_site1,     // deleted site 1
+    dltd_site2,     // deleted site 2
+    dltd_id1,       // deleted id 1
+    dltd_id2,       // deleted id 2
+    dltd_cpu1,      // deleted cpu 1                                             30
+    dltd_cpu2,      // deleted cpu 2
     id,             // unique identifier of segment
-    cpu,            // original process of segment                               25
+    cpu,            // original process of segment
     first_data,     // index of first value of uncharacterized block
-    count           // total number of elements in this enumeration              27
+    count           // total number of elements in this enumeration              35
   };
 };
 
