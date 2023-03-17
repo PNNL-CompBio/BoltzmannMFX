@@ -755,7 +755,7 @@ to this orientation is
 \]
 The inverse rotation is just the transpose of this matrix.
 
-\section{Creating a Bond List}
+\section{Maintaining Connectivities Between Segments}
 To model filamentous fungi, it is necessary to maintain bonds between
 different linear segments. The end of one segment is bonded to the end of another
 segment so that some sort of fixed relation can be maintained (A is bonded to B),
@@ -767,75 +767,145 @@ to be true
 \begin{list}{$\bullet$}{}
 \item Any segment B that is bonded to segment A is located within a finite
 distance of A and lies in the neighbor list of A (the neighbor list is based
-exclusively on position and is supported by the code)
+exclusively on position and is supported by the code). The same is true of A with
+respect to B.
 \item There is a finite maximum number of segments that can be bonded to a
-central segment (in our case the maximum is three)
+central segment (in our case the maximum is four)
 \item At most one bond can exist between two segments
 \item A unique identifier can be created for each new segment that is added to the
-system.
+system and is maintained over the life of the simulation. This identifier is also
+restored if the calculation is restarted from a checkpoint file.
 \end{list}
+The last item on this list is a bit more complicated than it might initially appear.
+The unique identifier in our implementation is, in fact, an integer pair. The first
+integer is a unique index associated with the process that created the segment and
+the second index is the rank of the process. This combination is unique across all
+processes and can be generated without communication between processes.
 
-Each segment is assumed to have two sites available at each end of the segment for
-forming bonds. These sites are labeled 1 and 2. In addition, each segment has
-a counter equal to the number of other segments that are bonded to it and three
-variables that correspond to the unique identifiers of the segments that it is
-bonded to. There are an additional three variables that identify which site (1 or
-2) that the other segments are bonded to. It is assumed that site 1 bonds to site
-2 so the bonding site on the other segment can be inferred. It is assumed that if
-two sites are bonded then there is a pairwise interaction between the two sites
-that is sufficiently strong to keep the sites in close proximity to each other (e.g.
-a harmonic oscillator bond).
-
-Growth of the filamentous fungi by creating new segments can occur via two mechanisms
+The four events that can generate new particles are
 \begin{list}{$\bullet$}{}
-\item Terminal budding, where a new segment appears at the unbounded end of a
-growing segment
-\item Side branch growth, where a new bud forms at one end of a segment that is
-already bonded to two segments at each end
+\item Segment generation from a growth tip.
+\item Tip splitting of a growth tip to generate two new segments.
+\item Side branching from an interiour segment.
+\item Fusion of a growth tip to an interior segment. The interior segment splits
+into two segments at the point at which the growth tip fuses.
 \end{list}
-The side branch growth mechanism encapsulates tip splitting, where two buds form
-at the non-bonded end of a growing segment. For tip splitting, the buds are assumed
-to form sequentially, although possibly close to each other in time.
+Each of these events can generate one or two segments and it is necessary for internal data
+on all particles to be updated to reflect the formation of new bonds and, in some cases,
+the removal of old bonds. All of this is complicated by the fact that modifications to
+particle data need to be done in a particular way in order for modifications to be made
+permanent. This can be seen when looking at loops over neighbor pairs.
 
-When a new segment is formed, the following steps occur
-\begin{list}{$\bullet$}{}
-\item A new segment is created from a parent segment at one end or the other of
-the parent
-\item The new segment is assigned a unique identifier. It is listed as bonded to
-the parent. If the new segment is generated at site 1 of the parent, then its
-bonding site is 2, otherwise its bonding site is 1. The bond counter is set to 1
-on the new segment
-\item The parent is modified to list the new segment as a bonding partner using
-its unique identifier and the bond counter is incremented by 1.
-\end{list}
+\begin{figure}
+\centering
+\includegraphics[width=4.0in,keepaspectratio=true]{side_branch}
+\caption{\label{fig:side_branch} Schematic diagram of side branching}
+\end{figure}
 
-To keep track of the bonds, the following data is needed on each segment
-\begin{list}{$\bullet$}{}
-\item A bond counter representing the number of neighboring segments that are bonded
-to the segment
-\item a three element list containing the unique segment IDs of the bonded
-segments
-\item a three element list containing the site to which the neighboring segments
-are bonded
-\end{list}
-A bonding relation between a segment and its neighbors can be determined by
-extracting the unique segment ID of the neighbor and comparing it to the list 
-of segment IDs to which the segment is bonded. If there is a match, then the bonding
-site can be determined from the second list.
+A typical loop over neighbors has the structure
+\[
+\sum_{i}\sum_{j\in Nghb(i)}
+\]
+The sum over $j$ may also have a restriction that the interaction is only evaluated
+for $i<j$ to avoid duplicate interactions. The issue that arises, is that any
+modifications that are identified in a loop over particles of this sort can only
+be permanently applied to the particles indexed by $i$. The particles in the neighbor list
+indexed by $j$ are copies of the original particle data, which may reside on other
+processors, and changes made to the copies will disappear when the neighbor list is rebuilt.
 
-Once this bonding information is in place, the actual interactions between segment
-pairs can be evaluated as follows.
+To maintain and update the connectivity information, the following information is maintained
+on each segment
 \begin{list}{$\bullet$}{}
-\item For each segment, a neighbor list is formed. The cutoff radius of the
-neighbor list is assumed to be sufficiently large that any segment that is bonded
-to the central segment will appear in the neighbor list.
-\item Each pair between the central segment and it neighbors is evaluated. The
-list of bonded identifiers on the central segment is compared to the identifier
-of the neighbor. If there is a match, the sites that are bonded are identified and
-the bonded interaction between the two segments is evaluated
-\item If there is no match, the non-bonded interaction between the two segments is
-evaluated
+\item the number of segments that this segment is bonded to. The maximum number is 4.
+\item a list of ids for the segments that are bonded to this segment (up to 4)
+\item a list of cpus for the segments that are bonded to this segment (up to 4)
+\item a list describing the site (1 or 2) at which the bonded segments are connected (up to 4)
+\item an integer enumeration specifying whether a segment is a growth tip or not
+\item a flag indicating that this segment is fusing to another segment
+\item a flag indicating that this segment going to split in a fusion event
+\item a flag indicating that this segment was created during a fusion event
+\item the id of the segment that this particle is fusing to
+\item the cpu of the segment that this particle is fusing to
+\item a list of segment ids that were deleted from this segment (up to 2)
+\item a list of segment cpus that were deleted from this segment (up to 2)
 \end{list}
+Each segment has a site at either end that is capabable of forming bonds with other segments.
+These sites are labeled 1 and 2 and each site can be bonded to a maximum of two other segments
+for a maximum of four bonds per segment. The last seven items in the list are only used to
+support fusion of a growth tip to another segment. Not all of the parameters are necessarily
+used simultaneously by all segments involved in the fusion event.
+
+A major function of the simulation is maintaining these connectivities and it is complicated
+to a significant degree by the behavior of the loops over neighbors. Generally, when new
+segments are created, they are spawned from a parent segment. At the moment of creation,
+the permanent copy of both the parent and the newly created child segment are available to
+to the program and modifications to their data will be preserved. Thus, when a growth tip
+generates a new tip or splits into two new tips, all the permanent information for both the
+parent segment and the new segments are available and all bonding information can be updated
+at the same time.
+
+The situation is more complicated for side-branching from an interior segment. This
+is illustrated in Figure \ref{fig:side_branch}. In the figure, the interior segment A is bonded
+to segment B and a side branch forms in segment A at the end that is bonded to segment B. The
+resulting segment C is bonded to both A and B. At the moment when segment C forms, both the
+permanent data for A and C are available, but not the data for B. A can set its internal data
+so that it is bonded to C and C, because it has access to A's internal data and can see that the
+end bonded to C is also bonded to B, can set its
+internal data so that it it is bonded to A and B. However, at this point B's bonding data does
+not list C as a bonding partner.
+This must be fixed up later when the loop to calculate forces is performed. Furthermore, to
+guarantee that segment C's permanent data is modified, the restriction $i<j$ cannot be used.
+Before evaluating the forces between a pair of segments, each segment in the pair
+checks to see if it bonded to the other segment. If it is not, then it checks the bonding
+information in the neighbor to see if the neighbor is bonded to it. If the neighbor is bonded
+then the segment updates its bonding information to list the neighbor as a bond. In the case
+of side branching, segment C is bonded to segment B but B is not bonded to segment C.
+In the force loop, segment B will check the bonding information of segment C and find that
+segment C lists B as a bonding partner. Based on this, segment B will update its bond
+information to include C.
+
+\begin{figure}
+\centering
+\includegraphics[width=4.0in,keepaspectratio=true]{fusion}
+\caption{\label{fig:fusion} Schematic diagram of a growth tip fusing with an interior segment}
+\end{figure}
+
+Fusion of a growth tip with an interior segment requires the addition of several more loops
+over neighbors in order to maintain an accurate record of connectivity. A schematic diagram
+of a tip fusion event is shown in Figure \ref{fig:fusion}. When a tip fuses to another segment,
+the other segment splits at the point where the fusion occurs and two new segments are formed.
+
+Computationally, a tip fusion event occurs in four separate steps:
+\begin{enumerate}
+\item In a double loop over all segments and their neighbors, a tip identifies another segment
+that it is going to fuse with. The tip labels itself as fusing and stores the id and cpu of the
+fusing partner. In Figure \ref{fig:fusion} segment A identifies segment B as a fusion partner
+and marks itself accordingly. Segment A also adds segment B to its list of bonding partners,
+\item A second double loop over all segments and their neighbors is performed and each segment
+checks its neighbors to see if it is a fusing tip and if it has marked the segment as a fusing
+partner. If it finds that it is a fusing partner, the segment marks itself as splitting and
+stores the id and cpu of the tip that it is fusing with. It also adds the tip as a bonding
+partner,
+\item A third loop over segments is performed and all segments marked for splitting are split
+into two segments. In the example in Figure \ref{fig:fusion}, segment B generates segment D and
+marks itself as having just split. Segment D is marked as being a new segment.
+The split is done in a consisistent way so that the new segment is generated at the end of the
+original segment corresponding to bonding site 2. Because of this, the bonds at site 2 on the
+original segment B to segment C are no longer valid and need to be replaced with bonds to D.
+Similarly, bonds to A, B and C can be added to D at this point since D has access to B's
+connectivity data. However, A does not list D as a bonding partner and C needs to modify its
+bonding data to remove the bonds to B and add bonds to D. To do this, B stores the ids and cpus
+of the one or two bonds to C that were deleted.
+\item A fourth double loop including neighbors is performed to fix up the bonds on segment C.
+Bonds between segment A and D and segment C and D will get fixed in the force loop when
+bonds are recognized between segments A and C and segment D. Segment B will still show up as
+a neighbor of
+segment C in the cleanup loop. However, segment B will be marked as having just been split and
+will list a
+bond to C as having been deleted. This is a signal to C to remove B as a bonding partner.
+\end{enumerate}
+Once these operations have been completed, the fusion flag, split flag and new segment flag are
+all set to zero before the f
 
 \section{Cylinder interactions}
 Our model for interacting cylinders is based on the minimum distance between two
