@@ -271,6 +271,7 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
         int_comp_names.push_back("deleted_id_2");
         int_comp_names.push_back("deleted_cpu_1");
         int_comp_names.push_back("deleted_cpu_2");
+        int_comp_names.push_back("fix_site");
         int_comp_names.push_back("unique_id");
         int_comp_names.push_back("home_cpu");
         for (i=intIdx::count-1; i<MAX_CHEM_INT_VAR; i++) {

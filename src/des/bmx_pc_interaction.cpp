@@ -322,33 +322,10 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                 particle.rdata(realIdx::wy) = fc_ptr[i+4*ntot];
                 particle.rdata(realIdx::wz) = fc_ptr[i+5*ntot];
 
-#if 1
-//                printf("PARTICLE RX: %e RY: %e RZ: %e ID: %d CPU: %d\n",
-//                    ppos[0],ppos[1],ppos[2],static_cast<int>(particle.id()),
-//                    static_cast<int>(particle.cpu()));
-//                printf("PARTICLE VX: %e VY: %e VZ: %e DT: %e\n",
-//                    particle.rdata(realIdx::velx),
-//                    particle.rdata(realIdx::vely),particle.rdata(realIdx::velz),
-//                    subdt);
-//                printf("PARTICLE WX: %e WY: %e WZ: %e\n",
-//                    particle.rdata(realIdx::wx),
-//                    particle.rdata(realIdx::wy),particle.rdata(realIdx::wz));
                 ppos[0] += subdt * particle.rdata(realIdx::velx);
                 ppos[1] += subdt * particle.rdata(realIdx::vely);
                 ppos[2] += subdt * particle.rdata(realIdx::velz);
-//                printf("PARTICLE POST RX: %e RY: %e RZ: %e\n",
-//                    ppos[0],ppos[1],ppos[2]);
-#else
-                Real dx = subdt * particle.rdata(realIdx::velx);
-                Real dy = subdt * particle.rdata(realIdx::vely);
-                Real dz = subdt * particle.rdata(realIdx::velz);
-                ppos[0] += dx;
-                ppos[1] += dy;
-                ppos[2] += dz;
-                if (fabs(dx) > 0.0005 || fabs(dy) > 0.0005 || fabs(dz) > 0.0005) {
-                  printf("JUMP DX: %f DY: %f DZ: %f\n",dx,dy,dz);
-                }
-#endif
+
                 // Modify orientation based on angular momentum
                 if (particle.idata(intIdx::cell_type) == cellType::FUNGI) {
                   Real theta = particle.rdata(realIdx::theta);
@@ -386,7 +363,6 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                     }
                   }
                   Real clen = particle.rdata(realIdx::c_length);
-                  //DBG printf("Omega_x: %e Omega_y: %e Omega_z: %e\n",om[0],om[1],om[2]);
                   om[0] = 0.0;
                   om[1] *= 2.0/(clen*clen);
                   om[2] *= 2.0/(clen*clen);
@@ -400,7 +376,6 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                   // Construct matrix to rotate system about x-axis so that rotational
                   // velocity is along z-axis. Cosine of the angle theta with
                   // the z-axis is just om[2] and sine of theta is om[1]
-                  //DBG printf("Omega2_x: %e Omega2_y: %e Omega2_z: %e ON: %e\n",om[0],om[1],om[2],on);
                   ct = om[2];
                   st = om[1];
                   Real orot[3][3];
@@ -413,19 +388,6 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                   orot[2][0] = 0.0;
                   orot[2][1] = st;
                   orot[2][2] = ct;
-#if 0
-                  printf("o11: %f o12: %f o13: %f\n",orot[0][0],orot[0][1],orot[0][2]);
-                  printf("o21: %f o22: %f o23: %f\n",orot[1][0],orot[1][1],orot[1][2]);
-                  printf("o31: %f o32: %f o33: %f\n",orot[2][0],orot[2][1],orot[2][2]);
-                  Real dtmp[3];
-                  for (i=0; i<3; i++) {
-                    dtmp[i] = 0.0;
-                    for (j=0; j<3; j++) {
-                      dtmp[i] += orot[i][j]*om[j];
-                    }
-                  }
-                  printf("Op_x: %e Op_y: %e Op_z: %e\n",dtmp[0],dtmp[1],dtmp[2]);
-#endif
                   // Cylinder is currently aligned along x-axis, so this
                   // rotation has no effect on it. Calculate how much system
                   // rotates about the z-axis in 1 time step and then calculate
@@ -443,7 +405,6 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                       om[ii] += orot[jj][ii]*ndir[jj];
                     }
                   }
-              //DBG    printf("Dtheta: %f om_x: %f om_y: %f om_z: %f\n",dtheta,om[0],om[1],om[2]);
 
                   // apply rot to new direction to recover final orientation
                   for (int ii=0; ii<3; ii++) {
@@ -452,7 +413,6 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                       ndir[ii] += rot[ii][jj]*om[jj];
                     }
                   }
-              //DBG    printf("NEW ORIENTATION NX: %e NY: %e NZ: %e\n",ndir[0],ndir[1],ndir[2]);
                   // get orientation angles
                   theta = acos(ndir[2]);
                   on = sqrt(ndir[0]*ndir[0]+ndir[1]*ndir[1]);
@@ -470,8 +430,6 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                 particle.pos(0) = ppos[0];
                 particle.pos(1) = ppos[1];
                 particle.pos(2) = ppos[2];
-//                printf("PARTICLE FINAL RX: %e RY: %e RZ: %e\n",
-//                    particle.pos(0),particle.pos(1),particle.pos(2));
 
 #if !defined(AMREX_USE_GPU)
                 if (verbose) {

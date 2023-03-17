@@ -479,9 +479,15 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
   int l_num_reals = BMXChemistry::p_num_reals;
   int l_num_ints  = BMXChemistry::p_num_ints;
 
+  /*
   BMXCellInteraction *interaction = BMXCellInteraction::instance();
   std::vector<Real> xpar_vec = interaction->getForceParams();
   Real *xpar = &xpar_vec[0];
+  */
+  BMXChemistry *bmxchem = BMXChemistry::instance();
+  std::vector<Real> chempar_vec;
+  bmxchem->getChemParams(chempar_vec);
+  Real *chempar = &chempar_vec[0];
 
   for (int lev = 0; lev <= finest_level; lev++)
   {
@@ -507,7 +513,9 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
     // the neighbour list with fresh data
 #if 1
       clearNeighbors();
-      Redistribute(0, 0, 0, 1);
+      //Redistribute(0, 0, 0, 1);
+      //Redistribute(0, finest_level, 0, 1);
+      Redistribute();
       fillNeighbors();
       // send in "false" for sort_neighbor_list option
 
@@ -558,7 +566,7 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
       // now we loop over the neighbor list and look for invalid connections
       int me = ParallelDescriptor::MyProc();
       amrex::ParallelFor(nrp,
-          [nrp,pstruct,nbor_data,xpar,ntot,me]
+          [nrp,pstruct,nbor_data,chempar,ntot,me]
           AMREX_GPU_DEVICE (int i) noexcept
           {
           auto& particle = pstruct[i];
@@ -581,8 +589,11 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
 
           RealVect diff(dist_x,dist_y,dist_z);
 
+          /*
           Real r_lm = maxInteractionDistance(&particle.rdata(0),&p2.rdata(0),
               &particle.idata(0),&p2.idata(0),xpar[0]);
+              */
+          Real r_lm = 1.5*chempar[9];
           AMREX_ASSERT_WITH_MESSAGE(
               not (particle.id() == p2.id() and
                 particle.cpu() == p2.cpu()),

@@ -14,7 +14,7 @@
  * defined in the realIdx and intIdx enumerations, plus the number of
  * variables in the undefined blocks */
 #define MAX_CHEM_REAL_VAR 33
-#define MAX_CHEM_INT_VAR 33
+#define MAX_CHEM_INT_VAR 34
 
 using amrex::Real;
 
@@ -107,10 +107,11 @@ struct intIdx
     dltd_id2,       // deleted id 2
     dltd_cpu1,      // deleted cpu 1                                             30
     dltd_cpu2,      // deleted cpu 2
+    fix_site,       // parameter to make sure that bonds fixed correctly
     id,             // unique identifier of segment
     cpu,            // original process of segment
-    first_data,     // index of first value of uncharacterized block
-    count           // total number of elements in this enumeration              35
+    first_data,     // index of first value of uncharacterized block             35
+    count           // total number of elements in this enumeration
   };
 };
 

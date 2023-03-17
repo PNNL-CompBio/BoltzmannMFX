@@ -17,7 +17,8 @@
  * @param p2 parameters describing particle 2
  * @param i1 integer parameters describing particle 1
  * @param i2 integer parameters describing particle 2
- * @return maximum interatction distance between particles 1 and 2
+ * @param bndry_width width of attractive region
+ * @return maximum interaction distance between particles 1 and 2
  */
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 Real 
@@ -33,7 +34,7 @@ maxInteractionDistance(const Real *p1, const Real *p2, const int *i1,
       i2[intIdx::cell_type] == cellType::FUNGI) {
     Real r1 = p1[realIdx::c_length];
     Real r2 = p2[realIdx::c_length];
-    return (r1+r2+bndry_width);
+    return (1.5*(r1+r2)+bndry_width);
   }
   return 0.0;
 }
@@ -415,16 +416,16 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           ipar2[intIdx::seg2_id1],ipar2[intIdx::seg2_id2],
           ipar2[intIdx::seg3_id1],ipar2[intIdx::seg3_id2],
           ipar2[intIdx::seg4_id1],ipar2[intIdx::seg4_id2]);
+      int ib0 = i_bnds;
+      // Probably from sidebranching
+      if (ipar1[intIdx::fix_site]==0) {
+        ipar1[intIdx::fix_site] = ipar1[intIdx::site1];
+      }
       if (i_bnds == 0) {
         ipar1[intIdx::seg1_id1] = jid;
         ipar1[intIdx::seg1_id2] = jcpu;
-        if (j_site[jidx] == 1) {
-          ipar1[intIdx::site1] = 2;
-          i_site[i_bnds] = 2;
-        } else {
-          ipar1[intIdx::site1] = 1;
-          i_site[i_bnds] = 1;
-        }
+        ipar1[intIdx::site1] = ipar1[intIdx::fix_site];
+        i_site[i_bnds] = ipar1[intIdx::fix_site];
         i_id[i_bnds] = jid;
         i_cpu[i_bnds] = jcpu;
         i_bnds++;
@@ -432,13 +433,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       } else if (i_bnds == 1) {
         ipar1[intIdx::seg2_id1] = jid;
         ipar1[intIdx::seg2_id2] = jcpu;
-        if (j_site[jidx] == 1) {
-          ipar1[intIdx::site2] = 2;
-          i_site[i_bnds] = 2;
-        } else {
-          ipar1[intIdx::site2] = 1;
-          i_site[i_bnds] = 1;
-        }
+        ipar1[intIdx::site2] = ipar1[intIdx::fix_site];
+        i_site[i_bnds] = ipar1[intIdx::fix_site];
         i_id[i_bnds] = jid;
         i_cpu[i_bnds] = jcpu;
         i_bnds++;
@@ -446,13 +442,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       } else if (i_bnds == 2) {
         ipar1[intIdx::seg3_id1] = jid;
         ipar1[intIdx::seg3_id2] = jcpu;
-        if (j_site[jidx] == 1) {
-          ipar1[intIdx::site3] = 2;
-          i_site[i_bnds] = 2;
-        } else {
-          ipar1[intIdx::site3] = 1;
-          i_site[i_bnds] = 1;
-        }
+        ipar1[intIdx::site3] = ipar1[intIdx::fix_site];
+        i_site[i_bnds] = ipar1[intIdx::fix_site];
         i_id[i_bnds] = jid;
         i_cpu[i_bnds] = jcpu;
         i_bnds++;
@@ -460,20 +451,15 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       } else if (i_bnds == 3) {
         ipar1[intIdx::seg4_id1] = jid;
         ipar1[intIdx::seg4_id2] = jcpu;
-        if (j_site[jidx] == 1) {
-          ipar1[intIdx::site4] = 2;
-          i_site[i_bnds] = 2;
-        } else {
-          ipar1[intIdx::site4] = 1;
-          i_site[i_bnds] = 1;
-        }
+        ipar1[intIdx::site4] = ipar1[intIdx::fix_site];
+        i_site[i_bnds] = ipar1[intIdx::fix_site];
         i_id[i_bnds] = jid;
         i_cpu[i_bnds] = jcpu;
         i_bnds++;
         ipar1[intIdx::n_bnds] = i_bnds;
       }
-      printf("FIXING up i id: %d cpu: %d attached to id: %d cpu: %d ipar: %p\n",
-          iid,icpu,jid,jcpu,ipar1);
+      printf("FIXING up i id: %d cpu: %d attached to id: %d cpu: %d ib: %d i_bnds: %d ipar: %p\n",
+          iid,icpu,jid,jcpu,ib0,i_bnds,ipar1);
     } else if (i_bonded_to_j && !j_bonded_to_i) {
       // i has registered j as a bonding partner but j
       // has not registered i as a bonding partner. Fix up j
@@ -491,16 +477,16 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           ipar2[intIdx::seg2_id1],ipar2[intIdx::seg2_id2],
           ipar2[intIdx::seg3_id1],ipar2[intIdx::seg3_id2],
           ipar2[intIdx::seg4_id1],ipar2[intIdx::seg4_id2]);
+      int jb0 = j_bnds;
+      // Probably from sidebranching
+      if (ipar2[intIdx::fix_site]==0) {
+        ipar2[intIdx::fix_site] = ipar2[intIdx::site1];
+      }
       if (j_bnds == 0) {
         ipar2[intIdx::seg1_id1] = iid;
         ipar2[intIdx::seg1_id2] = icpu;
-        if (j_site[iidx] == 1) {
-          ipar2[intIdx::site1] = 2;
-          j_site[j_bnds] = 2;
-        } else {
-          ipar2[intIdx::site1] = 1;
-          j_site[j_bnds] = 1;
-        }
+        ipar2[intIdx::site1] = ipar2[intIdx::fix_site];
+        j_site[j_bnds] = ipar2[intIdx::fix_site];
         j_id[j_bnds] = iid;
         j_cpu[j_bnds] = icpu;
         j_bnds++;
@@ -508,13 +494,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       } else if (j_bnds == 1) {
         ipar2[intIdx::seg2_id1] = iid;
         ipar2[intIdx::seg2_id2] = icpu;
-        if (j_site[iidx] == 1) {
-          ipar2[intIdx::site2] = 2;
-          j_site[j_bnds] = 2;
-        } else {
-          ipar2[intIdx::site2] = 1;
-          j_site[j_bnds] = 1;
-        }
+        ipar2[intIdx::site2] = ipar2[intIdx::fix_site];
+        j_site[j_bnds] = ipar2[intIdx::fix_site];
         j_id[j_bnds] = iid;
         j_cpu[j_bnds] = icpu;
         j_bnds++;
@@ -522,13 +503,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       } else if (j_bnds == 2) {
         ipar2[intIdx::seg3_id1] = iid;
         ipar2[intIdx::seg3_id2] = icpu;
-        if (j_site[iidx] == 1) {
-          ipar2[intIdx::site3] = 2;
-          j_site[j_bnds] = 2;
-        } else {
-          ipar2[intIdx::site3] = 1;
-          j_site[j_bnds] = 1;
-        }
+        ipar2[intIdx::site3] = ipar2[intIdx::fix_site];
+        j_site[j_bnds] = ipar2[intIdx::fix_site];
         j_id[j_bnds] = iid;
         j_cpu[j_bnds] = icpu;
         j_bnds++;
@@ -536,21 +512,17 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       } else if (j_bnds == 3) {
         ipar2[intIdx::seg4_id1] = iid;
         ipar2[intIdx::seg4_id2] = icpu;
-        if (j_site[iidx] == 1) {
-          ipar2[intIdx::site4] = 2;
-          j_site[j_bnds] = 2;
-        } else {
-          ipar2[intIdx::site4] = 1;
-          j_site[j_bnds] = 1;
-        }
+        ipar2[intIdx::site4] = ipar2[intIdx::fix_site];
+        j_site[j_bnds] = ipar2[intIdx::fix_site];
         j_id[j_bnds] = iid;
         j_cpu[j_bnds] = icpu;
         j_bnds++;
         ipar2[intIdx::n_bnds] = j_bnds;
       }
-      printf("FIXING up j id: %d cpu: %d attached to id: %d cpu: %d jpar: %p\n",
-          jid,jcpu,iid,icpu,ipar2);
+      printf("FIXING up j id: %d cpu: %d attached to id: %d cpu: %d jb: %d j_bnds: %d jpar: %p\n",
+          jid,jcpu,iid,icpu,jb0,j_bnds,ipar2);
     }
+    ipar1[intIdx::fix_site] = 0;
 #endif
 //    printf("p[%d] ID: %d CPU: %d I_ID: %d %d %d I_CPU: %d %d %d\n",
 //        me,iid,icpu,i_id[0],i_id[1],i_id[2],i_cpu[0],
@@ -741,7 +713,6 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         } // if (r<bond_cutoff)  ...
       } // if ((i_site[i] == 2 && j_site[j] == 2 && !bonded)) ...
     } // if (i<i_bnds && j_bnds) ...
-#if 1
     // Evaluate interactions between cylinders. Only calculate these
     // interactions if cylinders are not bonded.
     if (!bonded) {
@@ -757,172 +728,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       rho_j[0] = xj2-xj1;
       rho_j[1] = yj2-yj1;
       rho_j[2] = zj2-zj1;
-#if 0
-      Real rirj = 0.0;
-//    Real rtest = sqrt(r12[0]*r12[0]+r12[1]*r12[1]+r12[2]*r12[0]);
-//    if (rtest > 0.003) {
-//      printf("p[%d] INTERACTION PAIR IID: %d ICPU: %d JID: %d JCPU: %d\n",
-//          me,iid,icpu,jid,jcpu);
-//      printf("p[%d] SEP RX: %e RY: %e RZ: %e R: %e RA: %e\n",me,r12[0],r12[1],r12[2],
-//          rtest,rA);
-//    }
-
-      for (int ii=0; ii<3; ii++) {
-          rirj += rho_i[ii]*rho_j[ii];
-      } // ii
-
-      // Find tau_i and tau_j corresponding to minimum distance between
-      // cylinder segments
-      Real Aii = rho_i[0]*rho_i[0]+rho_i[1]*rho_i[1]+rho_i[2]*rho_i[2];
-      Real Aij = -rirj;
-      Real Aji = Aij;
-      Real Ajj = rho_j[0]*rho_j[0]+rho_j[1]*rho_j[1]+rho_j[2]*rho_j[2];
-      Real det = Aii*Ajj-Aij*Aji;
-      Real Bi = -((xi1-xj1)*rho_i[0]+(yi1-yj1)*rho_i[1]+(zi1-zj1)*rho_i[2]);
-      Real Bj = (xi1-xj1)*rho_j[0]+(yi1-yj1)*rho_j[1]+(zi1-zj1)*rho_j[2];
-      // First two cases are unlikely
-      bool search = false;
-      if (Aij == 0.0) {
-        // segments are perpendicular to each other
-        tau_i = Bi/Aii; 
-        tau_j = Bj/Ajj; 
-      } else if (det == 0.0) {
-        // segments are parallel to each other. Try setting tau_i to 0 and 1
-        // tau_i = 0.0;
-        Real tau_j0 = Bj/Ajj;
-        if (tau_j0 >= 0.0 && tau_j0 <= 1.0) {
-          tau_i = 0.0;
-          tau_j = tau_j0;
-        } else {
-          // tau_i = 1.0;
-          Real tau_j1 = (Bj+rirj)/Ajj;
-          if (tau_j1 >= 0.0 && tau_j1 <= 1.0) {
-            tau_i = 1.0;
-            tau_j = tau_j1;
-          } else {
-            // Check all four combinations of endpoints
-            search = true;
-          }
-        }
-      } else {
-        // Find minimum distance ignoring constraints
-        tau_i = (Ajj*Bi-Aij*Bj)/det;
-        tau_j = (Aii*Bj-Aji*Bi)/det;
-        if (tau_i >= 0.0 && tau_i <= 1.0) {
-          // tau_i satisfies constraints. Check tau_j
-          if (tau_j < 0.0 ||  tau_j > 1.0) {
-            // tau_j is outside limits, Need to try tau_j = 0.0 and
-            // tau_j = 1.0 and find minimum separation
-            Real tau_i0 = Bi/Aii;
-            Real tau_i1 = (Bi+rirj)/Aii;
-            if (tau_i0 >= 0.0 && tau_i0 <= 1.0 && tau_i1 >= 0.0 && tau_i1 <= 1.0) {
-              // both new values of tau_i are within limits. Compare distances
-              Real rix = xi1 + tau_i0*rho_i[0];
-              Real riy = yi1 + tau_i0*rho_i[1];
-              Real riz = zi1 + tau_i0*rho_i[2];
-              Real sep0 = (rix-xj1)*(rix-xj1)+(riy-yj1)*(riy-yj1)
-                +(riz-zj1)*(riz-zj1);
-              rix = xi1 + tau_i1*rho_i[0];
-              riy = yi1 + tau_i1*rho_i[1];
-              riz = zi1 + tau_i1*rho_i[2];
-              Real sep1 = (rix-xj2)*(rix-xj2)+(riy-yj2)*(riy-yj2)
-                +(riz-zj2)*(riz-zj2);
-              if (sep0 < sep1) {
-                tau_j = 0.0;
-                tau_i = tau_i0;
-              } else {
-                tau_j = 1.0;
-                tau_i = tau_i1;
-              }
-            } else if (tau_i0 >= 0.0 && tau_i0 <= 1.0) {
-              // only tau_i0 is within bounds
-              tau_j = 0.0;
-              tau_i = tau_i0;
-            } else if (tau_i1 >= 0.0 && tau_i1 <= 1.0) {
-              // only tau_i1 is within bounds
-              tau_j = 1.0;
-              tau_i = tau_i1;
-            } else {
-              // Neither solution is within bounds
-              search = true;
-            }
-          }
-        } else if (tau_j >= 0.0 && tau_j <= 1.0) {
-          // already know that tao_i is out of bounds
-          Real tau_j0 = Bj/Ajj;
-          Real tau_j1 = (Bj+rirj)/Ajj;
-          if (tau_j0 >= 0.0 && tau_j0 <= 1.0 && tau_j1 >= 0.0 && tau_j1 <= 1.0) {
-            // both new values of tau_j are within limits. Compare distances
-            Real rjx = xj1 + tau_j0*rho_j[0];
-            Real rjy = yj1 + tau_j0*rho_j[1];
-            Real rjz = zj1 + tau_j0*rho_j[2];
-            Real sep0 = (rjx-xi1)*(rjx-xi1)+(rjy-yi1)*(rjy-yi1)+(rjz-zi1)*(rjz-zi1);
-            rjx = xj1 + tau_j1*rho_j[0];
-            rjy = yj1 + tau_j1*rho_j[1];
-            rjz = zj1 + tau_j1*rho_j[2];
-            Real sep1 = (rjx-xi2)*(rjx-xi2)+(rjy-yi2)*(rjy-yi2)+(rjz-zi2)*(rjz-zi2);
-            if (sep0 < sep1) {
-              tau_i = 0.0;
-              tau_j = tau_j0;
-            } else {
-              tau_i = 1.0;
-              tau_j = tau_j1;
-            }
-          } else if (tau_j0 >= 0.0 && tau_j0 <= 1.0) {
-            // only tau_j0 is within bounds
-            tau_i = 0.0;
-            tau_j = tau_j0;
-          } else if (tau_j1 >= 0.0 && tau_j1 <= 1.0) {
-            // only tau_j1 is within bounds
-            tau_i = 1.0;
-            tau_j = tau_j1;
-          } else {
-            // Neither solution is within bounds
-            search = true;
-          }
-        } else {
-          // if we reach this point, both tau_i and tau_j are outside
-          // the constraints. Try all four end points for minimum distance
-          search = true;
-        }
-      }
-      if (search) {
-        // try all four endpoints to find minimum distance
-        Real min0 = (xi1-xj1)*(xi1-xj1)+(yi1-yj1)*(yi1-yj1)+(zi1-zj1)*(zi1-zj1);
-        Real min1 = (xi1-xj2)*(xi1-xj2)+(yi1-yj2)*(yi1-yj2)+(zi1-zj2)*(zi1-zj2);
-        Real min2 = (xi2-xj1)*(xi2-xj1)+(yi2-yj1)*(yi2-yj1)+(zi2-zj1)*(zi2-zj1);
-        Real min3 = (xi2-xj2)*(xi2-xj2)+(yi2-yj2)*(yi2-yj2)+(zi2-zj2)*(zi2-zj2);
-        int imin = 0;
-        Real min = min0;
-        if (min1 < min) {
-          imin = 1;
-          min = min1;
-        }
-        if (min2 < min) {
-          imin = 2;
-          min = min2;
-        }
-        if (min3 < min) {
-          imin = 3;
-          min = min3;
-        }
-        if (imin == 0) {
-          tau_i = 0.0;
-          tau_j = 0.0;
-        } else if (imin == 1) {
-          tau_i = 0.0;
-          tau_j = 1.0;
-        } else if (imin == 2) {
-          tau_i = 1.0;
-          tau_j = 0.0;
-        } else if (imin == 3) {
-          tau_i = 1.0;
-          tau_j = 1.0;
-        }
-      }
-#endif
-      // Evaluate minimum distance and calculate forces. Then
-      // distribute forces to individual sites
+      // Evaluate forces and distribute forces to individual sites
       Real ri[3], rj[3];
       ri[0] = xi1 + tau_i*rho_i[0];
       ri[1] = yi1 + tau_i*rho_i[1];
@@ -934,24 +740,32 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       ry = ri[1] - rj[1];
       rz = ri[2] - rj[2];
       r = sqrt(rx*rx+ry*ry+rz*rz);
-//      if (rtest > 0.003) {
-//      printf("p[%d] rx: %e ry: %e rz: %e r: %e tau_i: %f tau_j: %f\n",
-//          me,rx,ry,rz,r,tau_i,tau_j);
-//      }
       if (r > 1.0e-8) {
         rx /= r;
         ry /= r;
         rz /= r;
       } else {
-        /* Segments intersect. Find an appropriate separation vector */
-        Real Ri = std::sqrt(rho_i[0]*rho_i[0] + rho_i[1]*rho_i[1] + rho_i[2]*rho_i[2]);
-        Real Rj = std::sqrt(rho_j[0]*rho_j[0] + rho_j[1]*rho_j[1] + rho_j[2]*rho_j[2]);
+        /* Segments intersect (this is a corner case). Find an
+         * appropriate separation vector */
+        Real Ri = std::sqrt(rho_i[0]*rho_i[0] + rho_i[1]*rho_i[1]
+            + rho_i[2]*rho_i[2]);
+        Real Rj = std::sqrt(rho_j[0]*rho_j[0] + rho_j[1]*rho_j[1]
+            + rho_j[2]*rho_j[2]);
 
         for (int ii=0; ii<3; ii++) {
           rho_i[ii] /= Ri;
           rho_j[ii] /= Rj;
         }
 
+        /* Take cross product of vectors and multiply it by 1.0e-8 */
+        Real rx = rho_i[1]*rho_j[2]-rho_i[2]*rho_j[1];
+        Real ry = rho_i[2]*rho_j[0]-rho_i[0]*rho_j[2];
+        Real rz = rho_i[0]*rho_j[1]-rho_i[1]*rho_j[0];
+        rx *= 1.0e-08;
+        ry *= 1.0e-08;
+        rz *= 1.0e-08;
+
+        /*
         Real rdot = rho_i[0]*rho_j[0] + rho_i[1]*rho_j[1] + rho_i[2]*rho_j[2];
         if (rdot < 0.0) {
           for (int ii=0; ii<3; ii++) {
@@ -965,6 +779,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         rx *= inv_rn;
         ry *= inv_rn;
         rz *= inv_rn;
+        */
       }
 
       Real F;
@@ -973,10 +788,6 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       } else {
         F = 0.0;
       }
-//      if (F!= 0.0) {
-//      printf("p[%d] F: %e r: %e tau_i: %f tau_j: %f rA: %f rS: %f stiff: %f\n",
-//          me,F,r,tau_i,tau_j,rA,rS,stiffness);
-//      }
       if (F != 0.0) {
         f1_s1[0] += F*rx*(1.0-tau_i);
         f1_s1[1] += F*ry*(1.0-tau_i);
@@ -991,18 +802,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         f2_s2[1] -= F*ry*tau_j;
         f2_s2[2] -= F*rz*tau_j;
       }
-//      printf("fi1x: %e fi1y: %e fi1z: %e fi2x: %e fi2y: %e fi2z: %e\n",
-//          f1_s1[0],f1_s1[1],f1_s1[2],f1_s2[0],f1_s2[1],f1_s1[2]);
-//      printf("fj1x: %e fj1y: %e fj1z: %e fj2x: %e fj2y: %e fj2z: %e\n",
-//          f2_s1[0],f2_s1[1],f2_s1[2],f2_s2[0],f2_s2[1],f2_s1[2]);
     }
-    /*
-    else {
-      printf("BONDED PAIR IID: %d ICPU: %d JID: %d JCPU: %d\n",
-          iid,icpu,jid,jcpu);
-    }
-    */
-#endif
 
     // Subtract out the part of force that is moving sites together
     // and evaluate velocity of CM and rotational velocity
@@ -1010,7 +810,6 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     Real ry_i = yi1-yi2;
     Real rz_i = zi1-zi2;
     r = sqrt(rx_i*rx_i+ry_i*ry_i+rz_i*rz_i);
-//    printf("rx_i: %f ry_i: %f rz_i: %f r: %f\n",rx_i,ry_i,rz_i,r);
     nx = rx_i/r;
     ny = ry_i/r;
     nz = rz_i/r;
@@ -1024,14 +823,11 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     f1_s2[0] += 0.5*fn*nx;
     f1_s2[1] += 0.5*fn*ny;
     f1_s2[2] += 0.5*fn*nz;
-//    printf("SEGI bond_strength: %f f1x: %e f1y: %e f1z: %e f2x: %e f2y: %e f2z: %e\n",
-//      bond_strength,f1_s1[0],f1_s1[1],f1_s1[2],f1_s2[0],f1_s2[1],f1_s2[2]);
 
     Real rx_j = xj1-xj2;
     Real ry_j = yj1-yj2;
     Real rz_j = zj1-zj2;
     r = sqrt(rx_j*rx_j+ry_j*ry_j+rz_j*rz_j);
-//    printf("rx_j: %f ry_j: %f rz_j: %f r: %f\n",rx_j,ry_j,rz_j,r);
     nx = rx_j/r;
     ny = ry_j/r;
     nz = rz_j/r;
@@ -1045,8 +841,6 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     f2_s2[0] += 0.5*fn*nx;
     f2_s2[1] += 0.5*fn*ny;
     f2_s2[2] += 0.5*fn*nz;
-//    printf("SEGJ bond_strength: %f f1x: %e f1y: %e f1z: %e f2x: %e f2y: %e f2z: %e\n",
-//	bond_strength,f2_s1[0],f2_s1[1],f2_s1[2],f2_s2[0],f2_s2[1],f2_s2[2]);
 
 #if 1
     // Calculate friction tensor for segment i. Start by calculating
@@ -1068,23 +862,16 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       }
     }
     if (c_length1 > 2.0*arad) {
-      dij[0][0] = (c_length1*c_length1-2.0*arad*arad/3.0)/(4.0*M_PI*pow(c_length1,3)*visc);
-      dij[1][1] = (c_length1*c_length1+2.0*arad*arad/3.0)/(8.0*M_PI*pow(c_length1,3)*visc);
+      dij[0][0] = (c_length1*c_length1-2.0*arad*arad/3.0)
+        /(4.0*M_PI*pow(c_length1,3)*visc);
+      dij[1][1] = (c_length1*c_length1+2.0*arad*arad/3.0)
+        /(8.0*M_PI*pow(c_length1,3)*visc);
       dij[2][2] = dij[1][1];
     } else {
       dij[0][0] = (1.0-3.0*c_length1/(16.0*arad))/(6.0*M_PI*arad*visc);
       dij[1][1] = (1.0-9.0*c_length1/(32.0*arad))/(6.0*M_PI*arad*visc);
       dij[2][2] = dij[1][1];
     }
-#if 0
-    printf("(1) Dii11: %e Dii12: %e Dii13: %e\n",dii[0][0],dii[0][1],dii[0][2]);
-    printf("(1) Dii21: %e Dii22: %e Dii23: %e\n",dii[1][0],dii[1][1],dii[1][2]);
-    printf("(1) Dii31: %e Dii32: %e Dii33: %e\n",dii[2][0],dii[2][1],dii[2][2]);
-    printf("\n");
-    printf("(1) Dij11: %e Dij12: %e Dij13: %e\n",dij[0][0],dij[0][1],dij[0][2]);
-    printf("(1) Dij21: %e Dij22: %e Dij23: %e\n",dij[1][0],dij[1][1],dij[1][2]);
-    printf("(1) Dij31: %e Dij32: %e Dij33: %e\n",dij[2][0],dij[2][1],dij[2][2]);
-#endif
 
     // Reorient dii and dij so that it reflects the correct direction (dii is
     // diagonal but not proportional to the identity, so changes under rotation).
@@ -1156,24 +943,16 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       } // jj
     } // ii
     if (c_length2 > 2.0*arad) {
-      dij[0][0] = (c_length2*c_length2-2.0*arad*arad/3.0)/(4.0*M_PI*pow(c_length2,3)*visc);
-      dij[1][1] = (c_length2*c_length2+2.0*arad*arad/3.0)/(8.0*M_PI*pow(c_length2,3)*visc);
+      dij[0][0] = (c_length2*c_length2-2.0*arad*arad/3.0)
+        /(4.0*M_PI*pow(c_length2,3)*visc);
+      dij[1][1] = (c_length2*c_length2+2.0*arad*arad/3.0)
+        /(8.0*M_PI*pow(c_length2,3)*visc);
       dij[2][2] = dij[1][1];
     } else {
       dij[0][0] = (1.0-3.0*c_length2/(16.0*arad))/(6.0*M_PI*arad*visc);
       dij[1][1] = (1.0-9.0*c_length2/(32.0*arad))/(6.0*M_PI*arad*visc);
       dij[2][2] = dij[1][1];
     }
-#if 0
-    printf("\n");
-    printf("(2) Dii11: %e Dii12: %e Dii13: %e\n",dii[0][0],dii[0][1],dii[0][2]);
-    printf("(2) Dii21: %e Dii22: %e Dii23: %e\n",dii[1][0],dii[1][1],dii[1][2]);
-    printf("(2) Dii31: %e Dii32: %e Dii33: %e\n",dii[2][0],dii[2][1],dii[2][2]);
-    printf("\n");
-    printf("(2) Dij11: %e Dij12: %e Dij13: %e\n",dij[0][0],dij[0][1],dij[0][2]);
-    printf("(2) Dij21: %e Dij22: %e Dij23: %e\n",dij[1][0],dij[1][1],dij[1][2]);
-    printf("(2) Dij31: %e Dij32: %e Dij33: %e\n",dij[2][0],dij[2][1],dij[2][2]);
-#endif
     // Reorient dii and dij so that it reflects the correct direction (dii is
     // diagonal but not proportional to the identity, so changes under rotation).
     // Note the transpose of the rotation is equal to its inverse
