@@ -417,15 +417,23 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           ipar2[intIdx::seg3_id1],ipar2[intIdx::seg3_id2],
           ipar2[intIdx::seg4_id1],ipar2[intIdx::seg4_id2]);
       int ib0 = i_bnds;
-      // Probably from sidebranching
+      // Figure out where which site to add new bond
+      int isite;
       if (ipar1[intIdx::fix_site]==0) {
-        ipar1[intIdx::fix_site] = ipar1[intIdx::site1];
+        if (ipar1[intIdx::site1] = 1) {
+          isite = 2;
+        } else {
+          isite = 1;
+        }
+      } else {
+        isite = ipar1[intIdx::fix_site];
       }
+
       if (i_bnds == 0) {
         ipar1[intIdx::seg1_id1] = jid;
         ipar1[intIdx::seg1_id2] = jcpu;
-        ipar1[intIdx::site1] = ipar1[intIdx::fix_site];
-        i_site[i_bnds] = ipar1[intIdx::fix_site];
+        ipar1[intIdx::site1] = isite;
+        i_site[i_bnds] = isite;
         i_id[i_bnds] = jid;
         i_cpu[i_bnds] = jcpu;
         i_bnds++;
@@ -433,8 +441,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       } else if (i_bnds == 1) {
         ipar1[intIdx::seg2_id1] = jid;
         ipar1[intIdx::seg2_id2] = jcpu;
-        ipar1[intIdx::site2] = ipar1[intIdx::fix_site];
-        i_site[i_bnds] = ipar1[intIdx::fix_site];
+        ipar1[intIdx::site2] = isite;
+        i_site[i_bnds] = isite;
         i_id[i_bnds] = jid;
         i_cpu[i_bnds] = jcpu;
         i_bnds++;
@@ -442,8 +450,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       } else if (i_bnds == 2) {
         ipar1[intIdx::seg3_id1] = jid;
         ipar1[intIdx::seg3_id2] = jcpu;
-        ipar1[intIdx::site3] = ipar1[intIdx::fix_site];
-        i_site[i_bnds] = ipar1[intIdx::fix_site];
+        ipar1[intIdx::site3] = isite;
+        i_site[i_bnds] = isite;
         i_id[i_bnds] = jid;
         i_cpu[i_bnds] = jcpu;
         i_bnds++;
@@ -451,8 +459,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       } else if (i_bnds == 3) {
         ipar1[intIdx::seg4_id1] = jid;
         ipar1[intIdx::seg4_id2] = jcpu;
-        ipar1[intIdx::site4] = ipar1[intIdx::fix_site];
-        i_site[i_bnds] = ipar1[intIdx::fix_site];
+        ipar1[intIdx::site4] = isite;
+        i_site[i_bnds] = isite;
         i_id[i_bnds] = jid;
         i_cpu[i_bnds] = jcpu;
         i_bnds++;
@@ -478,15 +486,22 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           ipar2[intIdx::seg3_id1],ipar2[intIdx::seg3_id2],
           ipar2[intIdx::seg4_id1],ipar2[intIdx::seg4_id2]);
       int jb0 = j_bnds;
-      // Probably from sidebranching
+      // Figure out where which site to add new bond
+      int jsite;
       if (ipar2[intIdx::fix_site]==0) {
-        ipar2[intIdx::fix_site] = ipar2[intIdx::site1];
+        if (ipar2[intIdx::site1] = 1) {
+          jsite = 2;
+        } else {
+          jsite = 1;
+        }
+      } else {
+        jsite = ipar2[intIdx::fix_site];
       }
       if (j_bnds == 0) {
         ipar2[intIdx::seg1_id1] = iid;
         ipar2[intIdx::seg1_id2] = icpu;
-        ipar2[intIdx::site1] = ipar2[intIdx::fix_site];
-        j_site[j_bnds] = ipar2[intIdx::fix_site];
+        ipar2[intIdx::site1] = jsite;
+        j_site[j_bnds] = jsite;
         j_id[j_bnds] = iid;
         j_cpu[j_bnds] = icpu;
         j_bnds++;
@@ -494,8 +509,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       } else if (j_bnds == 1) {
         ipar2[intIdx::seg2_id1] = iid;
         ipar2[intIdx::seg2_id2] = icpu;
-        ipar2[intIdx::site2] = ipar2[intIdx::fix_site];
-        j_site[j_bnds] = ipar2[intIdx::fix_site];
+        ipar2[intIdx::site2] = jsite;
+        j_site[j_bnds] = jsite;
         j_id[j_bnds] = iid;
         j_cpu[j_bnds] = icpu;
         j_bnds++;
@@ -503,8 +518,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       } else if (j_bnds == 2) {
         ipar2[intIdx::seg3_id1] = iid;
         ipar2[intIdx::seg3_id2] = icpu;
-        ipar2[intIdx::site3] = ipar2[intIdx::fix_site];
-        j_site[j_bnds] = ipar2[intIdx::fix_site];
+        ipar2[intIdx::site3] = jsite;
+        j_site[j_bnds] = jsite;
         j_id[j_bnds] = iid;
         j_cpu[j_bnds] = icpu;
         j_bnds++;
@@ -512,8 +527,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       } else if (j_bnds == 3) {
         ipar2[intIdx::seg4_id1] = iid;
         ipar2[intIdx::seg4_id2] = icpu;
-        ipar2[intIdx::site4] = ipar2[intIdx::fix_site];
-        j_site[j_bnds] = ipar2[intIdx::fix_site];
+        ipar2[intIdx::site4] = jsite;
+        j_site[j_bnds] = jsite;
         j_id[j_bnds] = iid;
         j_cpu[j_bnds] = icpu;
         j_bnds++;

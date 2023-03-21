@@ -224,11 +224,14 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                           RealVect rot2(0.);
 
                           if (p2.idata(intIdx::fuse_flag) != 0) {
-                            printf("p[%d] Found FUSING particle j in force loop id: %d cpu: %d\n",
+                            printf("p[%d] Found FUSING particle j in force"
+                                " loop id: %d cpu: %d\n",
                                 me,p2.idata(intIdx::id),p2.idata(intIdx::cpu));
                           }
-                          evaluateForce(&diff[0],&particle.rdata(0),&p2.rdata(0), &particle.idata(0),
-                                        &p2.idata(0), &v1[0], &v2[0], &rot1[0], &rot2[0], fpar, me, i, j, n);
+                          evaluateForce(&diff[0],&particle.rdata(0),
+                              &p2.rdata(0), &particle.idata(0),
+                              &p2.idata(0), &v1[0], &v2[0], &rot1[0],
+                              &rot2[0], fpar, me, i, j, n);
 
 //                          printf("w1x: %e w1y: %e w1z: %e w2x: %e w2y: %e w2z: %e\n",
 //                              rot1[0],rot1[1],rot1[2],rot2[0],rot2[1],rot2[2]);
@@ -265,7 +268,8 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                   } // end of neighbor loop
                   RealVect vcom(0.);
                   RealVect vrot(0.);
-                  evaluateSurfaceForce(&pos1[0],&particle.rdata(0),&particle.idata(0),&vcom[0],&vrot[0],fpar);
+                  evaluateSurfaceForce(&pos1[0],&particle.rdata(0),
+                      &particle.idata(0),&vcom[0],&vrot[0],fpar);
                   amrex::Gpu::Atomic::Add(&fc_ptr[i         ], vcom[0]);
                   amrex::Gpu::Atomic::Add(&fc_ptr[i + ntot  ], vcom[1]);
                   amrex::Gpu::Atomic::Add(&fc_ptr[i + 2*ntot], vcom[2]);

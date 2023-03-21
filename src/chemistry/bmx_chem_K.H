@@ -1118,6 +1118,13 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     ipar_new[intIdx::seg4_id2] = n_cpu[1];
   }
   ipar_new[intIdx::n_bnds] = new_bnds;
+  printf("NEW SEG id: %d cpu: %d n: %d site1: %d id1: %d cpu1: %d site2: %d"
+      " id2: %d cpu2: %d site3: %d id3: %d cpu3: %d site4: %d"
+      " id4: %d cpu4: %d\n",id,cpu,new_bnds,
+      ipar_new[intIdx::site1],ipar_new[intIdx::seg1_id1],ipar_new[intIdx::seg1_id2],
+      ipar_new[intIdx::site2],ipar_new[intIdx::seg2_id1],ipar_new[intIdx::seg2_id2],
+      ipar_new[intIdx::site3],ipar_new[intIdx::seg3_id1],ipar_new[intIdx::seg3_id2],
+      ipar_new[intIdx::site4],ipar_new[intIdx::seg4_id1],ipar_new[intIdx::seg4_id2]);
   // Find segments bonded to site 1 on old segment
   new_bnds = 0;
   for (i=0; i<old_bnds; i++) {
@@ -1128,6 +1135,13 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       if (new_bnds == 2) break;
     }
   }
+  printf("OLD SEG BEFORE id: %d cpu: %d n: %d site1: %d id1: %d cpu1: %d site2: %d"
+      " id2: %d cpu2: %d site3: %d id3: %d cpu3: %d site4: %d"
+      " id4: %d cpu4: %d\n",ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],ipar_orig[intIdx::n_bnds],
+      ipar_orig[intIdx::site1],ipar_orig[intIdx::seg1_id1],ipar_orig[intIdx::seg1_id2],
+      ipar_orig[intIdx::site2],ipar_orig[intIdx::seg2_id1],ipar_orig[intIdx::seg2_id2],
+      ipar_orig[intIdx::site3],ipar_orig[intIdx::seg3_id1],ipar_orig[intIdx::seg3_id2],
+      ipar_orig[intIdx::site4],ipar_orig[intIdx::seg4_id1],ipar_orig[intIdx::seg4_id2]);
   ipar_orig[intIdx::site1] = 1;
   ipar_orig[intIdx::seg1_id1] = n_id[0];
   ipar_orig[intIdx::seg1_id2] = n_cpu[0];
@@ -1153,6 +1167,13 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     ipar_orig[intIdx::seg4_id1] = ipar_orig[intIdx::fuse_id];
     ipar_orig[intIdx::seg4_id2] = ipar_orig[intIdx::fuse_cpu];
   }
+  printf("OLD SEG AFTER id: %d cpu: %d n: %d site1: %d id1: %d cpu1: %d site2: %d"
+      " id2: %d cpu2: %d site3: %d id3: %d cpu3: %d site4: %d"
+      " id4: %d cpu4: %d\n",ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],ipar_orig[intIdx::n_bnds],
+      ipar_orig[intIdx::site1],ipar_orig[intIdx::seg1_id1],ipar_orig[intIdx::seg1_id2],
+      ipar_orig[intIdx::site2],ipar_orig[intIdx::seg2_id1],ipar_orig[intIdx::seg2_id2],
+      ipar_orig[intIdx::site3],ipar_orig[intIdx::seg3_id1],ipar_orig[intIdx::seg3_id2],
+      ipar_orig[intIdx::site4],ipar_orig[intIdx::seg4_id1],ipar_orig[intIdx::seg4_id2]);
   par_orig[realIdx::c_length] = tau_split*c_length;
   par_new[realIdx::c_length] = (1.0-tau_split)*c_length;
   ipar_orig[intIdx::position] = siteLocation::INTERIOR;
@@ -1180,7 +1201,7 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
   ipar_new[intIdx::dltd_id2] = -1;
   ipar_new[intIdx::dltd_cpu1] = -1;
   ipar_new[intIdx::dltd_cpu2] = -1;
-  ipar_new[intIdx::fix_site] = 0;
+  ipar_new[intIdx::fix_site] = 2;
   ipar_new[intIdx::new_flag] = 1;
 
   // Recalculate area and volume
@@ -1259,6 +1280,7 @@ void cleanupFusionBond(int *ipar , int *jpar, int me)
             jpar[intIdx::dltd_id2],jpar[intIdx::dltd_cpu2]);
         // Check further to see if a bond to this segment was deleted from
         // segment j
+        int site = 0;
         if ((jpar[intIdx::dltd_id1] == i_id && jpar[intIdx::dltd_cpu1] == i_cpu) ||
             (jpar[intIdx::dltd_id2] == i_id && jpar[intIdx::dltd_cpu2] == i_cpu)) {
           // This is a leftover bond from before the split. Remove it.
@@ -1266,27 +1288,31 @@ void cleanupFusionBond(int *ipar , int *jpar, int me)
               " id: %d cpu: %d ipar: %p\n",idx+1,
               ipar[intIdx::id],ipar[intIdx::cpu],jpar[intIdx::id],
               jpar[intIdx::cpu],ipar);
-          ipar[intIdx::fix_site] = isite[idx];
           if (idx < 1) {
+            if (site == 0) site = ipar[intIdx::site1];
             ipar[intIdx::seg1_id1] = ipar[intIdx::seg2_id1];
             ipar[intIdx::seg1_id2] = ipar[intIdx::seg2_id2];
             ipar[intIdx::site1] = ipar[intIdx::site2];
           }
           if (idx < 2) {
+            if (site == 0) site = ipar[intIdx::site2];
             ipar[intIdx::seg2_id1] = ipar[intIdx::seg3_id1];
             ipar[intIdx::seg2_id2] = ipar[intIdx::seg3_id2];
             ipar[intIdx::site2] = ipar[intIdx::site3];
           }
           if (idx < 3) {
+            if (site == 0) site = ipar[intIdx::site3];
             ipar[intIdx::seg3_id1] = ipar[intIdx::seg4_id1];
             ipar[intIdx::seg3_id2] = ipar[intIdx::seg4_id2];
             ipar[intIdx::site3] = ipar[intIdx::site4];
           }
+          if (site == 0) site = ipar[intIdx::site4];
           ipar[intIdx::seg4_id1] = 0;
           ipar[intIdx::seg4_id2] = 0;
           ipar[intIdx::site4] = 0;
           i_bnds--;
           ipar[intIdx::n_bnds] = i_bnds;
+          ipar[intIdx::fix_site] = site;
           printf("post REMOVE bond id: %d cpu: %d n_bnds: %d"
               " id1: %d cpu1: %d id2: %d cpu2: %d"
               " id3: %d cpu3: %d id4: %d cpu4: %d\n",
