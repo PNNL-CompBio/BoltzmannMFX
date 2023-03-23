@@ -1363,6 +1363,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
   length_max = chempar[9];
   // check to see if particle can grow. Set growth rates to zero
   // if it cannot
+#if 0
   if (cell_type == cellType::FUNGI) {
     if (cell_ipar[intIdx::position] != siteLocation::TIP) {
       if ((cell_par[realIdx::radius] >= radius_max &&
@@ -1373,6 +1374,15 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
       }
     }
   }
+#else
+  if (cell_type == cellType::FUNGI) {
+    if (cell_par[realIdx::radius] >= radius_max &&
+        cell_par[realIdx::c_length] >= length_max) {
+      kg = 0.0;
+      kv = 0.0;
+    }
+  }
+#endif
 #if 0
   // Stop growth on interior segments that are maximum sized
   if (cell_par[realIdx::c_length] == length_max &&
