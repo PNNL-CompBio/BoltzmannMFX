@@ -537,7 +537,7 @@ defined by $g_y(\yvec)=0$.
 \section{Two-Site Model for Filament Segment}
 A two-site model designed to represent a segment of filamentous fungi consists
 of two spheres that are held at a fixed distance apart and are chosen to represent
-the hydrodynamic drag on the on the segment as forces from other segments push
+the hydrodynamic drag on the segment as forces from other segments push
 it around. Each sphere is subject to a force, $\fvec_1$, $\fvec_2$, resulting in
 a translational and rotational motion of the segment. For freely interacting
 spheres, with no rigid constraints, the motion of the spheres can be described
@@ -671,7 +671,7 @@ elements are continuous at the contact value of $h=2a$. This formula can be used
 calculate the diffusion tensor in the frame of reference where the cylinder is located
 along the $x$ axis and then the tensor can be rotated back to the actual orientation.
 
-The only remaining detail
+A remaining detail
 is to choose a relation between the radius $a$ of the two particles representing
 the ends of the segment, the separation distance $h$ between the particles and
 the dimensions of the cylinder representing the fungi segment. For these simulations
@@ -728,6 +728,11 @@ of $\omvec$ are given by
 \omega_y & = & -v'_z/h \\
 \omega_z & = & v'_y/h
 \end{eqnarray*}
+Equivalently, $\omega$ can be computed from that rotated angular momentum $\Lvec'$ using
+\begin{eqnarray*}
+\omega_x & = & 2L_x'/h^2 \\
+\omega_y & = & 2L_y'/h^2 \\
+\end{eqnarray*}
 
 These equations have all relied on the fact that $\rvec_{12}$ is oriented along the
 $x$ axis. To use these equations in practice, it is necessary to construct the rotation
@@ -754,6 +759,13 @@ to this orientation is
 \end{array}\right]
 \]
 The inverse rotation is just the transpose of this matrix.
+
+A final rotation is required to rotate the about the $x$ axes to align the rotational
+velocity with the $z$ axis. The rotation angle can be found by normalizing $\omvec$
+and then finding the angle it makes with the $z$ axis (this should just be the
+$\cos^{-1}$ of the $z$ component of the normalized rotational velocity). The
+orientation of the segment can then be updated in this configuration and the segment
+is then returned to it original orientation by applying the inverse rotations.
 
 \section{Maintaining Connectivities Between Segments}
 To model filamentous fungi, it is necessary to maintain bonds between
@@ -822,8 +834,10 @@ on each segment
 \item a list describing the site (1 or 2) at which the bonded segments are connected (up to 4)
 \item an integer enumeration specifying whether a segment is a growth tip or not
 \item a flag indicating that this segment is fusing to another segment
-\item a flag indicating that this segment going to split in a fusion event
+\item a flag indicating that this segment is going to split in a fusion event
 \item a flag indicating that this segment was created during a fusion event
+\item an integer parameter that is used to determine which end of the segment a bond fix will
+attach to
 \item the id of the segment that this particle is fusing to
 \item the cpu of the segment that this particle is fusing to
 \item a list of segment ids that were deleted from this segment (up to 2)
@@ -831,7 +845,7 @@ on each segment
 \end{list}
 Each segment has a site at either end that is capabable of forming bonds with other segments.
 These sites are labeled 1 and 2 and each site can be bonded to a maximum of two other segments
-for a maximum of four bonds per segment. The last seven items in the list are only used to
+for a maximum of four bonds per segment. The last eight items in the list are only used to
 support fusion of a growth tip to another segment. Not all of the parameters are necessarily
 used simultaneously by all segments involved in the fusion event.
 
@@ -885,27 +899,46 @@ and marks itself accordingly. Segment A also adds segment B to its list of bondi
 checks its neighbors to see if it is a fusing tip and if it has marked the segment as a fusing
 partner. If it finds that it is a fusing partner, the segment marks itself as splitting and
 stores the id and cpu of the tip that it is fusing with. It also adds the tip as a bonding
-partner,
+partner. It the example shown in Figure \ref{fig:fusion}, segment B finds that segment A has
+marked itself as fusing and lists segment B as its fusing partner. Segment B marks itself as
+splitting, stores the id and spu of segment A and adds A as a bonding partner.
 \item A third loop over segments is performed and all segments marked for splitting are split
-into two segments. In the example in Figure \ref{fig:fusion}, segment B generates segment D and
-marks itself as having just split. Segment D is marked as being a new segment.
+into two segments. In the example in Figure \ref{fig:fusion}, segment B generates segment D.
+Segment D is marked as being a new segment derived from a fusion event.
 The split is done in a consisistent way so that the new segment is generated at the end of the
 original segment corresponding to bonding site 2. Because of this, the bonds at site 2 on the
-original segment B to segment C are no longer valid and need to be replaced with bonds to D.
+original segment B that bond to segment C are no longer valid and need to be replaced with bonds to D.
 Similarly, bonds to A, B and C can be added to D at this point since D has access to B's
 connectivity data. However, A does not list D as a bonding partner and C needs to modify its
 bonding data to remove the bonds to B and add bonds to D. To do this, B stores the ids and cpus
 of the one or two bonds to C that were deleted.
+
+An additional complication is that when A and the
+segments that were bonded to B at site 2 update their bond lists in the force loop, they
+won't know to which site to add the new bonds. This can be handled by the integer bond fix
+parameter. When segment A determines that it is fusing to segment B, it sets it copy of the
+bond fix parameter to the value of 1 or 2 corresponding to the end of the segment that is
+fusing to . When segment A determines that it is fusing to segment B, it sets it copy of the
+bond fix parameter to the value of 1 or 2 corresponding to the end of the segment that is
+fusing to B. The segments that were formerly bonded to B, in this case C, will set this
+parameter in the next step.
+
 \item A fourth double loop including neighbors is performed to fix up the bonds on segment C.
 Bonds between segment A and D and segment C and D will get fixed in the force loop when
 bonds are recognized between segments A and C and segment D. Segment B will still show up as
 a neighbor of
 segment C in the cleanup loop. However, segment B will be marked as having just been split and
 will list a
-bond to C as having been deleted. This is a signal to C to remove B as a bonding partner.
+bond to C as having been deleted. This is a signal to C to remove B as a bonding partner. C
+will also have information on which site B is attached and can use this to set the value of
+the bond fix flag to the site at which the bond to B was attached.
 \end{enumerate}
-Once these operations have been completed, the fusion flag, split flag and new segment flag are
-all set to zero before the f
+Once these operations have been completed, the force loop will fix up any remaining
+bonds that are only defined on one segment of a bonding pair and all other fusion parameters are
+reset to a state that can initiate new events. For a side branching event, the bond fix parameter
+is set to zero. If zero is encountered in the force loop, then segment that is updating its bond
+list checks which site the first bond in its bond list is using and then sets the bond fix
+parameter to the other site.
 
 \section{Cylinder interactions}
 Our model for interacting cylinders is based on the minimum distance between two
@@ -973,7 +1006,7 @@ relation
 for the force acting on site 1 of segment $i$. The force acting on site 2 of segment
 $i$ is just
 \[
-\fvec_{i2} = F(R)\frac{\Rvec}{R}\tau_j
+\fvec_{i2} = F(R)\frac{\Rvec}{R}\tau_i
 \]
 The expressions for the forces on the two sites of segment $j$ are similar.
 \bibliographystyle{unsrt}
