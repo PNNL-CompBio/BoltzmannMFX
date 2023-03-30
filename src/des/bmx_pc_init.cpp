@@ -102,14 +102,17 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
     }
     for (int i = 0; i < np; i++)
     {
-      printf("PARTICLE: %d:%d x: %f y: %f z: %f theta: %f phi: %f\n",
+      printf("PARTICLE: %d:%d x: %f y: %f z: %f theta: %f phi: %f [A]: %e [B]: %e [C]: %e\n",
           (int)host_particles[i].id(),
           (int)host_particles[i].cpu(),
           host_particles[i].pos(0),
           host_particles[i].pos(1),
           host_particles[i].pos(2),
           host_particles[i].rdata(realIdx::theta),
-          host_particles[i].rdata(realIdx::phi)
+          host_particles[i].rdata(realIdx::phi),
+          host_particles[i].rdata(realIdx::first_data),
+          host_particles[i].rdata(realIdx::first_data+1),
+          host_particles[i].rdata(realIdx::first_data+2)
           );
     }
 

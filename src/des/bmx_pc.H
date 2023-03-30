@@ -141,7 +141,7 @@ public:
     void CleanupFusion(const amrex::Vector<amrex::MultiFab*> cost,
                                    std::string& knapsack_weight_type);
 
-    void CleanBonds(const amrex::Vector<amrex::MultiFab*> cost,
+    void InitBonds(const amrex::Vector<amrex::MultiFab*> cost,
                                    std::string& knapsack_weight_type);
 
     void PrintConnectivity(const amrex::Vector<amrex::MultiFab*> cost,

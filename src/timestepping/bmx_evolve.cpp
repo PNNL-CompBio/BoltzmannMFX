@@ -87,9 +87,13 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
 
     int nsubsteps;
 
+    if (ParallelDescriptor::IOProcessor()) {
+      std::cout<<"Current time in EVOLVE: "<<time<<std::endl;
+    }
     if (DEM::solve)
     {
-        //if (time == 113810.0) pc->PrintConnectivity(particle_cost,knapsack_weight_type);
+        if (time == 0.0) pc->InitBonds(particle_cost, knapsack_weight_type);
+        // if (time == 0.0) pc->PrintConnectivity(particle_cost,knapsack_weight_type);
         pc->EvolveParticles(dt, particle_cost, knapsack_weight_type, nsubsteps);
         pc->split_particles(time);
         pc->ParticleExchange(dt, particle_cost, knapsack_weight_type, nsubsteps);

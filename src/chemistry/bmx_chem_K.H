@@ -2008,22 +2008,22 @@ evaluateExchange(Real *par1, Real *par2, int *ipar1, int *ipar2, Real *xpar, Rea
        Real dC = (cC_1-cC_2)*area*mtC*dt;
 
        // Check to see if anything might go negative
-       if (dA/vol1 > cnc1[3]/static_cast<Real>(i_bnds)) {
+       if (dA/vol1 > cnc1[0]/static_cast<Real>(i_bnds)) {
          dA = cnc1[3]*vol1/static_cast<Real>(i_bnds);
        }
-       if (-dA/vol2 > cnc2[3]/static_cast<Real>(j_bnds)) {
+       if (-dA/vol2 > cnc2[0]/static_cast<Real>(j_bnds)) {
          dA = -cnc2[3]*vol2/static_cast<Real>(j_bnds);
        }
-       if (dB/vol1 > cnc1[4]/static_cast<Real>(i_bnds)) {
+       if (dB/vol1 > cnc1[1]/static_cast<Real>(i_bnds)) {
          dB = cnc1[4]*vol1/static_cast<Real>(i_bnds);
        }
-       if (-dB/vol2 > cnc2[4]/static_cast<Real>(j_bnds)) {
+       if (-dB/vol2 > cnc2[1]/static_cast<Real>(j_bnds)) {
          dB = -cnc2[4]*vol2/static_cast<Real>(j_bnds);
        }
-       if (dC/vol1 > cnc1[5]/static_cast<Real>(i_bnds)) {
+       if (dC/vol1 > cnc1[2]/static_cast<Real>(i_bnds)) {
          dC = cnc1[5]*vol1/static_cast<Real>(i_bnds);
        }
-       if (-dC/vol2 > cnc2[5]/static_cast<Real>(j_bnds)) {
+       if (-dC/vol2 > cnc2[2]/static_cast<Real>(j_bnds)) {
          dC = -cnc2[5]*vol2/static_cast<Real>(j_bnds);
        }
        // Update increments
@@ -2033,6 +2033,7 @@ evaluateExchange(Real *par1, Real *par2, int *ipar1, int *ipar2, Real *xpar, Rea
        cnc2[3] += dA/vol2;
        cnc2[4] += dB/vol2;
        cnc2[5] += dC/vol2;
+
     } // if (i<i_bnds && j_bnds) ...
   }
 }
