@@ -86,7 +86,7 @@ void BMXCellInteraction::setParams(const char* /*file*/)
   p_force_params.push_back(p_stiffness);
   p_force_params.push_back(p_z_wall);
   p_force_params.push_back(p_z_bndry_width);
-  p_force_params.push_back(p_z_stiffness);
+  p_force_params.push_back(p_z_stiffness);       //5
   p_force_params.push_back(p_z_gravity);
   p_force_params.push_back(p_bond_strength);
   p_force_params.push_back(p_bond_cutoff);

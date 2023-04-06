@@ -84,6 +84,7 @@ void
 checkTipFusion(Real *rij, Real *i_par, int *i_ipar, Real *j_par,
     int *j_ipar, Real* fpar, int me, amrex::RandomEngine const& engine)
 {
+  // increment bond scaling parameter
   if (i_ipar[intIdx::cell_type] == cellType::FUNGI &&
       i_ipar[intIdx::position] == siteLocation::TIP &&
       i_ipar[intIdx::fuse_flag] == 0 &&
@@ -236,15 +237,19 @@ checkTipFusion(Real *rij, Real *i_par, int *i_ipar, Real *j_par,
                 site = 1;
               }
               if (i_bnds == 1) {
+                printf("Fuse tip SETTING SITE 2\n");
                 i_ipar[intIdx::site2] = site;
                 i_ipar[intIdx::seg2_id1] = j_ipar[intIdx::id];
                 i_ipar[intIdx::seg2_id2] = j_ipar[intIdx::cpu];
               } else if (i_bnds == 2) {
+                printf("Fuse tip SETTING SITE 3\n");
                 i_ipar[intIdx::site3] = site;
                 i_ipar[intIdx::seg3_id1] = j_ipar[intIdx::id];
                 i_ipar[intIdx::seg3_id2] = j_ipar[intIdx::cpu];
               }
               i_ipar[intIdx::n_bnds] = i_bnds+1;
+              i_par[realIdx::bond_scale] = 0.0;
+              i_ipar[intIdx::fuse_tip] = site;
             }
           }
         }
@@ -418,6 +423,8 @@ setNewCell(Real *pos_orig, Real *pos_new, Real *par_orig,
     par_new[realIdx::dadt] = dadt;
     par_orig[realIdx::radius] = radius;
     par_new[realIdx::radius] = radius;
+    par_new[realIdx::bond_scale] = 1.0;
+    ipar_new[intIdx::fuse_tip] = 0;
     /* Divide original increment evenly between two new cells */
     Real *p_vals = &par_orig[realIdx::first_data];
     p_vals[6] = 0.5*p_vals[6];
@@ -986,6 +993,8 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
   rad = par_new[realIdx::radius];
   par_new[realIdx::vol] = M_PI*rad*rad*clen;
   par_new[realIdx::area] = 2.0*M_PI*rad*clen+2.0*M_PI*rad*rad;
+  par_new[realIdx::bond_scale] = 1.0;
+  ipar_new[intIdx::fuse_tip] = 0;
   printf("Adding new segment id: %d cpu: %d\n",
       ipar_new[intIdx::id],ipar_new[intIdx::cpu]);
 }
@@ -1104,7 +1113,8 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       if (new_bnds == 2) break;
     }
   }
-  printf("DELETED: n: %d site1: %d id1: %d cpu1: %d site2: %d id2: %d cpu2: %d\n",
+  printf("DELETED id: %d cpu: %d n: %d site1: %d id1: %d cpu1: %d site2: %d id2: %d cpu2: %d\n",
+      ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],
       new_bnds,ipar_orig[intIdx::dltd_site1],ipar_orig[intIdx::dltd_id1],
       ipar_orig[intIdx::dltd_cpu1],ipar_orig[intIdx::dltd_site2],
       ipar_orig[intIdx::dltd_id2],ipar_orig[intIdx::dltd_cpu2]);
@@ -1213,6 +1223,8 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
   rad = par_new[realIdx::radius];
   par_new[realIdx::vol] = M_PI*rad*rad*clen;
   par_new[realIdx::area] = 2.0*M_PI*rad*clen+2.0*M_PI*rad*rad;
+  par_new[realIdx::bond_scale] = 1.0;
+  ipar_new[intIdx::fuse_tip] = 0;
   printf("New branch tip parent id: %d cpu: %d child id: %d cpu: %d\n",
       ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],id,cpu);
 
@@ -1313,14 +1325,15 @@ void cleanupFusionBond(int *ipar , int *jpar, int me)
           i_bnds--;
           ipar[intIdx::n_bnds] = i_bnds;
           ipar[intIdx::fix_site] = site;
-          printf("post REMOVE bond id: %d cpu: %d n_bnds: %d"
-              " id1: %d cpu1: %d id2: %d cpu2: %d"
-              " id3: %d cpu3: %d id4: %d cpu4: %d\n",
+          printf("post REMOVE bond id: %d cpu: %d n_bnds: %d fix_site: %d"
+              " id1: %d cpu1: %d site1: %d id2: %d cpu2: %d site2: %d"
+              " id3: %d cpu3: %d site3: %d id4: %d cpu4: %d site4: %d\n",
               ipar[intIdx::id],ipar[intIdx::cpu],ipar[intIdx::n_bnds],
-              ipar[intIdx::seg1_id1],ipar[intIdx::seg1_id2],
-              ipar[intIdx::seg2_id1],ipar[intIdx::seg2_id2],
-              ipar[intIdx::seg3_id1],ipar[intIdx::seg3_id2],
-              ipar[intIdx::seg4_id1],ipar[intIdx::seg4_id2]);
+              ipar[intIdx::fix_site],
+              ipar[intIdx::seg1_id1],ipar[intIdx::seg1_id2],ipar[intIdx::site1],
+              ipar[intIdx::seg2_id1],ipar[intIdx::seg2_id2],ipar[intIdx::site2],
+              ipar[intIdx::seg3_id1],ipar[intIdx::seg3_id2],ipar[intIdx::site3],
+              ipar[intIdx::seg4_id1],ipar[intIdx::seg4_id2],ipar[intIdx::site4]);
 
         }
       }
@@ -2407,10 +2420,14 @@ setNewSegments(Real *pos_orig, Real *pos_new1, Real *pos_new2,
   rad = par_new1[realIdx::radius];
   par_new1[realIdx::vol] = M_PI*rad*rad*clen;
   par_new1[realIdx::area] = 2.0*M_PI*rad*clen+2.0*M_PI*rad*rad;
+  par_new1[realIdx::bond_scale] = 1.0;
+  ipar_new1[intIdx::fuse_tip] = 0;
   clen = par_new2[realIdx::c_length];
   rad = par_new2[realIdx::radius];
   par_new2[realIdx::vol] = M_PI*rad*rad*clen;
   par_new2[realIdx::area] = 2.0*M_PI*rad*clen+2.0*M_PI*rad*rad;
+  par_new2[realIdx::bond_scale] = 1.0;
+  ipar_new2[intIdx::fuse_tip] = 0;
   printf("NEW segment id: %d cpu: %d site1: %d id1: %d cpu1: %d\n",
       ipar_new1[intIdx::id],ipar_new1[intIdx::cpu],ipar_new1[intIdx::site1],
       ipar_new1[intIdx::seg1_id1],ipar_new1[intIdx::seg1_id2]);
@@ -2442,5 +2459,20 @@ setNewSegments(Real *pos_orig, Real *pos_new1, Real *pos_new2,
       id2,cpu2,ipar_new2[intIdx::site1],ipar_new2[intIdx::seg1_id1],ipar_new2[intIdx::seg1_id2],
       ipar_new2[intIdx::site2],ipar_new2[intIdx::seg2_id1],ipar_new2[intIdx::seg2_id2]);
 #endif
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void incrementBondScale(Real *par , int *ipar, Real *fpar)
+{
+  // increment bond scaling parameter
+  if (par[realIdx::bond_scale] < 1.0) {
+//    printf("SCALING is less than 1.0 for id: %d cpu: %d scale: %f inc: %f\n",
+//        ipar[intIdx::id],ipar[intIdx::cpu],par[realIdx::bond_scale],fpar[2]);
+    par[realIdx::bond_scale] += fpar[2];
+    if (par[realIdx::bond_scale] > 1.0)
+      par[realIdx::bond_scale] = 1.0;
+  }
+  if (par[realIdx::bond_scale] >= 1.0)
+    ipar[intIdx::fuse_tip] = 0;
 }
 #endif

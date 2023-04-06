@@ -283,6 +283,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     Real rA = rS + bndry_width;
     // Bonded interactions
     bool bonded = false;
+    // Scale bond interaction in the case of a fusion event
+    Real scale = par1[realIdx::bond_scale]*par2[realIdx::bond_scale];
     Real bond_strength = fpar[6];
     Real bond_cutoff = fpar[7];
     Real visc = fpar[8];
@@ -331,19 +333,6 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     int icpu = ipar1[intIdx::cpu];
     int jid = ipar2[intIdx::id];
     int jcpu = ipar2[intIdx::cpu];
-    //printf("PAIR iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
-#if 0
-    printf("BONDS on segment id: %d cpu: %d\n",iid,icpu);
-    for (i=0; i<i_bnds; i++) {
-      printf("Bonded to id: %d cpu: %d at site %d\n",
-          i_id[i],i_cpu[i],i_site[i]);
-    }
-    printf("BONDS on segment id: %d cpu: %d\n",jid,jcpu);
-    for (i=0; i<j_bnds; i++) {
-      printf("Bonded to id: %d cpu: %d at site %d\n",
-          j_id[i],j_cpu[i],j_site[i]);
-    }
-#endif
     // Fix up status of interior location if attached TIP has converted to an
     // interior segment
     if (ipar1[intIdx::position] == siteLocation::SECOND_1 ||
@@ -378,7 +367,6 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     ipar1[intIdx::dltd_id2] = -1;
     ipar1[intIdx::dltd_cpu1] = -1;
     ipar1[intIdx::dltd_cpu2] = -1;
-#if 1
     // Is i bonded to j and is j bonded to i? Take action if only one particle
     // recognized the bond
     bool i_bonded_to_j = false;
@@ -420,7 +408,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       // Figure out where which site to add new bond
       int isite;
       if (ipar1[intIdx::fix_site]==0) {
-        if (ipar1[intIdx::site1] = 1) {
+        if (ipar1[intIdx::site1] == 1) {
           isite = 2;
         } else {
           isite = 1;
@@ -489,7 +477,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       // Figure out where which site to add new bond
       int jsite;
       if (ipar2[intIdx::fix_site]==0) {
-        if (ipar2[intIdx::site1] = 1) {
+        if (ipar2[intIdx::site1] == 1) {
           jsite = 2;
         } else {
           jsite = 1;
@@ -538,12 +526,6 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           jid,jcpu,iid,icpu,jb0,j_bnds,ipar2);
     }
     ipar1[intIdx::fix_site] = 0;
-#endif
-//    printf("p[%d] ID: %d CPU: %d I_ID: %d %d %d I_CPU: %d %d %d\n",
-//        me,iid,icpu,i_id[0],i_id[1],i_id[2],i_cpu[0],
-//        i_cpu[1],i_cpu[2]);
-//    printf("p[%d] nbnd: %d i_site[0]: %d i_site[1]: %d i_site[2]: %d\n",me,i_bnds,i_site[0],i_site[1],i_site[2]);
-//    printf("p[%d] nbnd: %d j_site[0]: %d j_site[1]: %d j_site[2]: %d\n",me,j_bnds,j_site[0],j_site[1],j_site[2]);
     for (int ii=0; ii<3; ii++) {
       f1_s1[ii] = 0.0;
       f1_s2[ii] = 0.0;
@@ -571,8 +553,6 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     xi2 = r12[0] + 0.5*nx*c_length1;
     yi2 = r12[1] + 0.5*ny*c_length1;
     zi2 = r12[2] + 0.5*nz*c_length1;
-//    printf("p[%d] id: %d cpu: %d xi1: %e yi1: %e zi1: %e xi2: %e yi2: %e zi2: %e\n",
-//      me,ipar1[intIdx::id],ipar1[intIdx::cpu],xi1,yi1,zi1,xi2,yi2,zi2);
     // Construct rotation matrices for this segment (for later use)
     Real rot_i[3][3];
     rot_i[0][0] = cp*st;
@@ -584,9 +564,6 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     rot_i[2][0] = ct;
     rot_i[2][1] = 0.0;
     rot_i[2][2] = st;
-//    printf("RI11: %e RI12: %e RI13: %e\n",rot_i[0][0],rot_i[0][1],rot_i[0][2]);
-//    printf("RI21: %e RI22: %e RI23: %e\n",rot_i[1][0],rot_i[1][1],rot_i[1][2]);
-//    printf("RI31: %e RI32: %e RI33: %e\n",rot_i[2][0],rot_i[2][1],rot_i[2][2]);
 
     theta = par2[realIdx::theta];
     phi = par2[realIdx::phi];
@@ -608,9 +585,6 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     rot_j[2][0] = ct;
     rot_j[2][1] = 0.0;
     rot_j[2][2] = st;
-//    printf("RJ11: %e RJ12: %e RJ13: %e\n",rot_j[0][0],rot_j[0][1],rot_j[0][2]);
-//    printf("RJ21: %e RJ22: %e RJ23: %e\n",rot_j[1][0],rot_j[1][1],rot_j[1][2]);
-//    printf("RJ31: %e RJ32: %e RJ33: %e\n",rot_j[2][0],rot_j[2][1],rot_j[2][2]);
 
     // find interaction centers on segment j
     xj1 = -0.5*nx*c_length2;
@@ -619,12 +593,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     xj2 = 0.5*nx*c_length2;
     yj2 = 0.5*ny*c_length2;
     zj2 = 0.5*nz*c_length2;
-//     printf("p[%d] id: %d cpu: %d xj1: %e yj1: %e zj1: %e xj2: %e yj2: %e zj2: %e\n",
-//       me,ipar2[intIdx::id],ipar2[intIdx::cpu],xj1,yj1,zj1,xj2,yj2,zj2);
 
-    // printf("p[%d] r12x: %e r12y: %e r12z: %e r12: %e clen1: %e clen2: %e\n",
-    //   me,r12[0],r12[1],r12[2],sqrt(r12[0]*r12[0]+r12[1]*r12[1]+r12[2]*r12[2]),
-    //   c_length1,c_length2);
     // Look for bonds connecting these two segments
     int ib, jb;
     for (ib=0; ib<i_bnds; ib++) {
@@ -636,25 +605,35 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     // Found a connection
     Real rx, ry, rz, r;
     if (ib <i_bnds && jb < j_bnds) {
+      int itip = ipar1[intIdx::fuse_tip];
+      int jtip = ipar2[intIdx::fuse_tip];
       // Four possibilities for bonded interactions
+      if ((itip > 0 && itip == i_site[ib]) ||
+          (jtip > 0 && jtip == j_site[jb])) {
+        bond_strength = scale*bond_strength;
+#if 0
+        printf("SCALING check i_bnd: %d is1: %d is2: %d is3: %d is4: %d\n",
+            i_bnds,i_site[0],i_site[1],i_site[2],i_site[3]);
+        printf("SCALING check j_bnd: %d js1: %d js2: %d js3: %d js4: %d\n",
+            j_bnds,j_site[0],j_site[1],j_site[2],j_site[3]);
+        printf("SCALING interaction between %d,%d and %d,%d scale: %f"
+            " ib: %d jb: %d isite: %d jsite: %d itip: %d jtip: %d\n",
+            iid,icpu,jid,jcpu,scale,ib,jb,i_site[ib],j_site[jb],itip,jtip);
+#endif
+      }
       if ((i_site[ib] == 1 && j_site[jb] == 1)) {
         // 1-1 interaction
         rx = xi1 - xj1;
         ry = yi1 - yj1;
         rz = zi1 - zj1;
         r = sqrt(rx*rx+ry*ry+rz*rz);
-        //if (r<bond_cutoff) {
-          // Might be bonded. Check further
-//          printf("Found bond iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
-          f1_s1[0] -= bond_strength*rx;
-          f1_s1[1] -= bond_strength*ry;
-          f1_s1[2] -= bond_strength*rz;
-          f2_s2[0] += bond_strength*rx;
-          f2_s2[1] += bond_strength*ry;
-          f2_s2[2] += bond_strength*rz;
-          //          printf("p[%d] f1_s1: %e x1: %e f2_s2: %e x2: %e rx: %e r: %e\n",me,f1_s1[0],xi1,f2_s2[0],xj2,rx,r);
-          bonded = true;
-        //} // r < bond_cutoff
+        f1_s1[0] -= bond_strength*rx;
+        f1_s1[1] -= bond_strength*ry;
+        f1_s1[2] -= bond_strength*rz;
+        f2_s2[0] += bond_strength*rx;
+        f2_s2[1] += bond_strength*ry;
+        f2_s2[2] += bond_strength*rz;
+        bonded = true;
       } // if ((i_site[ib] == 1 && j_site[j] == 1)) ...
 
       if ((i_site[ib] == 1 && j_site[jb] == 2 && !bonded)) {
@@ -663,22 +642,13 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         ry = yi1 - yj2;
         rz = zi1 - zj2;
         r = sqrt(rx*rx+ry*ry+rz*rz);
-        //    printf("p[%d] 12 Bond_cutoff: %e r: %e\n",me,bond_cutoff,r);
-        //if (r<bond_cutoff) {
-          // Might be bonded. Check further
-          //      printf("p[%d] 12 n_bonds: %d i_site[0]: %d i_id[0]: %d i_cpu[0]: %d j_id: %d j_cpu: %d\n",
-          //         me,i_bnds,i_site[0],iid,icpu,jid,jcpu);
-          //      printf("p[%d] DIFF (12) rx: %e ry: %e rz: %e r: %e i: %d j: %d\n",me,rx,ry,rz,r,i,j);
-//          printf("Found bond iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
-          f1_s1[0] -= bond_strength*rx;
-          f1_s1[1] -= bond_strength*ry;
-          f1_s1[2] -= bond_strength*rz;
-          f2_s2[0] += bond_strength*rx;
-          f2_s2[1] += bond_strength*ry;
-          f2_s2[2] += bond_strength*rz;
-          //          printf("p[%d] f1_s1: %e x1: %e f2_s2: %e x2: %e rx: %e r: %e\n",me,f1_s1[0],xi1,f2_s2[0],xj2,rx,r);
-          bonded = true;
-        //} // r < bond_cutoff
+        f1_s1[0] -= bond_strength*rx;
+        f1_s1[1] -= bond_strength*ry;
+        f1_s1[2] -= bond_strength*rz;
+        f2_s2[0] += bond_strength*rx;
+        f2_s2[1] += bond_strength*ry;
+        f2_s2[2] += bond_strength*rz;
+        bonded = true;
       } // if ((i_site[i] == 1 && j_site[j] == 2 && !bonded)) ...
       if ((i_site[ib] == 2 && j_site[jb] == 1 && !bonded)) {
         // 2-1 interaction
@@ -686,23 +656,13 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         ry = yi2 - yj1;
         rz = zi2 - zj1;
         r = sqrt(rx*rx+ry*ry+rz*rz);
-        //    printf("p[%d] 21 Bond_cutoff: %e r: %e\n",me,bond_cutoff,r);
-        //if (r<bond_cutoff) {
-          // Might be bonded. Check further
-          //      printf("p[%d] 21 n_bonds: %d i_site[0]: %d i_id[0]: %d i_cpu[0]: %d j_id: %d j_cpu: %d\n",
-          //         me,i_bnds,i_site[0],iid,icpu,jid,jcpu);
-//          printf("p[%d] DIFF (21) rx: %e ry: %e rz: %e r: %e i: %d j: %d ibnd: %d jbnd: %d\n",
-//              me,rx,ry,rz,r,i,j,i_bnds,j_bnds);
-//          printf("Found bond iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
-          f1_s2[0] -= bond_strength*rx;
-          f1_s2[1] -= bond_strength*ry;
-          f1_s2[2] -= bond_strength*rz;
-          f2_s1[0] += bond_strength*rx;
-          f2_s1[1] += bond_strength*ry;
-          f2_s1[2] += bond_strength*rz;
-          //          printf("p[%d] f1_s2: %e x1: %e f2_s1: %e x2: %e rx: %e r: %e\n",me,f1_s2[0],xi2,f2_s1[0],xj1,rx,r);
-          bonded = true;
-        //}
+        f1_s2[0] -= bond_strength*rx;
+        f1_s2[1] -= bond_strength*ry;
+        f1_s2[2] -= bond_strength*rz;
+        f2_s1[0] += bond_strength*rx;
+        f2_s1[1] += bond_strength*ry;
+        f2_s1[2] += bond_strength*rz;
+        bonded = true;
       }
       if ((i_site[ib] == 2 && j_site[jb] == 2 && !bonded)) {
         // 2-2 interaction
@@ -710,22 +670,13 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         ry = yi2 - yj2;
         rz = zi2 - zj2;
         r = sqrt(rx*rx+ry*ry+rz*rz);
-//        printf("p[%d] 22 Bond_cutoff: %e r: %e\n",me,bond_cutoff,r);
-        //if (r<bond_cutoff) {
-          // Might be bonded. Check further
-          //      printf("p[%d] 22 n_bonds: %d i_site[0]: %d i_id[0]: %d i_cpu[0]: %d j_id: %d j_cpu: %d\n",
-          //         me,i_bnds,i_site[0],iid,icpu,jid,jcpu);
-//          printf("p[%d] DIFF (22) rx: %e ry: %e rz: %e r: %e i: %d j: %d ibnd: %d jbnd: %d\n",
-//              me,rx,ry,rz,r,i,j,i_bnds,j_bnds);
-//          printf("Found bond iid: %d icpu: %d jid: %d jcpu: %d\n",iid,icpu,jid,jcpu);
-          f1_s2[0] -= bond_strength*rx;
-          f1_s2[1] -= bond_strength*ry;
-          f1_s2[2] -= bond_strength*rz;
-          f2_s1[0] += bond_strength*rx;
-          f2_s1[1] += bond_strength*ry;
-          f2_s1[2] += bond_strength*rz;
-          bonded = true;
-        //} // if (r<bond_cutoff)  ...
+        f1_s2[0] -= bond_strength*rx;
+        f1_s2[1] -= bond_strength*ry;
+        f1_s2[2] -= bond_strength*rz;
+        f2_s1[0] += bond_strength*rx;
+        f2_s1[1] += bond_strength*ry;
+        f2_s1[2] += bond_strength*rz;
+        bonded = true;
       } // if ((i_site[i] == 2 && j_site[j] == 2 && !bonded)) ...
     } // if (i<i_bnds && j_bnds) ...
     // Evaluate interactions between cylinders. Only calculate these
@@ -779,22 +730,6 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         rx *= 1.0e-08;
         ry *= 1.0e-08;
         rz *= 1.0e-08;
-
-        /*
-        Real rdot = rho_i[0]*rho_j[0] + rho_i[1]*rho_j[1] + rho_i[2]*rho_j[2];
-        if (rdot < 0.0) {
-          for (int ii=0; ii<3; ii++) {
-            rho_j[ii] = -rho_j[ii];
-          } // ii
-        } // if rdot
-        rx = rho_i[0]-rho_j[0];
-        ry = rho_i[1]-rho_j[1];
-        rz = rho_i[2]-rho_j[2];
-        Real inv_rn = 1. / sqrt(rx*rx+ry*ry+rz*rz);
-        rx *= inv_rn;
-        ry *= inv_rn;
-        rz *= inv_rn;
-        */
       }
 
       Real F;
@@ -857,7 +792,6 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     f2_s2[1] += 0.5*fn*ny;
     f2_s2[2] += 0.5*fn*nz;
 
-#if 1
     // Calculate friction tensor for segment i. Start by calculating
     // size of spheres with same exposed surface as cylinder
     Real area = par1[realIdx::area];
@@ -868,12 +802,12 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     Real dij[3][3];
     for (int ii=0; ii<3; ii++) {
       for (int jj=0; jj<3; jj++) {
-	if (ii==jj) {
-	  dii[ii][jj] = 1.0/(6.0*M_PI*arad*visc);
-	} else {
-	  dii[ii][jj] = 0.0;
-	}
-	dij[ii][jj] = 0.0;
+        if (ii==jj) {
+          dii[ii][jj] = 1.0/(6.0*M_PI*arad*visc);
+        } else {
+          dii[ii][jj] = 0.0;
+        }
+        dij[ii][jj] = 0.0;
       }
     }
     if (c_length1 > 2.0*arad) {
@@ -894,39 +828,39 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     Real dtmp[3][3];
     for (int ii=0; ii<3; ii++) {
       for (int jj=0; jj<3; jj++) {
-	dtmp[ii][jj] = 0.0;
-	for (int kk=0; kk<3; kk++) {
-	  // use inverse rotation here
-	  dtmp[ii][jj] += dii[ii][kk]*rot_i[jj][kk];
-	} // kk
+        dtmp[ii][jj] = 0.0;
+        for (int kk=0; kk<3; kk++) {
+          // use inverse rotation here
+          dtmp[ii][jj] += dii[ii][kk]*rot_i[jj][kk];
+        } // kk
       } // jj 
     } // ii
 
     for (int ii=0; ii<3; ii++) {
       for (int jj=0; jj<3; jj++) {
-	dii[ii][jj] = 0.0;
-	for (int kk=0; kk<3; kk++) {
-	  dii[ii][jj] += rot_i[ii][kk]*dtmp[kk][jj];
-	} // kk
+        dii[ii][jj] = 0.0;
+        for (int kk=0; kk<3; kk++) {
+          dii[ii][jj] += rot_i[ii][kk]*dtmp[kk][jj];
+        } // kk
       } // jj
     } // ii
 
     for (int ii=0; ii<3; ii++) {
       for (int jj=0; jj<3; jj++) {
-	dtmp[ii][jj] = 0.0;
-	for (int kk=0; kk<3; kk++) {
-	  // use inverse rotation here
-	  dtmp[ii][jj] += dij[ii][kk]*rot_i[jj][kk];
-	} // kk
+        dtmp[ii][jj] = 0.0;
+        for (int kk=0; kk<3; kk++) {
+          // use inverse rotation here
+          dtmp[ii][jj] += dij[ii][kk]*rot_i[jj][kk];
+        } // kk
       } // jj 
     } // ii
 
     for (int ii=0; ii<3; ii++) {
       for (int jj=0; jj<3; jj++) {
-	dij[ii][jj] = 0.0;
-	for (int kk=0; kk<3; kk++) {
-	  dij[ii][jj] += rot_i[ii][kk]*dtmp[kk][jj];
-	} // kk
+        dij[ii][jj] = 0.0;
+        for (int kk=0; kk<3; kk++) {
+          dij[ii][jj] += rot_i[ii][kk]*dtmp[kk][jj];
+        } // kk
       } // jj
     } // ii
 
@@ -936,8 +870,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       vi_1[ii] = 0.0;
       vi_2[ii] = 0.0;
       for (int jj=0; jj<3; jj++) {
-	vi_1[ii] += dii[ii][jj]*f1_s1[jj]+dij[ii][jj]*f1_s2[jj];
-	vi_2[ii] += dii[ii][jj]*f1_s2[jj]+dij[ii][jj]*f1_s1[jj];
+        vi_1[ii] += dii[ii][jj]*f1_s1[jj]+dij[ii][jj]*f1_s2[jj];
+        vi_2[ii] += dii[ii][jj]*f1_s2[jj]+dij[ii][jj]*f1_s1[jj];
       } // jj 
     } // ii
 
@@ -949,12 +883,12 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     // Assume the cylinder is oriented along the x-axis
     for (int ii=0; ii<3; ii++) {
       for (int jj=0; jj<3; jj++) {
-	if (ii==jj) {
-	  dii[ii][jj] = 1.0/(6.0*M_PI*arad*visc);
-	} else {
-	  dii[ii][jj] = 0.0;
-	}
-	dij[ii][jj] = 0.0;
+        if (ii==jj) {
+          dii[ii][jj] = 1.0/(6.0*M_PI*arad*visc);
+        } else {
+          dii[ii][jj] = 0.0;
+        }
+        dij[ii][jj] = 0.0;
       } // jj
     } // ii
     if (c_length2 > 2.0*arad) {
@@ -973,37 +907,37 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     // Note the transpose of the rotation is equal to its inverse
     for (int ii=0; ii<3; ii++) {
       for (int jj=0; jj<3; jj++) {
-	dtmp[ii][jj] = 0.0;
-	for (int kk=0; kk<3; kk++) {
-	  // use inverse rotation here
-	  dtmp[ii][jj] += dii[ii][kk]*rot_j[jj][kk];
-	}
+        dtmp[ii][jj] = 0.0;
+        for (int kk=0; kk<3; kk++) {
+          // use inverse rotation here
+          dtmp[ii][jj] += dii[ii][kk]*rot_j[jj][kk];
+        }
       }
     }
     for (int ii=0; ii<3; ii++) {
       for (int jj=0; jj<3; jj++) {
-	dii[ii][jj] = 0.0;
-	for (int kk=0; kk<3; kk++) {
-	  dii[ii][jj] += rot_j[ii][kk]*dtmp[kk][jj];
-	} // kk
+        dii[ii][jj] = 0.0;
+        for (int kk=0; kk<3; kk++) {
+          dii[ii][jj] += rot_j[ii][kk]*dtmp[kk][jj];
+        } // kk
       } // jj
     } // ii
 
     for (int ii=0; ii<3; ii++) {
       for (int jj=0; jj<3; jj++) {
-	dtmp[ii][jj] = 0.0;
-	for (int kk=0; kk<3; kk++) {
-	  // use inverse rotation here
-	  dtmp[ii][jj] += dij[ii][kk]*rot_j[jj][kk];
-	}
+        dtmp[ii][jj] = 0.0;
+        for (int kk=0; kk<3; kk++) {
+          // use inverse rotation here
+          dtmp[ii][jj] += dij[ii][kk]*rot_j[jj][kk];
+        }
       }
     }
     for (int ii=0; ii<3; ii++) {
       for (int jj=0; jj<3; jj++) {
-	dij[ii][jj] = 0.0;
-	for (int kk=0; kk<3; kk++) {
-	  dij[ii][jj] += rot_j[ii][kk]*dtmp[kk][jj];
-	} // kk
+        dij[ii][jj] = 0.0;
+        for (int kk=0; kk<3; kk++) {
+          dij[ii][jj] += rot_j[ii][kk]*dtmp[kk][jj];
+        } // kk
       } // jj
     } // ii
 
@@ -1013,8 +947,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       vj_1[ii] = 0.0;
       vj_2[ii] = 0.0;
       for (int jj=0; jj<3; jj++) {
-	vj_1[ii] += dii[ii][jj]*f2_s1[jj]+dij[ii][jj]*f2_s2[jj];
-	vj_2[ii] += dii[ii][jj]*f2_s2[jj]+dij[ii][jj]*f2_s1[jj];
+        vj_1[ii] += dii[ii][jj]*f2_s1[jj]+dij[ii][jj]*f2_s2[jj];
+        vj_2[ii] += dii[ii][jj]*f2_s2[jj]+dij[ii][jj]*f2_s1[jj];
       } // jj
     } // ii
 
@@ -1039,35 +973,6 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     rotv2[0] += -0.5*(ry_j*vj_2[2]-rz_j*vj_2[1]);
     rotv2[1] += -0.5*(rz_j*vj_2[0]-rx_j*vj_2[2]);
     rotv2[2] += -0.5*(rx_j*vj_2[1]-ry_j*vj_2[0]);
-#else
-    vel1[0] = 0.5*(f1_s1[0]+f1_s2[0]);
-    vel1[1] = 0.5*(f1_s1[1]+f1_s2[1]);
-    vel1[2] = 0.5*(f1_s1[2]+f1_s2[2]);
-    vel2[0] = 0.5*(f2_s1[0]+f2_s2[0]);
-    vel2[1] = 0.5*(f2_s1[1]+f2_s2[1]);
-    vel2[2] = 0.5*(f2_s1[2]+f2_s2[2]);
-
-    // remove force on center of mass
-    for (int ii=0; ii<3; ii++) {
-      f1_s1[ii] -= 0.5*vel1[ii];
-      f1_s2[ii] -= 0.5*vel1[ii];
-      f2_s1[ii] -= 0.5*vel2[ii];
-      f2_s2[ii] -= 0.5*vel2[ii];
-    }
-    rotv1[0] = 0.5*(ry_i*f1_s1[2]-rz_i*f1_s1[1]);
-    rotv1[1] = 0.5*(rz_i*f1_s1[0]-rx_i*f1_s1[2]);
-    rotv1[2] = 0.5*(rx_i*f1_s1[1]-ry_i*f1_s1[0]);
-    rotv1[0] += -0.5*(ry_i*f1_s2[2]-rz_i*f1_s2[1]);
-    rotv1[1] += -0.5*(rz_i*f1_s2[0]-rx_i*f1_s2[2]);
-    rotv1[2] += -0.5*(rx_i*f1_s2[1]-ry_i*f1_s2[0]);
-
-    rotv2[0] = 0.5*(ry_j*f2_s1[2]-rz_j*f2_s1[1]);
-    rotv2[1] = 0.5*(rz_j*f2_s1[0]-rx_j*f2_s1[2]);
-    rotv2[2] = 0.5*(rx_j*f2_s1[1]-ry_j*f2_s1[0]);
-    rotv2[0] += -0.5*(ry_j*f2_s2[2]-rz_j*f2_s2[1]);
-    rotv2[1] += -0.5*(rz_j*f2_s2[0]-rx_j*f2_s2[2]);
-    rotv2[2] += -0.5*(rx_j*f2_s2[1]-ry_j*f2_s2[0]);
-#endif
   }
 }
 
@@ -1123,6 +1028,19 @@ evaluateSurfaceForce(const Real *pos, Real *par, int *ipar, Real *vel, Real *rot
     rotv[2] = 0.0;
     return;
 #endif
+#if 0
+    // increment bond scaling parameter
+    if (par[realIdx::bond_scale] < 1.0) {
+      printf("SCALING is less than 1.0 for id: %d cpu: %d scale: %f inc: %f\n",
+          ipar[intIdx::id],ipar[intIdx::cpu],par[realIdx::bond_scale],fpar[9]);
+      par[realIdx::bond_scale] += fpar[9];
+      if (par[realIdx::bond_scale] > 1.0)
+        par[realIdx::bond_scale] = 1.0;
+    }
+    if (par[realIdx::bond_scale] >= 1.0)
+      ipar[intIdx::fuse_tip] = 0;
+#endif
+
     int i, j, k;
     for (i=0; i<3; i++) {
       f_s1[i] = 0.0;

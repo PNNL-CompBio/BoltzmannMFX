@@ -90,6 +90,8 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
         //host_particles[i].rdata(realIdx::first_data+c) = tmp[c];
       }
       bmxchem->setIntegers(&host_particles[i].idata(0));
+      host_particles[i].rdata(realIdx::bond_scale) = 1.0;
+      host_particles[i].idata(intIdx::fuse_tip) = 0;
       
       // Set id and cpu for this particle
       host_particles[i].id()  = ParticleType::NextID();

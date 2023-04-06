@@ -488,6 +488,8 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
   std::vector<Real> chempar_vec;
   bmxchem->getChemParams(chempar_vec);
   Real *chempar = &chempar_vec[0];
+  std::vector<Real> fpar_vec = bmxchem->getFusionParameters();
+  Real *fpar = &fpar_vec[0];
 
   for (int lev = 0; lev <= finest_level; lev++)
   {
@@ -566,11 +568,13 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
       // now we loop over the neighbor list and look for invalid connections
       int me = ParallelDescriptor::MyProc();
       amrex::ParallelFor(nrp,
-          [nrp,pstruct,nbor_data,chempar,ntot,me]
+          [nrp,pstruct,nbor_data,chempar,fpar,ntot,me]
           AMREX_GPU_DEVICE (int i) noexcept
           {
           auto& particle = pstruct[i];
 
+          // increment bond scaling parameter
+          incrementBondScale(&particle.rdata(0),&particle.idata(0),fpar);
           RealVect pos1(particle.pos());
 
           const auto neighbs = nbor_data.getNeighbors(i);
