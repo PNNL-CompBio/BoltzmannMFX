@@ -281,8 +281,8 @@ checkInteriorFusion(Real *i_par, int *i_ipar, Real *j_par, int *j_ipar,
     // check to see if particle j is supposed to fuse to particle i
     bool do_fuse = false;
     int i, j;
-        printf("Possible FUSION between particles id: %d cpu: %d to particle id: %d cpu: %d\n",
-           i_ipar[intIdx::id],i_ipar[intIdx::cpu],j_ipar[intIdx::id],j_ipar[intIdx::cpu]);
+   //     printf("Possible FUSION between particles id: %d cpu: %d to particle id: %d cpu: %d\n",
+   //        i_ipar[intIdx::id],i_ipar[intIdx::cpu],j_ipar[intIdx::id],j_ipar[intIdx::cpu]);
     if (i_ipar[intIdx::id] == j_ipar[intIdx::fuse_id] &&
         i_ipar[intIdx::cpu] == j_ipar[intIdx::fuse_cpu]) {
       do_fuse = true;

@@ -391,19 +391,21 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       // j has registered i as a bonding partner but i
       // has not registered j as a bonding partner. Fix up i
       printf("I id: %d cpu: %d nbnds: %d id1: %d cpu1: %d id2: %d cpu: %d"
-          " id3: %d cpu3: %d id4: %d cpu4: %d\n",ipar1[intIdx::id],
+          " id3: %d cpu3: %d id4: %d cpu4: %d fix_site: %d\n",ipar1[intIdx::id],
           ipar1[intIdx::cpu],ipar1[intIdx::n_bnds],
           ipar1[intIdx::seg1_id1],ipar1[intIdx::seg1_id2],
           ipar1[intIdx::seg2_id1],ipar1[intIdx::seg2_id2],
           ipar1[intIdx::seg3_id1],ipar1[intIdx::seg3_id2],
-          ipar1[intIdx::seg4_id1],ipar1[intIdx::seg4_id2]);
+          ipar1[intIdx::seg4_id1],ipar1[intIdx::seg4_id2],
+          ipar1[intIdx::fix_site]);
       printf("J id: %d cpu: %d nbnds: %d id1: %d cpu1: %d id2: %d cpu: %d"
-          " id3: %d cpu3: %d id4: %d cpu4: %d\n",ipar2[intIdx::id],
+          " id3: %d cpu3: %d id4: %d cpu4: %d fix_site: %d\n",ipar2[intIdx::id],
           ipar2[intIdx::cpu],ipar2[intIdx::n_bnds],
           ipar2[intIdx::seg1_id1],ipar2[intIdx::seg1_id2],
           ipar2[intIdx::seg2_id1],ipar2[intIdx::seg2_id2],
           ipar2[intIdx::seg3_id1],ipar2[intIdx::seg3_id2],
-          ipar2[intIdx::seg4_id1],ipar2[intIdx::seg4_id2]);
+          ipar2[intIdx::seg4_id1],ipar2[intIdx::seg4_id2],
+          ipar2[intIdx::fix_site]);
       int ib0 = i_bnds;
       // Figure out where which site to add new bond
       int isite;
@@ -454,25 +456,34 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         i_bnds++;
         ipar1[intIdx::n_bnds] = i_bnds;
       }
-      printf("FIXING up i id: %d cpu: %d attached to id: %d cpu: %d ib: %d i_bnds: %d ipar: %p\n",
-          iid,icpu,jid,jcpu,ib0,i_bnds,ipar1);
+      printf("FIXING up i id: %d cpu: %d attached to id: %d cpu: %d ib: %d i_bnds: %d isite: %d\n",
+          iid,icpu,jid,jcpu,ib0,i_bnds,isite);
+      printf("post FIXING up i id: %d cpu: %d nbnds: %d id1: %d cpu1: %d site1: %d"
+          " id2: %d cpu2: %d site2: %d id3: %d cpu3: %d site3: %d id4: %d cpu4: %d site4: %d\n",
+          ipar1[intIdx::id],ipar1[intIdx::cpu],ipar1[intIdx::n_bnds],
+          ipar1[intIdx::seg1_id1],ipar1[intIdx::seg1_id2],ipar1[intIdx::site1],
+          ipar1[intIdx::seg2_id1],ipar1[intIdx::seg2_id2],ipar1[intIdx::site2],
+          ipar1[intIdx::seg3_id1],ipar1[intIdx::seg3_id2],ipar1[intIdx::site3],
+          ipar1[intIdx::seg4_id1],ipar1[intIdx::seg4_id2],ipar1[intIdx::site4]);
     } else if (i_bonded_to_j && !j_bonded_to_i) {
       // i has registered j as a bonding partner but j
       // has not registered i as a bonding partner. Fix up j
       printf("I id: %d cpu: %d nbnds: %d id1: %d cpu1: %d id2: %d cpu: %d"
-          " id3: %d cpu3: %d id4: %d cpu4: %d\n",ipar1[intIdx::id],
+          " id3: %d cpu3: %d id4: %d cpu4: %d fix_site: %d\n",ipar1[intIdx::id],
           ipar1[intIdx::cpu],ipar1[intIdx::n_bnds],
           ipar1[intIdx::seg1_id1],ipar1[intIdx::seg1_id2],
           ipar1[intIdx::seg2_id1],ipar1[intIdx::seg2_id2],
           ipar1[intIdx::seg3_id1],ipar1[intIdx::seg3_id2],
-          ipar1[intIdx::seg4_id1],ipar1[intIdx::seg4_id2]);
+          ipar1[intIdx::seg4_id1],ipar1[intIdx::seg4_id2],
+          ipar1[intIdx::fix_site]);
       printf("J id: %d cpu: %d nbnds: %d id1: %d cpu1: %d id2: %d cpu: %d"
-          " id3: %d cpu3: %d id4: %d cpu4: %d\n",ipar2[intIdx::id],
+          " id3: %d cpu3: %d id4: %d cpu4: %d fix_site: %d\n",ipar2[intIdx::id],
           ipar2[intIdx::cpu],ipar2[intIdx::n_bnds],
           ipar2[intIdx::seg1_id1],ipar2[intIdx::seg1_id2],
           ipar2[intIdx::seg2_id1],ipar2[intIdx::seg2_id2],
           ipar2[intIdx::seg3_id1],ipar2[intIdx::seg3_id2],
-          ipar2[intIdx::seg4_id1],ipar2[intIdx::seg4_id2]);
+          ipar2[intIdx::seg4_id1],ipar2[intIdx::seg4_id2],
+          ipar2[intIdx::fix_site]);
       int jb0 = j_bnds;
       // Figure out where which site to add new bond
       int jsite;
@@ -522,10 +533,16 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         j_bnds++;
         ipar2[intIdx::n_bnds] = j_bnds;
       }
-      printf("FIXING up j id: %d cpu: %d attached to id: %d cpu: %d jb: %d j_bnds: %d jpar: %p\n",
-          jid,jcpu,iid,icpu,jb0,j_bnds,ipar2);
+      printf("FIXING up j id: %d cpu: %d attached to id: %d cpu: %d jb: %d j_bnds: %d jsite: %d\n",
+          jid,jcpu,iid,icpu,jb0,j_bnds,jsite);
+      printf("post FIXING up j id: %d cpu: %d nbnds: %d id1: %d cpu1: %d site1: %d"
+          " id2: %d cpu2: %d site2: %d id3: %d cpu3: %d site3: %d id4: %d cpu4: %d site4: %d\n",
+          ipar2[intIdx::id],ipar2[intIdx::cpu],ipar2[intIdx::n_bnds],
+          ipar2[intIdx::seg1_id1],ipar2[intIdx::seg1_id2],ipar2[intIdx::site1],
+          ipar2[intIdx::seg2_id1],ipar2[intIdx::seg2_id2],ipar2[intIdx::site2],
+          ipar2[intIdx::seg3_id1],ipar2[intIdx::seg3_id2],ipar2[intIdx::site3],
+          ipar2[intIdx::seg4_id1],ipar2[intIdx::seg4_id2],ipar2[intIdx::site4]);
     }
-    ipar1[intIdx::fix_site] = 0;
     for (int ii=0; ii<3; ii++) {
       f1_s1[ii] = 0.0;
       f1_s2[ii] = 0.0;
@@ -1040,6 +1057,7 @@ evaluateSurfaceForce(const Real *pos, Real *par, int *ipar, Real *vel, Real *rot
     if (par[realIdx::bond_scale] >= 1.0)
       ipar[intIdx::fuse_tip] = 0;
 #endif
+    ipar[intIdx::fix_site] = 0;
 
     int i, j, k;
     for (i=0; i<3; i++) {
