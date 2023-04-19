@@ -132,7 +132,7 @@ public:
                            std::string& knapsack_weight_type,
                            int& nsubsteps);
 
-    void EvaluateTipFusion(const amrex::Vector<amrex::MultiFab*> cost,
+    bool EvaluateTipFusion(const amrex::Vector<amrex::MultiFab*> cost,
                                    std::string& knapsack_weight_type);
 
     void EvaluateInteriorFusion(const amrex::Vector<amrex::MultiFab*> cost,

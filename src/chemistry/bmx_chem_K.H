@@ -82,8 +82,9 @@ checkSplit(Real *p_par, int *p_ipar, Real max_vol, Real max_len,
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void 
 checkTipFusion(Real *rij, Real *i_par, int *i_ipar, Real *j_par,
-    int *j_ipar, Real* fpar, int me, amrex::RandomEngine const& engine)
+    int *j_ipar, Real* fpar, int me, int *fusing, amrex::RandomEngine const& engine)
 {
+  *fusing = 0;
   // increment bond scaling parameter
   if (i_ipar[intIdx::cell_type] == cellType::FUNGI &&
       i_ipar[intIdx::position] == siteLocation::TIP &&
@@ -250,6 +251,7 @@ checkTipFusion(Real *rij, Real *i_par, int *i_ipar, Real *j_par,
               i_ipar[intIdx::n_bnds] = i_bnds+1;
               i_par[realIdx::bond_scale] = 0.0;
               i_ipar[intIdx::fuse_tip] = site;
+              *fusing = 1;
             }
           }
         }
