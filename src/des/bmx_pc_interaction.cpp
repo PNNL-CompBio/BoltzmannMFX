@@ -500,7 +500,6 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 void BMXParticleContainer::InitBonds (const Vector<MultiFab*> cost,
                                               std::string& knapsack_weight_type)
 {
-  printf("Calling InitBonds\n");
     BL_PROFILE_REGION_START("bmx_dem::InitBonds()");
     BL_PROFILE("bmx_dem::InitBonds()");
 

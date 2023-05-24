@@ -1462,16 +1462,17 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
   cC = p_vals[2];
   int i;
   Real dtp = dt/static_cast<Real>(nloop);
+//  printf("   Cell concentration A,B,C (at 1): %16.8e %16.8e %16.8e\n",cA,cB,cC);
 
   Real fA_tmp = fA;
   Real fB_tmp = fB;
   Real fC_tmp = fC;
-    Real cA0 = cA;
-    Real cB0 = cB;
-    Real cC0 = cC;
-    Real fA0 = fA_tmp;
-    Real fB0 = fB_tmp;
-    Real fC0 = fC_tmp;
+  Real cA0 = cA;
+  Real cB0 = cB;
+  Real cC0 = cC;
+  Real fA0 = fA_tmp;
+  Real fB0 = fB_tmp;
+  Real fC0 = fC_tmp;
 
   p_vals[3] = cA;
   p_vals[4] = cB;
@@ -1576,6 +1577,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
       fC_tmp = 0.0;
       cC += dC1/orig_cell_vol;
     }
+//  printf("   Cell concentration B (at 2): %16.8e\n",cB);
 
 #ifndef AMREX_USE_GPU
     if (cA < 0.0) {
@@ -1623,6 +1625,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     cA += dA3;
     cB += dB3;
     cC += dC3;
+//  printf("   Cell concentration B (at 1a): %16.8e\n",cB);
     if (cA < 0.0) {
       cA -= dA3;
       dA3 = -cA;
@@ -1660,6 +1663,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     dB3 = dtp*rB;
     cB += dB3;
     Real dV = dtp*rV;
+//  printf("   Cell concentration B (at 1c): %16.8e\n",cB);
     if (cB < 0.0) {
       cB -= dB3;
       // Assume a shorter time step if cB goes to zero for a full time step
@@ -1667,6 +1671,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
       dV = ttmp*rV;
       cB = 0.0;
     }
+//  printf("   Cell concentration B (at 1d): %16.8e\n",cB);
 
 #ifndef AMREX_USE_GPU
     if (cA < 0.0) printf("   Intermediate internal concentration A: %16.8e\n",cA);
@@ -1790,6 +1795,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     cA += dA2/new_cell_vol;
     cB += dB2/new_cell_vol;
     cC += dC2/new_cell_vol;
+//  printf("   Cell concentration B (at 3): %16.8e\n",cB);
 
     // ********************************************************************
     // Save fluid concentration increments - we will divide by grid volume 

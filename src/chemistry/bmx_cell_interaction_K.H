@@ -257,7 +257,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
 
     Real F;
     if (rn < rA) {
-      F= stiffness*(rn-rA)*(rn-rA)*(rn-rS);
+      F= -stiffness*(rn-rA)*(rn-rA)*(rn-rS);
     } else {
       F = 0.0;
     }

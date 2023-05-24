@@ -110,7 +110,6 @@ void BMXChemistry::setParams(const char* /*file*/)
   p_overlap = 0.2;
   scale_inc = 0.001;
   pp.query("bond_scaling_increment",scale_inc);
-  printf("SCALE_INC: %f\n",scale_inc);
 
   /* figure out cutoff for neighbor list */
   Real vol = SPECIES::max_vol;
