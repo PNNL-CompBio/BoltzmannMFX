@@ -1453,6 +1453,9 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     if (fC < 0.0) printf("   internal NEGATIVE fluid concentration C : %16.8e\n",fC);
 #endif
 
+   if (fA < 0.0 && fabs(fA) < 1.0e-15) fA = 0.0;
+   if (fB < 0.0 && fabs(fB) < 1.0e-15) fB = 0.0;
+   if (fC < 0.0 && fabs(fC) < 1.0e-15) fC = 0.0;
    if (fA < 0. || fB < 0. || fC < 0.) amrex::Abort("Negative fluid concentration into particle integrator");
 
   // Original cell concentrations
@@ -1584,16 +1587,19 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
       printf("   Internal concentration A : %16.8e\n"
              "     cA0: %16.8e fA0: %16.8e\n"
              "     cA1: %16.8e fA1: %16.8e\n",cA,cA0,fA0,cA1,fA1);
+      if (fabs(cA) < 1.0e-15) cA = 0.0;
     }
     if (cB < 0.0) {
       printf("   Internal concentration B : %16.8e\n"
              "     cB0: %16.8e fB0: %16.8e\n"
              "     cB1: %16.8e fB1: %16.8e\n",cB,cB0,fB0,cB1,fB1);
+      if (fabs(cB) < 1.0e-15) cB = 0.0;
     }
     if (cC < 0.0) {
       printf("   Internal concentration C : %16.8e\n"
         "          cC0: %16.8e fC0: %16.8e\n"
         "          cC1: %16.8e fC1: %16.8e\n",cC,cC0,fC0,cC1,fC1);
+      if (fabs(cC) < 1.0e-15) cC = 0.0;
     }
     if (cA < 0.0) is_negative = true;
     if (cB < 0.0) is_negative = true;
@@ -1625,7 +1631,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     cA += dA3;
     cB += dB3;
     cC += dC3;
-//  printf("   Cell concentration B (at 1a): %16.8e\n",cB);
+//  printf("   Cell concentration B (at 2a): %16.8e\n",cB);
     if (cA < 0.0) {
       cA -= dA3;
       dA3 = -cA;
@@ -1663,7 +1669,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     dB3 = dtp*rB;
     cB += dB3;
     Real dV = dtp*rV;
-//  printf("   Cell concentration B (at 1c): %16.8e\n",cB);
+//  printf("   Cell concentration B (at 2c): %16.8e\n",cB);
     if (cB < 0.0) {
       cB -= dB3;
       // Assume a shorter time step if cB goes to zero for a full time step
@@ -1671,7 +1677,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
       dV = ttmp*rV;
       cB = 0.0;
     }
-//  printf("   Cell concentration B (at 1d): %16.8e\n",cB);
+//  printf("   Cell concentration B (at 2d): %16.8e\n",cB);
 
 #ifndef AMREX_USE_GPU
     if (cA < 0.0) printf("   Intermediate internal concentration A: %16.8e\n",cA);
@@ -1859,6 +1865,9 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
       cC += dC2/new_cell_vol;
     }
 
+    if (cA < 0.0 && fabs(cA) < 1.0e-15) cA = 0.0;
+    if (cB < 0.0 && fabs(cB) < 1.0e-15) cB = 0.0;
+    if (cC < 0.0 && fabs(cC) < 1.0e-15) cC = 0.0;
 #ifndef AMREX_USE_GPU
     if (cA < 0.0) printf("   Final internal concentration A: %16.8e\n",cA);
     if (cB < 0.0) printf("   Final internal concentration B: %16.8e\n",cB);
@@ -1920,6 +1929,11 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
   p_vals[0] = p_vals[3];
   p_vals[1] = p_vals[4];
   p_vals[2] = p_vals[5];
+
+  if (p_vals[1] > 1.0e-7) {
+    printf("UPDATE Concentration B: %e id: %d cpu: %d\n",p_vals[1],
+        cell_ipar[intIdx::id],cell_ipar[intIdx::cpu]);
+  }
 #if 0
   printf("   Final concentration increment for A: %16.8e\n",p_vals[6]);
   printf("   Final concentration increment for B: %16.8e\n",p_vals[7]);
@@ -1994,6 +2008,7 @@ evaluateExchange(Real *par1, Real *par2, int *ipar1, int *ipar2, Real *xpar, Rea
     int jid = ipar2[intIdx::id];
     int jcpu = ipar2[intIdx::cpu];
 
+
     // Look for bonds connecting these two segments
     int ib, jb;
     for (ib=0; ib<i_bnds; ib++) {
@@ -2027,25 +2042,33 @@ evaluateExchange(Real *par1, Real *par2, int *ipar1, int *ipar2, Real *xpar, Rea
        Real dA = (cA_1-cA_2)*area*mtA*dt;
        Real dB = (cB_1-cB_2)*area*mtB*dt;
        Real dC = (cC_1-cC_2)*area*mtC*dt;
+#if 0
+    if (iid == 23 && icpu == 6) {
+      printf("Evaluating exchange increment for i"
+          " id: 23 cpu: 6 j id: %d cpu: %d A1: %e B1: %e C1: %e"
+          " A2: %e B2: %e C2: %e\n",jid,jcpu,cnc1[3],cnc1[4],cnc1[5],
+          cnc2[3],cnc2[4],cnc2[5]);
+    }
+#endif
 
        // Check to see if anything might go negative
        if (dA/vol1 > cnc1[0]/static_cast<Real>(i_bnds)) {
-         dA = cnc1[3]*vol1/static_cast<Real>(i_bnds);
+         dA = cnc1[0]*vol1/static_cast<Real>(i_bnds);
        }
        if (-dA/vol2 > cnc2[0]/static_cast<Real>(j_bnds)) {
-         dA = -cnc2[3]*vol2/static_cast<Real>(j_bnds);
+         dA = -cnc2[0]*vol2/static_cast<Real>(j_bnds);
        }
        if (dB/vol1 > cnc1[1]/static_cast<Real>(i_bnds)) {
-         dB = cnc1[4]*vol1/static_cast<Real>(i_bnds);
+         dB = cnc1[1]*vol1/static_cast<Real>(i_bnds);
        }
        if (-dB/vol2 > cnc2[1]/static_cast<Real>(j_bnds)) {
-         dB = -cnc2[4]*vol2/static_cast<Real>(j_bnds);
+         dB = -cnc2[1]*vol2/static_cast<Real>(j_bnds);
        }
        if (dC/vol1 > cnc1[2]/static_cast<Real>(i_bnds)) {
-         dC = cnc1[5]*vol1/static_cast<Real>(i_bnds);
+         dC = cnc1[2]*vol1/static_cast<Real>(i_bnds);
        }
        if (-dC/vol2 > cnc2[2]/static_cast<Real>(j_bnds)) {
-         dC = -cnc2[5]*vol2/static_cast<Real>(j_bnds);
+         dC = -cnc2[2]*vol2/static_cast<Real>(j_bnds);
        }
        // Update increments
        cnc1[3] -= dA/vol1;

@@ -102,6 +102,8 @@ void BMXParticleContainer::InitParticlesAscii (const std::string& file)
       if (!ifs.good())
           amrex::Abort("Error initializing particles from Ascii file. \n");
     }
+    // For testing inter-segment exchange
+    // host_particles[3].rdata(realIdx::first_data+1) = 1.0e-5;
     for (int i = 0; i < np; i++)
     {
       printf("PARTICLE: %d:%d x: %f y: %f z: %f theta: %f phi: %f [A]: %e [B]: %e [C]: %e type: %d\n",
