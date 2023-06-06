@@ -93,7 +93,7 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
     if (DEM::solve)
     {
         if (time == 0.0) pc->InitBonds(particle_cost, knapsack_weight_type);
-        //if (time == 77723.0) pc->PrintConnectivity(particle_cost,knapsack_weight_type);
+        //if (time == 100000.0) pc->PrintConnectivity(particle_cost,knapsack_weight_type);
         pc->EvolveParticles(dt, particle_cost, knapsack_weight_type, nsubsteps);
         pc->split_particles(time);
         pc->ParticleExchange(dt, particle_cost, knapsack_weight_type, nsubsteps);
