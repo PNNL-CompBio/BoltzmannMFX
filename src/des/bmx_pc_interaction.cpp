@@ -223,11 +223,11 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                           RealVect rot1(0.);
                           RealVect rot2(0.);
 
-                          if (p2.idata(intIdx::fuse_flag) != 0) {
-                            printf("p[%d] Found FUSING particle j in force"
-                                " loop id: %d cpu: %d\n",
-                                me,p2.idata(intIdx::id),p2.idata(intIdx::cpu));
-                          }
+//                          if (p2.idata(intIdx::fuse_flag) != 0) {
+//                            printf("p[%d] Found FUSING particle j in force"
+//                                " loop id: %d cpu: %d\n",
+//                                me,p2.idata(intIdx::id),p2.idata(intIdx::cpu));
+//                          }
                           evaluateForce(&diff[0],&particle.rdata(0),
                               &p2.rdata(0), &particle.idata(0),
                               &p2.idata(0), &v1[0], &v2[0], &rot1[0],
@@ -495,15 +495,21 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 }
 
 /*******************************************************************************
- *  clean up bonding information.                                              *
+ *    *
  ******************************************************************************/
-void BMXParticleContainer::CleanBonds (const Vector<MultiFab*> cost,
+void BMXParticleContainer::InitBonds (const Vector<MultiFab*> cost,
                                               std::string& knapsack_weight_type)
 {
-    BL_PROFILE_REGION_START("bmx_dem::CleanBonds()");
-    BL_PROFILE("bmx_dem::CleanBonds()");
+    BL_PROFILE_REGION_START("bmx_dem::InitBonds()");
+    BL_PROFILE("bmx_dem::InitBonds()");
 
     Real eps = std::numeric_limits<Real>::epsilon();
+
+    Real rlim = 1.0e-7;
+
+    BMXCellInteraction *interaction = BMXCellInteraction::instance();
+    std::vector<Real> fpar_vec = interaction->getForceParams();
+    Real *fpar = &fpar_vec[0];
 
     for (int lev = 0; lev <= finest_level; lev++)
     {
@@ -512,15 +518,6 @@ void BMXParticleContainer::CleanBonds (const Vector<MultiFab*> cost,
 
     if (n_at_lev == 0) continue;
 
-    BMXCellInteraction *interaction = BMXCellInteraction::instance();
-    std::vector<Real> xpar_vec = interaction->getForceParams();
-    Real *xpar = &xpar_vec[0];
-    /****************************************************************************
-     * DEBUG flag toggles:                                                      *
-     *   -> Print number of collisions                                          *
-     *   -> Print max (over substeps) particle velocity at each time step       *
-     *   -> Print max particle-wall and particle-particle forces                *
-     ***************************************************************************/
 
     // Debug level controls the detail of debug output:
     //   -> debug_level = 0 : no debug output
@@ -528,18 +525,13 @@ void BMXParticleContainer::CleanBonds (const Vector<MultiFab*> cost,
     //   -> debug_level = 2 : debug output for every substep
     const int debug_level = 0;
 
-    // Don't redistribute particles since that gets done elsewhere but update
-    // the neighbour list with fresh data
-    //if (n % 25 == 0) {
-      clearNeighbors();
-      Redistribute(0, 0, 0, 1);
-      fillNeighbors();
-      // send in "false" for sort_neighbor_list option
+    // update the neighbour list with fresh data
+    clearNeighbors();
+    Redistribute(0, 0, 0, 1);
+    fillNeighbors();
+    // send in "false" for sort_neighbor_list option
 
-      buildNeighborList(BMXCheckPair(DEM::neighborhood, false), false);
-    // } else {
-    //   updateNeighbors();
-    // }
+    buildNeighborList(BMXCheckPair(DEM::neighborhood, false), false);
 
     /********************************************************************
      * Particles routines                                               *
@@ -569,7 +561,7 @@ void BMXParticleContainer::CleanBonds (const Vector<MultiFab*> cost,
        * Particle-Particle collision forces (and torques)                 *
        *******************************************************************/
 
-      BL_PROFILE_VAR("clean_bonds()", clean_bonds);
+      BL_PROFILE_VAR("set_bonds()", set_bonds);
 
       auto nbor_data = m_neighbor_list[lev][index].data();
 
@@ -578,7 +570,7 @@ void BMXParticleContainer::CleanBonds (const Vector<MultiFab*> cost,
       // now we loop over the neighbor list and compute the forces
       int me = ParallelDescriptor::MyProc();
       amrex::ParallelForRNG(nrp,
-          [nrp,pstruct,nbor_data,xpar,me]
+          [nrp,pstruct,nbor_data,rlim,fpar,me]
           AMREX_GPU_DEVICE (int i, amrex::RandomEngine const& engine) noexcept
 //            [=] AMREX_GPU_DEVICE (int i, amrex::RandomEngine const& engine) noexcept
           {
@@ -608,22 +600,25 @@ void BMXParticleContainer::CleanBonds (const Vector<MultiFab*> cost,
             dist_y*dist_y +
             dist_z*dist_z;
 
+          printf("R: %e\n",sqrt(r2));
           RealVect diff(dist_x,dist_y,dist_z);
 
-          Real r_lm = maxInteractionDistance(&particle.rdata(0),&p2.rdata(0),
-              &particle.idata(0),&p2.idata(0),xpar[0]);
 
           AMREX_ASSERT_WITH_MESSAGE(
               not (particle.id() == p2.id() and
                 particle.cpu() == p2.cpu()),
               "A particle should not be its own neighbor!");
 
+          Real r_lm = maxInteractionDistance(&particle.rdata(0),&p2.rdata(0),
+              &particle.idata(0),&p2.idata(0), fpar[0]);
+
           if ( r2 <= (r_lm - small_number)*(r_lm - small_number) )
           {
 
-            // Fix up any bond interactions that are only showing up on
-            // one particle but not the other
-            fixBonds(&particle.idata(0), &p2.idata(0));
+            // create bond if fungi segment ends are close enough to
+            // each other
+            fixBonds(&diff[0], &particle.rdata(0), &particle.idata(0),
+                &p2.rdata(0), &p2.idata(0), rlim);
 
             // TODO: Do we need an OPENMP pragma here?
 
@@ -633,7 +628,7 @@ void BMXParticleContainer::CleanBonds (const Vector<MultiFab*> cost,
 
       amrex::Gpu::Device::synchronize();
 
-      BL_PROFILE_VAR_STOP(clean_bonds);
+      BL_PROFILE_VAR_STOP(set_bonds);
 
       /********************************************************************
        * Update runtime cost (used in load-balancing)                     *
@@ -669,5 +664,5 @@ void BMXParticleContainer::CleanBonds (const Vector<MultiFab*> cost,
 #pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
 #endif
 
-    BL_PROFILE_REGION_STOP("bmx_dem::CleanBonds()");
+    BL_PROFILE_REGION_STOP("bmx_dem::InitBonds()");
 }

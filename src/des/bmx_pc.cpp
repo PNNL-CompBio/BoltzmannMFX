@@ -96,7 +96,7 @@ Real
 BMXParticleContainer::computeParticleVolume () const
 {
     auto r = amrex::ReduceSum(*this, [=]
-       AMREX_GPU_HOST_DEVICE (const ParticleType& p) noexcept -> amrex::Real
+       AMREX_GPU_HOST_DEVICE (const ParticleType& p) -> amrex::Real
        {
            return p.rdata(realIdx::vol);
        });
@@ -109,7 +109,7 @@ Real
 BMXParticleContainer::computeParticleContent (int comp) const
 {
     auto r = amrex::ReduceSum(*this, [=]
-       AMREX_GPU_HOST_DEVICE (const ParticleType& p) noexcept -> amrex::Real
+       AMREX_GPU_HOST_DEVICE (const ParticleType& p) -> amrex::Real
        {
            return (p.rdata(realIdx::vol) * p.rdata(comp));
        });

@@ -23,6 +23,7 @@ amrex::Real BMXChemistry::radius_max = 0.0;
 amrex::Real BMXChemistry::length_max = 0.0;
 amrex::Real BMXChemistry::p_overlap = 0.0;
 amrex::Real BMXChemistry::fusion_prob= 0.0;
+amrex::Real BMXChemistry::scale_inc= 0.001;
 amrex::Real BMXChemistry::max_fusion_separation= 0.0;
 
 int BMXChemistry::p_num_reals = 0;
@@ -107,6 +108,9 @@ void BMXChemistry::setParams(const char* /*file*/)
   max_fusion_separation = 5.0e-4;
   pp.query("max_fusion_separation",max_fusion_separation);
   p_overlap = 0.2;
+  scale_inc = 0.001;
+  pp.query("bond_scaling_increment",scale_inc);
+
   /* figure out cutoff for neighbor list */
   Real vol = SPECIES::max_vol;
   radius_max = SPECIES::max_rad;
@@ -203,12 +207,12 @@ void BMXChemistry::getChemParams(std::vector<Real> &chempar)
   chempar.push_back(k2);
   chempar.push_back(k3);
   chempar.push_back(kr1);
-  chempar.push_back(kr2);
+  chempar.push_back(kr2);            // 5
   chempar.push_back(kr3);
   chempar.push_back(kg);
   chempar.push_back(kv);
   chempar.push_back(radius_max);
-  chempar.push_back(length_max);
+  chempar.push_back(length_max);     // 10
 }
 
 /** Returen a vector containing exchange parameters
@@ -232,5 +236,6 @@ std::vector<Real> BMXChemistry::getFusionParameters()
   std::vector<Real> ret;
   ret.push_back(fusion_prob);
   ret.push_back(max_fusion_separation);
+  ret.push_back(scale_inc);
   return ret;
 }

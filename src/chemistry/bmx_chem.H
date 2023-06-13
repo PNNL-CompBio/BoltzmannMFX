@@ -13,8 +13,8 @@
  * These two values need to be coordinated with the number of variables
  * defined in the realIdx and intIdx enumerations, plus the number of
  * variables in the undefined blocks */
-#define MAX_CHEM_REAL_VAR 33
-#define MAX_CHEM_INT_VAR 34
+#define MAX_CHEM_REAL_VAR 34
+#define MAX_CHEM_INT_VAR 35
 
 using amrex::Real;
 
@@ -61,7 +61,8 @@ struct realIdx
     gz,          // z-component of chemical gradient
     dadt,        // rate of change of the area
     dvdt,        // rate of change of the volume
-    tau_split,   // value of tau to use if fusion occurs                24
+    tau_split,   // value of tau to use if fusion occurs
+    bond_scale,  // parameter to reduce value of bond force             25
     first_data,  // index of first value in uncharacterized block
     count        // total number of elements in this enumeration
   };
@@ -101,16 +102,17 @@ struct intIdx
     new_flag,       // flag to identify new particle in fusion event
     fuse_id,        // id of particle that this particle is fusing to
     fuse_cpu,       // cpu of particle that this particle is fusing to           25
+    fuse_tip,       // site that fuses                                           
     dltd_site1,     // deleted site 1
     dltd_site2,     // deleted site 2
     dltd_id1,       // deleted id 1
-    dltd_id2,       // deleted id 2
-    dltd_cpu1,      // deleted cpu 1                                             30
+    dltd_id2,       // deleted id 2                                              30
+    dltd_cpu1,      // deleted cpu 1
     dltd_cpu2,      // deleted cpu 2
     fix_site,       // parameter to make sure that bonds fixed correctly
     id,             // unique identifier of segment
-    cpu,            // original process of segment
-    first_data,     // index of first value of uncharacterized block             35
+    cpu,            // original process of segment                               35
+    first_data,     // index of first value of uncharacterized block
     count           // total number of elements in this enumeration
   };
 };
@@ -253,6 +255,7 @@ class BMXChemistry
 
   static Real fusion_prob; // probability of segments fusing
   static Real max_fusion_separation; // maximum separtion when fusion can occur
+  static Real scale_inc; // increment for increasing bond scaling parameter
 
   std::vector<int> p_int_vals; // stored values of integers
 

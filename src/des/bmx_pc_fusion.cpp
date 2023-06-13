@@ -14,14 +14,14 @@ using namespace amrex;
 /*******************************************************************************
  *  Check all tips to see if they fuse with a neighbor.                        *
  ******************************************************************************/
-void BMXParticleContainer::EvaluateTipFusion (const Vector<MultiFab*> cost,
+bool BMXParticleContainer::EvaluateTipFusion (const Vector<MultiFab*> cost,
                                               std::string& knapsack_weight_type)
 {
+    bool ret = false;
     BL_PROFILE_REGION_START("bmx_dem::EvaluateTipFusion()");
     BL_PROFILE("bmx_dem::EvaluateTipFusion()");
 
-    Real eps = std::numeric_limits<Real>::epsilon();
-
+    int global_fused = 0;
     for (int lev = 0; lev <= finest_level; lev++)
     {
 
@@ -46,7 +46,7 @@ void BMXParticleContainer::EvaluateTipFusion (const Vector<MultiFab*> cost,
     //   -> debug_level = 0 : no debug output
     //   -> debug_level = 1 : debug output for every fluid step
     //   -> debug_level = 2 : debug output for every substep
-    const int debug_level = 0;
+    // const int debug_level = 0;
 
     // Don't redistribute particles since that gets done elsewhere but update
     // the neighbour list with fresh data
@@ -80,10 +80,11 @@ void BMXParticleContainer::EvaluateTipFusion (const Vector<MultiFab*> cost,
       auto& aos   = ptile.GetArrayOfStructs();
       ParticleType* pstruct = aos().dataPtr();
 
-      const int nrp = GetParticles(lev)[index].numRealParticles();
+      Gpu::DeviceScalar<int> fused_gpu(0);
+      int* fused = fused_gpu.dataPtr();
 
+      const int nrp = GetParticles(lev)[index].numRealParticles();
       // Number of particles including neighbor particles
-      int ntot = nrp;
 
       /********************************************************************
        * Particle-Particle collision forces (and torques)                 *
@@ -98,7 +99,7 @@ void BMXParticleContainer::EvaluateTipFusion (const Vector<MultiFab*> cost,
       // now we loop over the neighbor list and compute the forces
       int me = ParallelDescriptor::MyProc();
       amrex::ParallelForRNG(nrp,
-          [nrp,pstruct,nbor_data,fpar,xpar,me]
+          [nrp,pstruct,nbor_data,fpar,xpar,fused,me]
           AMREX_GPU_DEVICE (int i, amrex::RandomEngine const& engine) noexcept
 //            [=] AMREX_GPU_DEVICE (int i, amrex::RandomEngine const& engine) noexcept
           {
@@ -119,6 +120,7 @@ void BMXParticleContainer::EvaluateTipFusion (const Vector<MultiFab*> cost,
           {
           auto p2 = *mit;
           const int j = mit.index();
+          int fusing;
 
           Real dist_x = pos1[0] - p2.pos(0);
           Real dist_y = pos1[1] - p2.pos(1);
@@ -145,8 +147,9 @@ void BMXParticleContainer::EvaluateTipFusion (const Vector<MultiFab*> cost,
             // whether it is fusing to p2. If fusion occurs, mark particle
             // as being fused to p2.
             checkTipFusion(&diff[0], &particle.rdata(0), &particle.idata(0),
-                &p2.rdata(0), &p2.idata(0), fpar, me, engine);
+                &p2.rdata(0), &p2.idata(0), fpar, me, &fusing, engine);
 
+            Gpu::Atomic::Max(fused, fusing);
             // TODO: Do we need an OPENMP pragma here?
 
           }
@@ -154,6 +157,9 @@ void BMXParticleContainer::EvaluateTipFusion (const Vector<MultiFab*> cost,
           }); // end of loop over particles
 
       amrex::Gpu::Device::synchronize();
+
+      global_fused = std::max(global_fused, fused_gpu.dataValue());
+
 
       BL_PROFILE_VAR_STOP(calc_tip_fusions);
 
@@ -178,6 +184,7 @@ void BMXParticleContainer::EvaluateTipFusion (const Vector<MultiFab*> cost,
         (*cost[lev])[pti].plus<RunOn::Device>(wt, tbx);
       }
     }
+    ParallelDescriptor::ReduceIntMax(global_fused);
 
     // Redistribute particles at the end of all substeps (note that the particle
     // neighbour list needs to be reset when redistributing).
@@ -186,12 +193,11 @@ void BMXParticleContainer::EvaluateTipFusion (const Vector<MultiFab*> cost,
     //updateNeighbors();
 
     } // lev
+    if (global_fused == 1) ret = true;
 
-#ifdef _OPENMP
-#pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
-#endif
-
+    if (!ret) Redistribute(0, 0, 0, 1);
     BL_PROFILE_REGION_STOP("bmx_dem::EvaluateTipFusion()");
+    return ret;
 }
 
 /*******************************************************************************
@@ -203,11 +209,6 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
 {
   BL_PROFILE_REGION_START("bmx_dem::EvaluateInteriorFusion()");
   BL_PROFILE("bmx_dem::EvaluateInteriorFusion()");
-
-  Real eps = std::numeric_limits<Real>::epsilon();
-
-  int l_num_reals = BMXChemistry::p_num_reals;
-  int l_num_ints  = BMXChemistry::p_num_ints;
 
   for (int lev = 0; lev <= finest_level; lev++)
   {
@@ -233,7 +234,7 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
     //   -> debug_level = 0 : no debug output
     //   -> debug_level = 1 : debug output for every fluid step
     //   -> debug_level = 2 : debug output for every substep
-    const int debug_level = 0;
+    // const int debug_level = 0;
 
     // Don't redistribute particles since that gets done elsewhere but update
     // the neighbour list with fresh data
@@ -326,10 +327,6 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
           if ( r2 <= (r_lm - small_number)*(r_lm - small_number) )
           {
 
-            if (particle.idata(intIdx::split_flag) != 0) {
-              printf("p[%d] Found FUSING particle i id: %d cpu: %d r: %e flg: %d\n",
-                  me,particle.idata(intIdx::id),particle.idata(intIdx::cpu),sqrt(r2),intIdx::split_flag);
-            }
             // Check to see if p2 is fused to particle. If it is,
             // then mark particle as being fused to p2 and set
             // split_flag to 1.
@@ -378,6 +375,11 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
       }
       // Fill new particle data. If particle pid is split, the new particle
       // is at index np + poffsets[pid]
+
+
+      int l_num_reals = BMXChemistry::p_num_reals;
+      int l_num_ints  = BMXChemistry::p_num_ints;
+
       auto poffsets = offsets.data();
       int my_proc = amrex::ParallelDescriptor::MyProc();
       amrex::ParallelFor( nrp, [=] AMREX_GPU_DEVICE (int pid) noexcept
@@ -419,8 +421,10 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
           } else if (do_split_p[pid] > 1) {
             //TODO: Simultaneous fusion happened. We don't know how to
             //handle this.
+#ifndef AMREX_USE_GPU
             std::cout<<"Simultaneous fusion event happened. We cannot"
               " handle this situation"<<std::endl;
+#endif
           } else {
             int *ipar_orig = &p_orig.idata(0);
             ipar_orig[intIdx::split_flag] = 0;
@@ -452,6 +456,7 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
 
 
   } // lev
+
   // Redistribute particles at the end of all substeps (note that the particle
   // neighbour list needs to be reset when redistributing).
   clearNeighbors();
@@ -471,13 +476,9 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
 void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
                                               std::string& knapsack_weight_type)
 {
+#if 1
   BL_PROFILE_REGION_START("bmx_dem::CleanupFusion()");
   BL_PROFILE("bmx_dem::CleanupFusion()");
-
-  Real eps = std::numeric_limits<Real>::epsilon();
-
-  int l_num_reals = BMXChemistry::p_num_reals;
-  int l_num_ints  = BMXChemistry::p_num_ints;
 
   /*
   BMXCellInteraction *interaction = BMXCellInteraction::instance();
@@ -488,6 +489,8 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
   std::vector<Real> chempar_vec;
   bmxchem->getChemParams(chempar_vec);
   Real *chempar = &chempar_vec[0];
+  std::vector<Real> fpar_vec = bmxchem->getFusionParameters();
+  Real *fpar = &fpar_vec[0];
 
   for (int lev = 0; lev <= finest_level; lev++)
   {
@@ -507,7 +510,7 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
     //   -> debug_level = 0 : no debug output
     //   -> debug_level = 1 : debug output for every fluid step
     //   -> debug_level = 2 : debug output for every substep
-    const int debug_level = 0;
+    // const int debug_level = 0;
 
     // Don't redistribute particles since that gets done elsewhere but update
     // the neighbour list with fresh data
@@ -551,13 +554,12 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
       const int nrp = GetParticles(lev)[index].numRealParticles();
       const int num_total = GetParticles(lev)[index].numTotalParticles();
 
-      // Number of particles including neighbor particles
-      int ntot = nrp;
+       // Number of particles including neighbor particles
+       int ntot = nrp;
 
       /********************************************************************
        * Particle-Particle collision forces (and torques)                 *
        *******************************************************************/
-
 
       auto nbor_data = m_neighbor_list[lev][index].data();
 
@@ -566,11 +568,13 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
       // now we loop over the neighbor list and look for invalid connections
       int me = ParallelDescriptor::MyProc();
       amrex::ParallelFor(nrp,
-          [nrp,pstruct,nbor_data,chempar,ntot,me]
+          [nrp,pstruct,nbor_data,chempar,fpar,ntot,me]
           AMREX_GPU_DEVICE (int i) noexcept
           {
           auto& particle = pstruct[i];
 
+          // increment bond scaling parameter
+          incrementBondScale(&particle.rdata(0),&particle.idata(0),fpar);
           RealVect pos1(particle.pos());
 
           const auto neighbs = nbor_data.getNeighbors(i);
@@ -599,7 +603,7 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
                 particle.cpu() == p2.cpu()),
               "A particle should not be its own neighbor!");
 
-          int split_flag = 0;
+          // int split_flag = 0;
           if ( r2 <= (r_lm - small_number)*(r_lm - small_number) )
           {
             // Check to see if particle is bound to p2. If it is
@@ -649,6 +653,7 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
 #endif
 
   BL_PROFILE_REGION_STOP("bmx_dem::CleanupFusion()");
+#endif
 }
 
 /*******************************************************************************
@@ -660,11 +665,6 @@ void BMXParticleContainer::PrintConnectivity (const Vector<MultiFab*> cost,
 {
   BL_PROFILE_REGION_START("bmx_dem::PrintConnectivity()");
   BL_PROFILE("bmx_dem::PrintConnectivity()");
-
-  Real eps = std::numeric_limits<Real>::epsilon();
-
-  int l_num_reals = BMXChemistry::p_num_reals;
-  int l_num_ints  = BMXChemistry::p_num_ints;
 
   for (int lev = 0; lev <= finest_level; lev++)
   {
@@ -699,9 +699,6 @@ void BMXParticleContainer::PrintConnectivity (const Vector<MultiFab*> cost,
 
       const int nrp = GetParticles(lev)[index].numRealParticles();
       const int num_total = GetParticles(lev)[index].numTotalParticles();
-
-      // Number of particles including neighbor particles
-      int ntot = nrp;
 
       /********************************************************************
        * Particle-Particle collision forces (and torques)                 *

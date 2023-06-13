@@ -75,7 +75,7 @@ void BMXParticleContainer::ParticleExchange (Real dt,
             fillNeighbors();
             // send in "false" for sort_neighbor_list option
 
-            buildNeighborList(BMXCheckPair(DEM::neighborhood), false);
+            buildNeighborList(BMXCheckPair(DEM::neighborhood,false), false);
         } else {
             updateNeighbors();
         }
