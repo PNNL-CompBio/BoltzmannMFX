@@ -91,9 +91,9 @@ by diffusion in the agar growth medium.
 An additional equation couples the concentration of $B_{in}$ to cell growth.
 The growth is governed by the equation
 \[
-\frac{V_{cell}}{dt} = V_{cell}k_v[B_{in}]
+\frac{dV_{cell}}{dt} = V_{cell}k_v[B_{in}]
 \]
-The factor of $V_{cell}$ means that the total volume produced be unit time is
+The factor of $V_{cell}$ means that the total volume produced per unit time is
 governed by the total amount of $B_{in}$ insided the cell. For the time being,
 the rate constants are only non-zero if the segment is below the maximum size
 limits. This means that growth only occurs at growth tips or, to a lesser
@@ -102,7 +102,7 @@ extent, segments that have just branched.
 The transport equations into and out of the cell can be examined in more detail.
 To avoid confusion with the cell area $A_{cell}$, we focus on component $C$ but similar comments
 apply to component $A$. We define coefficients $k'_3$ and $k'_{-3}$ as mass-transfer
-coefficients and the fluxes of material into the cell, $f_{in}$, and out $f_{out}$ can be written
+coefficients and the fluxes of material into the cell, $f_{in}$, and out, $f_{out}$, can be written
 as
 \begin{eqnarray*}
 f_{in} &=& [C_{out}]A_{cell}k'_3 \\
@@ -148,7 +148,7 @@ rate equations governing this system become
 \frac{d [C_{out}]}{d t} &=&k'_{-3} \frac{A_{cell}}{V_{grid}}[C_{in}]
 -k'_3\frac{A_{cell}}{V_{grid}} [C_{out}]
 \end{eqnarray*}
-From here on in, we drop the primes on $k'_1$, $k'_{-1}$, $k'_3$ and $k'_{-3}$.
+From here on, we drop the primes on $k'_1$, $k'_{-1}$, $k'_3$ and $k'_{-3}$.
 
 Numerically, the rate equations are currently being handled using the following scheme
 \begin{list}{$\bullet$}{}
@@ -843,7 +843,7 @@ attach to
 \item a list of segment ids that were deleted from this segment (up to 2)
 \item a list of segment cpus that were deleted from this segment (up to 2)
 \end{list}
-Each segment has a site at either end that is capabable of forming bonds with other segments.
+Each segment has a site at either end that is capable of forming bonds with other segments.
 These sites are labeled 1 and 2 and each site can be bonded to a maximum of two other segments
 for a maximum of four bonds per segment. The last eight items in the list are only used to
 support fusion of a growth tip to another segment. Not all of the parameters are necessarily
@@ -899,9 +899,9 @@ and marks itself accordingly. Segment A also adds segment B to its list of bondi
 checks its neighbors to see if it is a fusing tip and if it has marked the segment as a fusing
 partner. If it finds that it is a fusing partner, the segment marks itself as splitting and
 stores the id and cpu of the tip that it is fusing with. It also adds the tip as a bonding
-partner. It the example shown in Figure \ref{fig:fusion}, segment B finds that segment A has
+partner. In the example shown in Figure \ref{fig:fusion}, segment B finds that segment A has
 marked itself as fusing and lists segment B as its fusing partner. Segment B marks itself as
-splitting, stores the id and spu of segment A and adds A as a bonding partner.
+splitting, stores the id and cpu of segment A and adds A as a bonding partner.
 \item A third loop over segments is performed and all segments marked for splitting are split
 into two segments. In the example in Figure \ref{fig:fusion}, segment B generates segment D.
 Segment D is marked as being a new segment derived from a fusion event.
@@ -910,21 +910,20 @@ original segment corresponding to bonding site 2. Because of this, the bonds at 
 original segment B that bond to segment C are no longer valid and need to be replaced with bonds to D.
 Similarly, bonds to A, B and C can be added to D at this point since D has access to B's
 connectivity data. However, A does not list D as a bonding partner and C needs to modify its
-bonding data to remove the bonds to B and add bonds to D. To do this, B stores the ids and cpus
-of the one or two bonds to C that were deleted.
+bonding data to remove the bonds to B and add bonds to D. To do this, B stores the id and cpu
+of the bond to C that was deleted. If B is attached to two segments at site 2, then the ids and
+cpus of both segments are stored.
 
 An additional complication is that when A and the
 segments that were bonded to B at site 2 update their bond lists in the force loop, they
 won't know to which site to add the new bonds. This can be handled by the integer bond fix
-parameter. When segment A determines that it is fusing to segment B, it sets it copy of the
-bond fix parameter to the value of 1 or 2 corresponding to the end of the segment that is
-fusing to . When segment A determines that it is fusing to segment B, it sets it copy of the
+parameter. When segment A determines that it is fusing to segment B, it sets its copy of the
 bond fix parameter to the value of 1 or 2 corresponding to the end of the segment that is
 fusing to B. The segments that were formerly bonded to B, in this case C, will set this
 parameter in the next step.
 
-\item A fourth double loop including neighbors is performed to fix up the bonds on segment C.
-Bonds between segment A and D and segment C and D will get fixed in the force loop when
+\item A fourth double loop including neighbors is performed to fix up the bond on segment C.
+Bonds between segments A and D and segments C and D will get fixed in the force loop when
 bonds are recognized between segments A and C and segment D. Segment B will still show up as
 a neighbor of
 segment C in the cleanup loop. However, segment B will be marked as having just been split and
@@ -936,16 +935,18 @@ the bond fix flag to the site at which the bond to B was attached.
 Once these operations have been completed, the force loop will fix up any remaining
 bonds that are only defined on one segment of a bonding pair and all other fusion parameters are
 reset to a state that can initiate new events. For a side branching event, the bond fix parameter
-is set to zero. If zero is encountered in the force loop, then segment that is updating its bond
-list checks which site the first bond in its bond list is using and then sets the bond fix
-parameter to the other site.
+will be set to zero. If a zero value for the bond fix parameter is encountered in the force loop,
+then the segment that is
+updating its bond list checks which site the first bond in its bond list is using and then sets
+the bond fix parameter to the other site. This is enough to guarantee that the new bond is
+attached to the correct site.
 
 \section{Cylinder interactions}
-Our model for interacting cylinders is based on the minimum distance between two
+Our model for interacting cylinders is based on finding the minimum distance between two
 line segments. The segments are defined by the line joining the centers of the two
 end caps for each cylinder. If these two points are defined as $\rvec_1$ and $\rvec_2$
-and the separation between them is defined as $\rhvec = \rvec_2-\rvec_1$ then the line
-segment $\Rvec(\tau)$ joining the endpoints is defined as
+and the separation between them is $\rhvec = \rvec_2-\rvec_1$, then the line
+segment $\Rvec(\tau)$ joining the endpoints is defined by
 \[
 \Rvec(\tau) = \rvec_1 +\tau\rhvec\;\;\;\;\;\;\;\mbox{for}\;\;\tau\in [0,1]
 \]
