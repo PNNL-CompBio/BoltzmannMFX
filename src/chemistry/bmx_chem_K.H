@@ -1836,7 +1836,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
       cB -= dB2/new_cell_vol;
       fB_tmp += dfB;
       dB2 = -cB*new_cell_vol;
-      cA = 0.0;
+      cB = 0.0;
       dfB = dB2/fluid_vol;
       fB_tmp -= dfB;
     }
@@ -1852,7 +1852,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
       cC -= dC2/new_cell_vol;
       fC_tmp += dfC;
       dC2 = -cC*new_cell_vol;
-      cA = 0.0;
+      cC = 0.0;
       dfC = dC2/fluid_vol;
       fC_tmp -= dfC;
     }
