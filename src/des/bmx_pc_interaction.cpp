@@ -167,9 +167,9 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 
             // now we loop over the neighbor list and compute the forces
             int me = ParallelDescriptor::MyProc();
-            amrex::ParallelFor(nrp,
+            amrex::ParallelForRNG(nrp,
                 [nrp,pstruct,fc_ptr,nbor_data,subdt,ntot,fpar,me,n]
-              AMREX_GPU_DEVICE (int i) noexcept
+              AMREX_GPU_DEVICE (int i, amrex::RandomEngine const& engine) noexcept
               {
                   auto& particle = pstruct[i];
 
@@ -201,7 +201,7 @@ void BMXParticleContainer::EvolveParticles (Real dt,
 
                       Real r_lm = maxInteractionDistance(&particle.rdata(0),&p2.rdata(0),
                                                          &particle.idata(0),&p2.idata(0),
-                                                         fpar[0]);
+                                                         &fpar[0]);
 //                      printf("R_LM: %f\n",r_lm);
 
                       AMREX_ASSERT_WITH_MESSAGE(
@@ -233,10 +233,6 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                               &p2.idata(0), &v1[0], &v2[0], &rot1[0],
                               &rot2[0], fpar, me, i, j, n);
 
-//                          printf("w1x: %e w1y: %e w1z: %e w2x: %e w2y: %e w2z: %e\n",
-//                              rot1[0],rot1[1],rot1[2],rot2[0],rot2[1],rot2[2]);
-//                          printf("v1x: %e r1x: %e v2x: %e r2x: %e\n",
-//                              v1[0],pos1[0],v2[0],p2.pos(0));
 #ifdef _OPENMP
 #pragma omp critical
                           {
@@ -269,13 +265,24 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                   RealVect vcom(0.);
                   RealVect vrot(0.);
                   evaluateSurfaceForce(&pos1[0],&particle.rdata(0),
-                      &particle.idata(0),&vcom[0],&vrot[0],fpar);
+                      &particle.idata(0),&vcom[0],&vrot[0],fpar, engine);
                   amrex::Gpu::Atomic::Add(&fc_ptr[i         ], vcom[0]);
                   amrex::Gpu::Atomic::Add(&fc_ptr[i + ntot  ], vcom[1]);
                   amrex::Gpu::Atomic::Add(&fc_ptr[i + 2*ntot], vcom[2]);
                   amrex::Gpu::Atomic::Add(&fc_ptr[i + 3*ntot], vrot[0]);
                   amrex::Gpu::Atomic::Add(&fc_ptr[i + 4*ntot], vrot[1]);
                   amrex::Gpu::Atomic::Add(&fc_ptr[i + 5*ntot], vrot[2]);
+#if 0
+                  printf("id: %d cpu: %d vx1: %e vy1: %e vz1: %e\n",
+                          particle.idata(intIdx::id),particle.idata(intIdx::cpu),
+                          fc_ptr[i],fc_ptr[i+1],fc_ptr[i+2]);
+                  printf("id: %d cpu: %d wx1: %e wy1: %e wz1: %e\n",
+                          particle.idata(intIdx::id),particle.idata(intIdx::cpu),
+                          fc_ptr[i+3],fc_ptr[i+4],fc_ptr[i+5]);
+                  printf("id: %d cpu: %d x1: %e y1: %e z1: %e\n",
+                          particle.idata(intIdx::id),particle.idata(intIdx::cpu),
+                          pos1[0],pos1[1],pos1[2]);
+#endif
               }); // end of loop over particles
 
             amrex::Gpu::Device::synchronize();
@@ -600,7 +607,6 @@ void BMXParticleContainer::InitBonds (const Vector<MultiFab*> cost,
             dist_y*dist_y +
             dist_z*dist_z;
 
-          printf("R: %e\n",sqrt(r2));
           RealVect diff(dist_x,dist_y,dist_z);
 
 
@@ -610,7 +616,7 @@ void BMXParticleContainer::InitBonds (const Vector<MultiFab*> cost,
               "A particle should not be its own neighbor!");
 
           Real r_lm = maxInteractionDistance(&particle.rdata(0),&p2.rdata(0),
-              &particle.idata(0),&p2.idata(0), fpar[0]);
+              &particle.idata(0),&p2.idata(0),&fpar[0]);
 
           if ( r2 <= (r_lm - small_number)*(r_lm - small_number) )
           {

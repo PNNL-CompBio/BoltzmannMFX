@@ -125,10 +125,11 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 #ifdef NEW_CHEM
     const int interp_ng    = 1;    // Only one layer needed for interpolation
     //const int interp_ncomp = bmxchem->getIntData(intIdx::num_reals);
-    const int interp_ncomp = 3;
+    const int interp_ncomp = NUM_CHEM_COMPONENTS;
 
     if (m_leveldata[lev]->X_k->nComp() != interp_ncomp)
-      amrex::Abort("We are not interpolating the right number of components in calc_txfr_particle");
+      amrex::Abort("We are not interpolating the right"
+          " number of components in calc_txfr_particle");
 #endif
 
     if (OnSameGrids)

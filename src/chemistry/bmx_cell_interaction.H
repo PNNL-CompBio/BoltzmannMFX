@@ -46,26 +46,17 @@ class BMXCellInteraction
   
   public:
 
-  static Real p_bndry_width;   // cell surface interaction parameter
-#if 1
-  static Real p_stiffness;     // strength of cell interaction. This parameter assumes
-                               // viscous drag is incorporated into force
-#else
-  static Real p_r_stiffness;   // strength of repulsive cell interaction. This parameter assumes
-                            // viscous drag is incorporated into force
-  static Real p_a_stiffness;   // strength of adhesive cell interaction. This parameter assumes
-                               // viscous drag is incorporated into force
-#endif
+  static Real p_fungi_bndry_width;   // fungi surface interaction parameter
+  static Real p_fungi_stiffness;     // strength of fungi interaction.
+  static Real p_cell_bndry_width;   // cell surface interaction parameter
+  static Real p_cell_stiffness;     // strength of cell interaction.
 
   static Real p_z_wall;        // z-location of surface
-  static Real p_z_bndry_width; // cell-growth surface interaction parameter
 
-#if 1
-  static Real p_z_stiffness;   // strength of cell-growth surface interaction
-#else
-  static Real p_z_r_stiffness; // strength of repulsive cell-growth surface interaction
-  static Real p_z_a_stiffness; // strength of adhesive cell-growth surface interaction
-#endif
+  static Real p_fungi_z_bndry_width; // fungi-growth surface interaction parameter
+  static Real p_fungi_z_stiffness;   // strength of fungi-growth surface interaction
+  static Real p_cell_z_bndry_width; // cell-growth surface interaction parameter
+  static Real p_cell_z_stiffness;   // strength of cell-growth surface interaction
 
   static Real p_z_gravity;     // factor for gravity
 
@@ -74,6 +65,10 @@ class BMXCellInteraction
   static Real p_bond_cutoff;   // cutoff radius for detecting a bond
 
   static Real p_viscosity;     // drag parameter for segments
+
+  static Real p_ran_scale;     // magnitude of random velocity fluctuations
+
+  static Real p_fluc_mix;      // fluctuation mixing coefficient
 
   static std::vector<Real> p_force_params;  // vector containing all force params
 

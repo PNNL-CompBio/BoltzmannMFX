@@ -137,7 +137,7 @@ bool BMXParticleContainer::EvaluateTipFusion (const Vector<MultiFab*> cost,
           RealVect diff(dist_x,dist_y,dist_z);
 
           Real r_lm = maxInteractionDistance(&particle.rdata(0),&p2.rdata(0),
-              &particle.idata(0),&p2.idata(0),xpar[0]);
+              &particle.idata(0),&p2.idata(0),&xpar[0]);
 
           AMREX_ASSERT_WITH_MESSAGE(
               not (particle.id() == p2.id() and
@@ -326,7 +326,7 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
           RealVect diff(dist_x,dist_y,dist_z);
 
           Real r_lm = maxInteractionDistance(&particle.rdata(0),&p2.rdata(0),
-              &particle.idata(0),&p2.idata(0),xpar[0]);
+              &particle.idata(0),&p2.idata(0),&xpar[0]);
           AMREX_ASSERT_WITH_MESSAGE(
               not (particle.id() == p2.id() and
                 particle.cpu() == p2.cpu()),

@@ -13,7 +13,8 @@
  * These two values need to be coordinated with the number of variables
  * defined in the realIdx and intIdx enumerations, plus the number of
  * variables in the undefined blocks */
-#define MAX_CHEM_REAL_VAR 34
+#define NUM_CHEM_COMPONENTS 5
+#define MAX_CHEM_REAL_VAR 28 + 3*NUM_CHEM_COMPONENTS
 #define MAX_CHEM_INT_VAR 35
 
 using amrex::Real;
@@ -63,6 +64,9 @@ struct realIdx
     dvdt,        // rate of change of the volume
     tau_split,   // value of tau to use if fusion occurs
     bond_scale,  // parameter to reduce value of bond force             25
+    ranvx,       // random x velocity
+    ranvy,       // random y velocity
+    ranvz,       // random z velocity                                   28
     first_data,  // index of first value in uncharacterized block
     count        // total number of elements in this enumeration
   };
@@ -235,11 +239,18 @@ class BMXChemistry
   private:
 
   // Hardwired variables for ABC model
-  static Real k1, kr1;   // rate coefficients for species A into and out of biological cell
-  static Real k2, kr2;   // rate coefficients for converting A into B and C inside biological cell
-  static Real k3, kr3;   // rate coefficients for species C into and out of biological cell
-  static Real kg, kv;        // cell growth coefficients
+  static Real k1, kr1;   // rate coefficients for species A into and out of fungi
+  static Real k2, kr2;   // rate coefficients for converting A into B and C inside fungi
+  static Real k3, kr3;   // rate coefficients for species C into and out of fungi
+  static Real k4, kr4;   // rate coefficients for species D into and out of bacterium
+  static Real k5, kr5;   // rate coefficients for species C and D into E and A
+  static Real k6, kr6;   // rate coefficients for species A into and out of bacterium
+  static Real k7, kr7;   // rate coefficients for species C into and out of bacterium
 
+  static Real kg, kv;        // fungi growth coefficients
+  static Real kb, kbv;       // bacterium growth coefficients
+
+  static Real bacteria_radius_max;  // maximum value of radius for bacterium
   static Real radius_max;  // maximum value of cylinder radius for fungi segment
   static Real length_max;  // maximum value of cylinder length for fungi segment
   static Real brnch_prob;  // probability of side branching

@@ -26,9 +26,14 @@ void set_ic_chem_species (const Box& sbx,
                           const GpuArray<Real, 3>& /*p_hi*/,
                           const Array4<Real> X_k_arr)
 {
-#ifdef NEW_CHEM
-  const RealVect chem(&FLUID::init_conc[0]);
-#endif
+  Vector<Real> h_vec(NUM_CHEM_COMPONENTS,0.0);
+  Gpu::DeviceVector<Real> d_vec(NUM_CHEM_COMPONENTS);
+  int ii;
+  // Initialize h_vec (on host)
+  for (ii=0; ii<NUM_CHEM_COMPONENTS; ii++) h_vec[ii] = FLUID::init_conc[ii];
+  // Copy host to device
+  Gpu::copy(Gpu::hostToDevice,h_vec.begin(),h_vec.end(),d_vec.begin());
+  auto vec_ptr = d_vec.data();
 
   const int nchem_species = X_k_arr.nComp();
 
@@ -65,7 +70,7 @@ void set_ic_chem_species (const Box& sbx,
          if (z > zhi)
             X_k_arr(i,j,k,n) = 0.0;
          else
-            X_k_arr(i,j,k,n) = chem[n];
+            X_k_arr(i,j,k,n) = vec_ptr[n];
 #endif
       }); 
 }

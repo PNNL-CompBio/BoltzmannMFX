@@ -17,21 +17,31 @@
  * @param p2 parameters describing particle 2
  * @param i1 integer parameters describing particle 1
  * @param i2 integer parameters describing particle 2
- * @param bndry_width width of attractive region
+ * @param fpar force parameters
  * @return maximum interaction distance between particles 1 and 2
  */
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 Real 
 maxInteractionDistance(const Real *p1, const Real *p2, const int *i1,
-    const int *i2, Real bndry_width)
+    const int *i2, Real *fpar)
 {
   if (i1[intIdx::cell_type] == cellType::YEAST &&
       i2[intIdx::cell_type] == cellType::YEAST) {
+    Real bndry_width = fpar[2];
+    Real r1 = p1[realIdx::radius];
+    Real r2 = p2[realIdx::radius];
+    return (r1+r2+bndry_width);
+  } else if ((i1[intIdx::cell_type] == cellType::FUNGI &&
+      i2[intIdx::cell_type] == cellType::YEAST) ||
+      (i1[intIdx::cell_type] == cellType::YEAST &&
+      i2[intIdx::cell_type] == cellType::FUNGI)) {
+    Real bndry_width = fpar[2];
     Real r1 = p1[realIdx::radius];
     Real r2 = p2[realIdx::radius];
     return (r1+r2+bndry_width);
   } else if (i1[intIdx::cell_type] == cellType::FUNGI &&
       i2[intIdx::cell_type] == cellType::FUNGI) {
+    Real bndry_width = fpar[0];
     Real r1 = p1[realIdx::c_length];
     Real r2 = p2[realIdx::c_length];
     return (1.5*(r1+r2)+bndry_width);
@@ -221,6 +231,34 @@ evaluateMinimumDistance(Real xi1, Real yi1, Real zi1,
 }
 
 /**
+ * calculate the minimum distance between point (px,py,pz)
+ * and a line segment defined by the two points (x1,y1,z1)
+ * and (x2,y2,z2)
+ * @param px, py, pz coordinates of point
+ * @param x1,y1,z1,x2,y2,z2 endpoints of segment
+ * @param tau location along segment representing location
+ *            of minimum separation
+ */
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void 
+evaluatePointSegmentMinimumDistance(Real px, Real py, Real pz,
+    Real x1, Real y1, Real z1, Real x2, Real y2, Real z2,
+    Real *tau)
+{
+  Real rho[3];
+  rho[0] = x2-x1;
+  rho[1] = y2-y1;
+  rho[2] = z2-z1;
+  Real rho2 = rho[0]*rho[0]+rho[1]*rho[1]+rho[2]*rho[2];
+  Real rp = rho[0]*(px-x1)+rho[1]*(py-y1)+rho[2]*(pz-z1);
+  *tau = rp/rho2;
+  // If tau falls outside of allowed range [0,1], set minimum
+  // distance to endpoint
+  if (*tau < 0.0) *tau = 0.0;
+  if (*tau > 1.0) *tau = 1.0;
+}
+
+/**
  * Calculate the force between 2 particles. r12 is computed outside this routine
  * and periodic boundary conditions, if applicable, have already been applied
  * @param r12 position of particle 2 - position of particle 1
@@ -242,8 +280,8 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
 {
   if (ipar1[intIdx::cell_type] == cellType::YEAST &&
       ipar2[intIdx::cell_type] == cellType::YEAST) {
-    Real bndry_width = fpar[0];
-    Real stiffness = fpar[1];
+    Real bndry_width = fpar[2];
+    Real stiffness = fpar[3];
     Real rS = par1[realIdx::radius] + par2[realIdx::radius];
     Real rA = rS + bndry_width;
     Real rx, ry, rz, rn;
@@ -274,6 +312,331 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     rotv2[0] = 0.0;
     rotv2[1] = 0.0;
     rotv2[2] = 0.0;
+  } else if ((ipar1[intIdx::cell_type] == cellType::YEAST &&
+      ipar2[intIdx::cell_type] == cellType::FUNGI) ||
+      (ipar1[intIdx::cell_type] == cellType::FUNGI &&
+       ipar2[intIdx::cell_type] == cellType::YEAST)) {
+    Real fungi_bndry_width = fpar[0];
+    Real fungi_stiffness = fpar[1];
+    Real cell_bndry_width = fpar[2];
+    Real cell_stiffness = fpar[3];
+    Real bndry_width = 0.5*(fungi_bndry_width+cell_bndry_width);
+    Real stiffness = std::sqrt(fungi_stiffness*cell_stiffness);
+    Real rS = par1[realIdx::radius] + par2[realIdx::radius];
+    Real rA = rS + bndry_width;
+    Real visc = fpar[12];
+    Real f1[3];
+    Real f2_s1[3];
+    Real f2_s2[3];
+    Real px, py, pz;
+    Real rx, ry, rz, rn, r;
+    Real x1, y1, z1, x2, y2, z2;
+    bool part1_seg2;
+    rx = r12[0];
+    ry = r12[1];
+    rz = r12[2];
+    rn = sqrt(rx*rx+ry*ry+rz*rz);
+    rx /= rn;
+    ry /= rn;
+    rz /= rn;
+    int ii, jj, kk;
+
+    if (ipar1[intIdx::cell_type] == cellType::YEAST &&
+              ipar2[intIdx::cell_type] == cellType::FUNGI) {
+      part1_seg2 = true;
+    } else {
+      part1_seg2 = false;
+    }
+
+    for (int ii=0; ii<3; ii++) {
+      f1[ii] = 0.0;
+      f2_s1[ii] = 0.0;
+      f2_s2[ii] = 0.0;
+    }
+
+    Real c_length, theta, phi;
+    if (part1_seg2) {
+      c_length = par2[realIdx::c_length];
+      theta = par2[realIdx::theta];
+      phi = par2[realIdx::phi];
+    } else {
+      c_length = par1[realIdx::c_length];
+      theta = par1[realIdx::theta];
+      phi = par1[realIdx::phi];
+    }
+    Real ct = cos(theta);
+    Real st = sin(theta);
+    Real cp = cos(phi);
+    Real sp = sin(phi);
+    Real nx = st*cp;
+    Real ny = st*sp;
+    Real nz = ct;
+
+    // Find interaction centers on segment 2
+    if (part1_seg2) {
+      x1 = -0.5*nx*c_length;
+      y1 = -0.5*ny*c_length;
+      z1 = -0.5*nz*c_length;
+      x2 = 0.5*nx*c_length;
+      y2 = 0.5*ny*c_length;
+      z2 = 0.5*nz*c_length;
+      px = r12[0];
+      py = r12[1];
+      pz = r12[2];
+    } else {
+      x1 = r12[0] - 0.5*nx*c_length;
+      y1 = r12[1] - 0.5*ny*c_length;
+      z1 = r12[2] - 0.5*nz*c_length;
+      x2 = r12[0] + 0.5*nx*c_length;
+      y2 = r12[1] + 0.5*ny*c_length;
+      z2 = r12[2] + 0.5*nz*c_length;
+      px = 0.0;
+      py = 0.0;
+      pz = 0.0;
+    }
+
+    // Construct rotation matrices for this segment (for later use)
+    Real rot[3][3];
+    rot[0][0] = cp*st;
+    rot[0][1] = -sp;
+    rot[0][2] = -cp*ct;
+    rot[1][0] = sp*st;
+    rot[1][1] = cp;
+    rot[1][2] = -sp*ct;
+    rot[2][0] = ct;
+    rot[2][1] = 0.0;
+    rot[2][2] = st;
+
+    Real tau;
+    evaluatePointSegmentMinimumDistance(px, py, pz,
+        x1, y1, z1, x2, y2, z2, &tau);
+    // Calculate segment vectors
+    Real rho[3];
+    rho[0] = x2-x1;
+    rho[1] = y2-y1;
+    rho[2] = z2-z1;
+
+    // Evaluate forces and distribute forces to individual sites
+    Real rt[3];
+    rt[0] = x1 + tau*rho[0];
+    rt[1] = y1 + tau*rho[1];
+    rt[2] = z1 + tau*rho[2];
+    rx = px - rt[0];
+    ry = py - rt[1];
+    rz = pz - rt[2];
+    r = sqrt(rx*rx+ry*ry+rz*rz);
+
+    if (r > 1.0e-8) {
+      rx /= r;
+      ry /= r;
+      rz /= r;
+    } else {
+      /* Particle intersects segment (this is a corner case).
+       * Pick an arbitrary separation vector perpendicular to rho */
+      Real Rt = std::sqrt(rho[0]*rho[0] + rho[1]*rho[1]
+          + rho[2]*rho[2]);
+      for (int ii=0; ii<3; ii++) {
+        rho[ii] /= Rt;
+      }
+
+      Real qx, qy, qz;
+      if (rho[0] > 0.0 || rho[1] > 0.0) {
+        qx = 0.0;
+        qy = 0.0;
+        qz = 1.0;
+      } else {
+        qx = 1.0;
+        qy = 0.0;
+        qz = 0.0;
+      }
+
+      /* Take cross product of vectors and multiply it by 1.0e-8 */
+      Real rx = qy*rho[2]-qz*rho[1];
+      Real ry = qz*rho[0]-qx*rho[2];
+      Real rz = qx*rho[1]-qy*rho[0];
+      rx *= 1.0e-08;
+      ry *= 1.0e-08;
+      rz *= 1.0e-08;
+    }
+
+    Real F;
+    if (r < rA) {
+      F= -stiffness*(r-rA)*(r-rA)*(r-rS);
+    } else {
+      F = 0.0;
+    }
+    if (F != 0.0) {
+      if (part1_seg2) {
+        f1[0] += F*rx;
+        f1[1] += F*ry;
+        f1[2] += F*rz;
+        f2_s1[0] -= F*rx*(1.0-tau);
+        f2_s1[1] -= F*ry*(1.0-tau);
+        f2_s1[2] -= F*rz*(1.0-tau);
+        f2_s2[0] -= F*rx*tau;
+        f2_s2[1] -= F*ry*tau;
+        f2_s2[2] -= F*rz*tau;
+      } else {
+        f1[0] -= F*rx;
+        f1[1] -= F*ry;
+        f1[2] -= F*rz;
+        f2_s1[0] += F*rx*(1.0-tau);
+        f2_s1[1] += F*ry*(1.0-tau);
+        f2_s1[2] += F*rz*(1.0-tau);
+        f2_s2[0] -= F*rx*tau;
+        f2_s2[1] += F*ry*tau;
+        f2_s2[2] += F*rz*tau;
+      }
+    }
+
+    if (part1_seg2) {
+      vel1[0] = f1[0];
+      vel1[1] = f1[1];
+      vel1[2] = f1[2];
+      rotv1[0] = 0.0;
+      rotv1[1] = 0.0;
+      rotv1[2] = 0.0;
+    } else {
+      vel2[0] = f1[0];
+      vel2[1] = f1[1];
+      vel2[2] = f1[2];
+      rotv2[0] = 0.0;
+      rotv2[1] = 0.0;
+      rotv2[2] = 0.0;
+    }
+
+    // Subtract out the part of force that is moving sites together
+    // and evaluate velocity of CM and rotational velocity
+
+    rx = x1-x2;
+    ry = y1-y2;
+    rz = z1-z2;
+    r = sqrt(rx*rx+ry*ry+rz*rz);
+    nx = rx/r;
+    ny = ry/r;
+    nz = rz/r;
+    Real fx, fy, fz, fn;
+    fx = f2_s1[0]-f2_s2[0];
+    fy = f2_s1[1]-f2_s2[1];
+    fz = f2_s1[2]-f2_s2[2];
+    fn = fx*nx + fy*ny + fz*nz;
+    f2_s1[0] -= 0.5*fn*nx;
+    f2_s1[1] -= 0.5*fn*ny;
+    f2_s1[2] -= 0.5*fn*nz;
+    f2_s2[0] += 0.5*fn*nx;
+    f2_s2[1] += 0.5*fn*ny;
+    f2_s2[2] += 0.5*fn*nz;
+
+    Real dii[3][3];
+    Real dij[3][3];
+    Real dtmp[3][3];
+    // Calculate friction tensor for segment. Start by calculating
+    // size of spheres with same exposed surface as cylinder
+    Real area, arad;
+    if (part1_seg2) {
+      area = par2[realIdx::area];
+    } else {
+      area = par1[realIdx::area];
+    }
+    area /= 2.0;
+    arad = sqrt(area/(4.0*M_PI));
+    // Assume the cylinder is oriented along the x-axis
+    for (int ii=0; ii<3; ii++) {
+      for (int jj=0; jj<3; jj++) {
+        if (ii==jj) {
+          dii[ii][jj] = 1.0/(6.0*M_PI*arad*visc);
+        } else {
+          dii[ii][jj] = 0.0;
+        }
+        dij[ii][jj] = 0.0;
+      } // jj
+    } // ii
+    if (c_length > 2.0*arad) {
+      dij[0][0] = (c_length*c_length-2.0*arad*arad/3.0)
+        /(4.0*M_PI*pow(c_length,3)*visc);
+      dij[1][1] = (c_length*c_length+2.0*arad*arad/3.0)
+        /(8.0*M_PI*pow(c_length,3)*visc);
+      dij[2][2] = dij[1][1];
+    } else {
+      dij[0][0] = (1.0-3.0*c_length/(16.0*arad))/(6.0*M_PI*arad*visc);
+      dij[1][1] = (1.0-9.0*c_length/(32.0*arad))/(6.0*M_PI*arad*visc);
+      dij[2][2] = dij[1][1];
+    }
+    // Reorient dii and dij so that it reflects the correct direction (dii is
+    // diagonal but not proportional to the identity, so changes under rotation).
+    // Note the transpose of the rotation is equal to its inverse
+    for (int ii=0; ii<3; ii++) {
+      for (int jj=0; jj<3; jj++) {
+        dtmp[ii][jj] = 0.0;
+        for (int kk=0; kk<3; kk++) {
+          // use inverse rotation here
+          dtmp[ii][jj] += dii[ii][kk]*rot[jj][kk];
+        }
+      }
+    }
+    for (int ii=0; ii<3; ii++) {
+      for (int jj=0; jj<3; jj++) {
+        dii[ii][jj] = 0.0;
+        for (int kk=0; kk<3; kk++) {
+          dii[ii][jj] += rot[ii][kk]*dtmp[kk][jj];
+        } // kk
+      } // jj
+    } // ii
+
+    for (int ii=0; ii<3; ii++) {
+      for (int jj=0; jj<3; jj++) {
+        dtmp[ii][jj] = 0.0;
+        for (int kk=0; kk<3; kk++) {
+          // use inverse rotation here
+          dtmp[ii][jj] += dij[ii][kk]*rot[jj][kk];
+        }
+      }
+    }
+    for (int ii=0; ii<3; ii++) {
+      for (int jj=0; jj<3; jj++) {
+        dij[ii][jj] = 0.0;
+        for (int kk=0; kk<3; kk++) {
+          dij[ii][jj] += rot[ii][kk]*dtmp[kk][jj];
+        } // kk
+      } // jj
+    } // ii
+
+    // Calculate velocities on sites 1 and 2
+    Real v_1[3], v_2[3];
+    for (int ii=0; ii<3; ii++) {
+      v_1[ii] = 0.0;
+      v_2[ii] = 0.0;
+      for (int jj=0; jj<3; jj++) {
+        v_1[ii] += dii[ii][jj]*f2_s1[jj]+dij[ii][jj]*f2_s2[jj];
+        v_2[ii] += dii[ii][jj]*f2_s2[jj]+dij[ii][jj]*f2_s1[jj];
+      } // jj
+    } // ii
+
+    // Get translational and rotational velocities of each segment
+    if (part1_seg2) {
+      vel2[0] = 0.5*(v_1[0]+v_2[0]);
+      vel2[1] = 0.5*(v_1[1]+v_2[1]);
+      vel2[2] = 0.5*(v_1[2]+v_2[2]);
+
+      rotv2[0] = 0.5*(ry*v_1[2]-rz*v_1[1]);
+      rotv2[1] = 0.5*(rz*v_1[0]-rx*v_1[2]);
+      rotv2[2] = 0.5*(rx*v_1[1]-ry*v_1[0]);
+      rotv2[0] += -0.5*(ry*v_2[2]-rz*v_2[1]);
+      rotv2[1] += -0.5*(rz*v_2[0]-rx*v_2[2]);
+      rotv2[2] += -0.5*(rx*v_2[1]-ry*v_2[0]);
+    } else {
+      vel1[0] = 0.5*(v_1[0]+v_2[0]);
+      vel1[1] = 0.5*(v_1[1]+v_2[1]);
+      vel1[2] = 0.5*(v_1[2]+v_2[2]);
+
+      rotv1[0] = 0.5*(ry*v_1[2]-rz*v_1[1]);
+      rotv1[1] = 0.5*(rz*v_1[0]-rx*v_1[2]);
+      rotv1[2] = 0.5*(rx*v_1[1]-ry*v_1[0]);
+      rotv1[0] += -0.5*(ry*v_2[2]-rz*v_2[1]);
+      rotv1[1] += -0.5*(rz*v_2[0]-rx*v_2[2]);
+      rotv1[2] += -0.5*(rx*v_2[1]-ry*v_2[0]);
+    }
+
   } else if (ipar1[intIdx::cell_type] == cellType::FUNGI &&
       ipar2[intIdx::cell_type] == cellType::FUNGI) {
     // Non-bonding interactions
@@ -285,9 +648,9 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     bool bonded = false;
     // Scale bond interaction in the case of a fusion event
     Real scale = par1[realIdx::bond_scale]*par2[realIdx::bond_scale];
-    Real bond_strength = fpar[6];
-    Real bond_cutoff = fpar[7];
-    Real visc = fpar[8];
+    Real bond_strength = fpar[10];
+    Real bond_cutoff = fpar[11];
+    Real visc = fpar[12];
     Real f1_s1[3];
     Real f1_s2[3];
     Real f2_s1[3];
@@ -1001,16 +1364,20 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
  * @param vel velocity of center of mass of segment
  * @param rotv rotation velocity of segment
  * @param fpar force model parameters
+ * @param engine random number engine
  */
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void 
-evaluateSurfaceForce(const Real *pos, Real *par, int *ipar, Real *vel, Real *rotv, Real *fpar)
+evaluateSurfaceForce(const Real *pos, Real *par, int *ipar, Real *vel, Real *rotv, Real *fpar, amrex::RandomEngine const& engine)
 {
   if (ipar[intIdx::cell_type] == cellType::YEAST) {
-    Real z_wall = fpar[2];
-    Real z_bndry_width = fpar[3];
-    Real z_stiffness = fpar[4];
-    Real z_gravity = fpar[5];
+    Real z_wall = fpar[8];
+    Real z_bndry_width = fpar[6];
+    Real z_stiffness = fpar[7];
+    Real z_gravity = fpar[9];
+    Real scale = fpar[13];
+    Real mix = fpar[14];
+    Real fx, fy;
     vel[0] = 0.0;
     vel[1] = 0.0;
     rotv[0] = 0.0;
@@ -1028,12 +1395,23 @@ evaluateSurfaceForce(const Real *pos, Real *par, int *ipar, Real *vel, Real *rot
       vel[2] = 0.0;
     }
     vel[2] -= z_gravity*z_stiffness*rA*rA*rS;
+    // Only add random fluctuations in xy plane
+    Real vx, vy;
+    vx = amrex::RandomNormal(0.0,scale,engine);
+    vy = amrex::RandomNormal(0.0,scale,engine);
+    fx = (1.0-mix)*par[25]+mix*vx;
+    fy = (1.0-mix)*par[26]+mix*vy;
+    vel[0] = fx;
+    vel[1] = fy;
+    par[25] = fx;
+    par[26] = fy;
+    par[27] = 0.0;
   } else if (ipar[intIdx::cell_type] == cellType::FUNGI) {
-    Real z_wall = fpar[2];
-    Real z_bndry_width = fpar[3];
-    Real z_stiffness = fpar[4];
-    Real z_gravity = fpar[5];
-    Real visc = fpar[8];
+    Real z_wall = fpar[8];
+    Real z_bndry_width = fpar[4];
+    Real z_stiffness = fpar[5];
+    Real z_gravity = fpar[9];
+    Real visc = fpar[12];
     Real f_s1[3];
     Real f_s2[3];
 #if 0

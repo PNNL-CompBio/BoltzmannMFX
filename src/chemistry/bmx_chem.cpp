@@ -11,14 +11,25 @@
 amrex::Real BMXChemistry::k1 = 0.0;
 amrex::Real BMXChemistry::k2 = 0.0;
 amrex::Real BMXChemistry::k3 = 0.0;
+amrex::Real BMXChemistry::k4 = 0.0;
+amrex::Real BMXChemistry::k5 = 0.0;
+amrex::Real BMXChemistry::k6 = 0.0;
+amrex::Real BMXChemistry::k7 = 0.0;
 amrex::Real BMXChemistry::kr1 = 0.0;
 amrex::Real BMXChemistry::kr2 = 0.0;
 amrex::Real BMXChemistry::kr3 = 0.0;
+amrex::Real BMXChemistry::kr4 = 0.0;
+amrex::Real BMXChemistry::kr5 = 0.0;
+amrex::Real BMXChemistry::kr6 = 0.0;
+amrex::Real BMXChemistry::kr7 = 0.0;
 amrex::Real BMXChemistry::kg = 0.0;
 amrex::Real BMXChemistry::kv = 0.0;
+amrex::Real BMXChemistry::kb = 0.0;
+amrex::Real BMXChemistry::kbv = 0.0;
 amrex::Real BMXChemistry::mtA = 0.0;
 amrex::Real BMXChemistry::mtB = 0.0;
 amrex::Real BMXChemistry::mtC = 0.0;
+amrex::Real BMXChemistry::bacteria_radius_max = 0.0;
 amrex::Real BMXChemistry::radius_max = 0.0;
 amrex::Real BMXChemistry::length_max = 0.0;
 amrex::Real BMXChemistry::p_overlap = 0.0;
@@ -47,7 +58,7 @@ BMXChemistry* BMXChemistry::instance()
  */
 BMXChemistry::BMXChemistry()
 {
-  p_num_species = 3;
+  p_num_species = NUM_CHEM_COMPONENTS;
   p_num_ivals = 0;
   p_num_reals = 3*p_num_species;
   p_num_ints = 0;
@@ -95,8 +106,18 @@ void BMXChemistry::setParams(const char* /*file*/)
   pp.get("kr2",kr2);
   pp.get("k3",k3);
   pp.get("kr3",kr3);
+  pp.get("k4",k4);
+  pp.get("kr4",kr4);
+  pp.get("k5",k5);
+  pp.get("kr5",kr5);
+  pp.get("k6",k6);
+  pp.get("kr6",kr6);
+  pp.get("k7",k7);
+  pp.get("kr7",kr7);
   pp.get("kg",kg);
   pp.get("kv",kv);
+  pp.get("kb",kb);
+  pp.get("kbv",kbv);
   mtA = 0.0;
   pp.query("mass_transfer_A",mtA);
   mtB = 0.0;
@@ -176,6 +197,16 @@ void BMXChemistry::printCellConcentrations(int id, Real *p_vals, Real *p_par)
     } else {
       printf("        Concentration C: %18.6e\n",p_vals[2]);
     }
+    if (p_vals[3] < 0) {
+      printf(" XXXX   Concentration D: %18.6e\n",p_vals[3]);
+    } else {
+      printf("        Concentration D: %18.6e\n",p_vals[3]);
+    }
+    if (p_vals[4] < 0) {
+      printf(" XXXX   Concentration E: %18.6e\n",p_vals[4]);
+    } else {
+      printf("        Concentration E: %18.6e\n",p_vals[4]);
+    }
    // printf("        Concentration B: %18.6e\n",p_vals[1]);
    // printf("        Concentration C: %18.6e\n",p_vals[2]);
     printf("        Cell volume    : %18.6e\n",p_par[realIdx::vol]);
@@ -206,13 +237,24 @@ void BMXChemistry::getChemParams(std::vector<Real> &chempar)
   chempar.push_back(k1);
   chempar.push_back(k2);
   chempar.push_back(k3);
+  chempar.push_back(k4);
+  chempar.push_back(k5);                  // 5
+  chempar.push_back(k6);
+  chempar.push_back(k7);
   chempar.push_back(kr1);
-  chempar.push_back(kr2);            // 5
-  chempar.push_back(kr3);
-  chempar.push_back(kg);
+  chempar.push_back(kr2);
+  chempar.push_back(kr3);                 // 10
+  chempar.push_back(kr4);
+  chempar.push_back(kr5);
+  chempar.push_back(kr6);
+  chempar.push_back(kr7);
+  chempar.push_back(kg);                  // 15
   chempar.push_back(kv);
-  chempar.push_back(radius_max);
-  chempar.push_back(length_max);     // 10
+  chempar.push_back(kb);
+  chempar.push_back(kbv);
+  chempar.push_back(bacteria_radius_max);
+  chempar.push_back(radius_max);          // 20
+  chempar.push_back(length_max);          // 21
 }
 
 /** Returen a vector containing exchange parameters

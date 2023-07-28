@@ -11,14 +11,20 @@
 
 BMXCellInteraction *BMXCellInteraction::p_instance = NULL;
 amrex::Real BMXCellInteraction::p_z_gravity = 0.0;
-amrex::Real BMXCellInteraction::p_bndry_width = 0.0;
-amrex::Real BMXCellInteraction::p_stiffness = 0.0;
-amrex::Real BMXCellInteraction::p_z_bndry_width = 0.0;
-amrex::Real BMXCellInteraction::p_z_stiffness = 0.0;
+amrex::Real BMXCellInteraction::p_fungi_bndry_width = 0.0;
+amrex::Real BMXCellInteraction::p_fungi_stiffness = 0.0;
+amrex::Real BMXCellInteraction::p_cell_bndry_width = 0.0;
+amrex::Real BMXCellInteraction::p_cell_stiffness = 0.0;
+amrex::Real BMXCellInteraction::p_fungi_z_bndry_width = 0.0;
+amrex::Real BMXCellInteraction::p_fungi_z_stiffness = 0.0;
+amrex::Real BMXCellInteraction::p_cell_z_bndry_width = 0.0;
+amrex::Real BMXCellInteraction::p_cell_z_stiffness = 0.0;
 amrex::Real BMXCellInteraction::p_z_wall = 0.0;
 amrex::Real BMXCellInteraction::p_bond_strength = 0.0;
 amrex::Real BMXCellInteraction::p_bond_cutoff = 5.0;
 amrex::Real BMXCellInteraction::p_viscosity = 20.0;
+amrex::Real BMXCellInteraction::p_ran_scale = 0.0;
+amrex::Real BMXCellInteraction::p_fluc_mix = 0.0;
 std::vector<amrex::Real> BMXCellInteraction::p_force_params;
 
 /**
@@ -55,22 +61,17 @@ void BMXCellInteraction::setParams(const char* /*file*/)
 {
   ParmParse pp("cell_force");
 
-  pp.get("boundary_width",p_bndry_width);
+  pp.get("fungi_boundary_width",p_fungi_bndry_width);
+  pp.get("fungi_stiffness",p_fungi_stiffness);
+  pp.get("cell_boundary_width",p_cell_bndry_width);
+  pp.get("cell_stiffness",p_cell_stiffness);
+  pp.get("fungi_wall_boundary_width",p_fungi_z_bndry_width);
+  pp.get("fungi_wall_stiffness",p_fungi_z_stiffness);
+  pp.get("cell_wall_boundary_width",p_cell_z_bndry_width);
+  pp.get("cell_wall_stiffness",p_cell_z_stiffness);
+
   p_z_gravity = 0.0;
   pp.query("gravity",p_z_gravity);
-#if 1
-  pp.get("stiffness",p_stiffness);
-#else
-  pp.get("repulsion_stiffness",p_r_stiffness);
-  pp.get("adhesion_stiffness",p_a_stiffness);
-#endif
-  pp.get("wall_boundary_width",p_z_bndry_width);
-#if 1
-  pp.get("wall_stiffness",p_z_stiffness);
-#else
-  pp.get("wall_repulsion_stiffness",p_z_r_stiffness);
-  pp.get("wall_adhesion_stiffness",p_z_a_stiffness);
-#endif
   pp.get("viscous_drag",p_viscosity);
 
   p_bond_strength = 5.0;
@@ -78,19 +79,29 @@ void BMXCellInteraction::setParams(const char* /*file*/)
 
   p_bond_cutoff = 0.00001;
   pp.get("bond_cutoff",p_bond_cutoff);
+  p_ran_scale = 0.0;
+  pp.query("fluctuation_scale",p_ran_scale);
+  p_fluc_mix = 0.0;
+  pp.query("fluctuation_mixing",p_fluc_mix);
 
   p_z_wall = FLUID::surface_location;
 
   p_force_params.clear();
-  p_force_params.push_back(p_bndry_width);
-  p_force_params.push_back(p_stiffness);
+  p_force_params.push_back(p_fungi_bndry_width);
+  p_force_params.push_back(p_fungi_stiffness);
+  p_force_params.push_back(p_cell_bndry_width);
+  p_force_params.push_back(p_cell_stiffness);
+  p_force_params.push_back(p_fungi_z_bndry_width);     // 5
+  p_force_params.push_back(p_fungi_z_stiffness);
+  p_force_params.push_back(p_cell_z_bndry_width);
+  p_force_params.push_back(p_cell_z_stiffness);
   p_force_params.push_back(p_z_wall);
-  p_force_params.push_back(p_z_bndry_width);
-  p_force_params.push_back(p_z_stiffness);       //5
-  p_force_params.push_back(p_z_gravity);
+  p_force_params.push_back(p_z_gravity);               // 10
   p_force_params.push_back(p_bond_strength);
   p_force_params.push_back(p_bond_cutoff);
   p_force_params.push_back(p_viscosity);
+  p_force_params.push_back(p_ran_scale);
+  p_force_params.push_back(p_fluc_mix);                // 15
   amrex::Print() << "SURFACE LOCATION: "<<p_z_wall<<'\n';
 }
 

@@ -112,6 +112,11 @@ public:
     void InitParticlesAscii (const std::string& file);
 
     void WriteToAscii (const std::string& file,int nstep,amrex::Real time);
+    void countParticleTypes(int &nparticles, int &nsegments);
+    void WriteSegmentsToAscii (const std::string& file,int nstep,
+        amrex::Real time, int nsegments);
+    void WriteParticlesToAscii (const std::string& file,int nstep,
+        amrex::Real time, int nparticles);
 
     void printParticles ();
 

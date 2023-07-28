@@ -233,6 +233,9 @@ bmx::WritePlotFile (std::string& plot_file, int nstep, Real time )
         real_comp_names.push_back("cell_volume_growth_rate");
         real_comp_names.push_back("splitting_fraction");
         real_comp_names.push_back("bond_scaling");
+        real_comp_names.push_back("random_vx");
+        real_comp_names.push_back("random_vy");
+        real_comp_names.push_back("random_vz");
         Vector<int> write_real_comp = Vector<int>(MAX_CHEM_REAL_VAR,1);
         int i;
         for (i=realIdx::count-1; i<MAX_CHEM_REAL_VAR; i++) {
