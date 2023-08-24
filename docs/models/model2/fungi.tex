@@ -1,0 +1,793 @@
+\documentclass[12pt]{article}
+\usepackage{xcolor}
+\usepackage{graphicx}
+%\usepackage{appendix}
+%\usepackage{verbatim}
+\usepackage[margin=1.0in]{geometry}
+\DeclareGraphicsExtensions{.jpg,.jpeg,.png}
+\renewcommand{\baselinestretch}{1.0}
+\begin{document}
+\newcommand{\dt}{\Delta t}
+\newcommand{\Fvec}{\overline{F}}
+\newcommand{\fvec}{\overline{f}}
+\newcommand{\rvec}{\overline{r}}
+\newcommand{\omvec}{\overline{\omega}}
+\newcommand{\xvec}{\overline{x}}
+\newcommand{\Xvec}{\overline{X}}
+\newcommand{\yvec}{\overline{y}}
+\newcommand{\Yvec}{\overline{Y}}
+\newcommand{\Vvec}{\overline{V}}
+\newcommand{\Rvec}{\overline{R}}
+\newcommand{\Gvec}{\overline{G}}
+\newcommand{\svec}{\overline{s}}
+\newcommand{\Tvec}{\overline{T}}
+\newcommand{\Lvec}{\overline{L}}
+\newcommand{\vvec}{\overline{v}}
+\newcommand{\nhat}{\hat{n}}
+\newcommand{\rhvec}{\overline{\rho}}
+\newcommand{\Dmat}{\overline{\overline{D}}}
+\newcommand{\Rmat}{\overline{\overline{R}}}
+\newcommand{\Omat}{\overline{\overline{1}}}
+\newcommand{\Imat}{\overline{\overline{I}}}
+\newcommand{\Hmat}{\overline{\overline{H}}}
+\newcommand{\Lag}{\mathcal{L}}
+\title{Simple Model of Fungal Growth on a Stationary Nutrient Medium}
+\author{Written by a cast of thousands}
+\maketitle
+
+% Change table counter
+\renewcommand{\thetable}{\Roman{table}}
+
+\section{Model}
+This document describes a fungal growth simulation implemented with the
+BMX framework. Individual hyphae are modeled as connected cylinders that 
+are designed to mimic the behavior of a fungal network that is growing by
+elongation of tip elements and creation of new segments at the growth tips.
+The hyphae cylinders are characterized by a length and a radius. Hyphae
+that have reached a maximum size stop growing if they are in an interior
+location while hyphae representing a growth tip can generate one or two new
+hyphae at the free growth end of the cylinder. The tip splitting events that
+result in two new hyphae generate branched structures similar to those
+seen in real fungal systems. The simulation also supports fusion of growth
+tips to interior portions of the existing fungal network.
+
+The individual hyphae are represented by a single particle data structure inside
+the AMReX framework. The hyphae are characterized by a position $\rvec$
+represeting the center of the cylinder, an orientation
+specified by two angles $\phi$ and $\theta$ and the previously mentioned cylinder
+length and radius. In addition, a large number of integer flags keep track of
+bonding of the hyphae to other hyphae in the fungal network. These flags are
+discussed in more detail below. Because the hyphae are cylinders that are rotationally
+symmetric about the cylinder axis, only two angles are needed instead of the
+customary three angles used to specify the orientation of an arbitrary shape
+in three dimensions. The centers of the cylinder end-caps are located at positions
+$\rvec_1$ and $\rvec_2$ and the angles $\phi$ and $\theta$ describe the unit vector
+$\nhat = (\cos(\phi)\sin(\theta),\sin(\phi)\sin(\theta),\cos(\theta))$ pointing
+from $\rvec_1$ to $\rvec_2$. For a cylinder of length $h$, the vectors $\rvec$,
+$\rvec_1$ and $\rvec_2$ are related via
+\begin{eqnarray*}
+\rvec_1 & = & \rvec - \frac{h}{2}\nhat \\
+\rvec_2 & = & \rvec + \frac{h}{2}\nhat
+\end{eqnarray*}
+
+\section{Chemistry Model}
+The chemistry for this fungi simulation is similar to one constructed for looking
+at bacteria or yeast and consists of a simple set
+of equations that describe chemical dynamics of a simple system within
+the fungal hyphae. Three chemical
+constituents are considered, $A$, $B$
+and $C$. The cell volume is also coupled to these constituents. $A$ and $C$
+exist both inside and outside the cell (in the
+agar medium). The concentrations outside the cell are denoted with the
+subscript $out$ while those inside the cell are labeled
+with the subscript $in$. The compound $B$ is only located inside the cell and
+is impermeable to the cell membrane.
+These species are related to each other via the following reactions:
+\begin{eqnarray*}
+A_{out} &\stackrel{k_{1},k_{-1}}{\longleftrightarrow}& A_{in} \\
+A_{in} &\stackrel{k_2,k_{-2}}{\longleftrightarrow}& B_{in} + C_{in} \\
+C_{in} &\stackrel{k_3,k_{-3}}{\longleftrightarrow}& C_{out}
+\end{eqnarray*}
+$A$ is only capable of undergoing a reaction inside the cell.  To distinguish
+between concentrations of these components and absolute amounts of component, we use
+brackets [ ]. In this notation, $[A_{out}]$ is the concentration of $A$ in a grid cell and
+$A_{out}$ is the total amount (mass) of $A$ in a grid cell. There is also an
+additional equation that converts $B_{cell}$ into cell volume. This can be
+expressed by the equation
+\[
+B_{in} \stackrel{k_g,k_v}{\longleftrightarrow} V_{cell}
+\]
+The rate constant $k_g$ describes how fast $B_{in}$ disappears from the system
+and the rate constant $k_v$ describes how fast the cell volume $V_{cell}$
+increases. In this model, the conversion of $B_{in}$ to volume is irreversible.
+
+The intracellular concentration of these species is governed by the set of equations
+\begin{eqnarray*}
+\frac{d [A_{out}]}{d t} &=&-k_1 [A_{out}]+k_{-1} [A_{in}] \\
+\frac{d [A_{in}]}{d t} &=&k_1 [A_{out}]-k_{-1} [A_{in}] - k_2 [A_{in}]
+ + k_{-2}[B_{in}][C_{in}]\\
+\frac{d [B_{in}]}{d t} &=&k_2 [A_{in}] - k_{-2}[B_{in}][C_{in}] - k_g[B_{in}]\\
+\frac{d [C_{in}]}{d t} &=&k_2 [A_{in}] - k_{-2}[B_{in}][C_{in}]-k_{-3} [C_{in}]
++ k_3 [C_{out}] \\
+\frac{d [C_{out}]}{d t} &=&k_{-3} [C_{in}]-k_3 [C_{out}]
+\end{eqnarray*}
+These reactions also act as sources and sinks for $A_{out}$ and $C_{out}$ in the diffusion
+equations that govern transport in the agar growth medium.
+
+An additional equation couples the concentration of $B_{in}$ to cell growth.
+The growth is governed by the equation
+\[
+\frac{dV_{cell}}{dt} = V_{cell}k_v[B_{in}]
+\]
+The factor of $V_{cell}$ means that the total volume produced per unit time is
+governed by the total amount of $B_{in}$ insided the cell. For the time being,
+the rate constants are only non-zero if the segment is below the maximum size
+limits. This means that growth only occurs at growth tips or, to a lesser
+extent, segments that have just undergone a fusion event.
+
+In addition to transport in and out of the cell, coupled to diffusion in the external
+growth medium, constituants can also be transferred between hyphae that are directly
+bonded to each other. Hyphae that are linked together are separated by a permeable septum
+that allows material to transfer between hyphae based on the concentration difference
+across the septum. The flux of material between segments i and j is given by a relation
+of the form
+\[
+f_{X,ij} = M_X ([X]_{in,i}-[X]_{in,i})
+\]
+where $f_{X,ij}$ is the flux of $X$ from segment i into segment j and $M_X$ is the mass
+transfer coefficient for this process. This equation assumes perfect mixing inside the hyphae
+so that the concentration at the septum is equal to the concentration within the cell.
+
+The transport equations into and out of the hyphae from the external fluid are similar to those
+examined in a previous paper.
+After accounting for hyphae surface area and volume, as well as the fluid volume in the grid cell
+containing the hyphae, the equations for transport in and out of the hyphae in a time increment
+$\dt$ are
+\begin{eqnarray*}
+\frac{d [C_{in}]}{dt} &=& [C_{out}]\frac{A_{cell}}{V_{cell}}k_3 - [C_{in}]\frac{A_{cell}}{V_{cell}}
+k_{-3} \\
+\frac{d[C_{out}]}{dt} &=& [C_{in}]\frac{A_{cell}}{V_{grid}}k_{-3} - [C_{out}]\frac{A_{cell}}{V_{grid}}
+k_{3}
+\end{eqnarray*}
+These equation are for component $C$. The variable $A_{cell}$ is the surface area of the hyphae,
+$V_{cell}$ is the corresponding hyphe volume and $V_{grid}$ is the fluid volume in the grid cell.
+Similar equations apply to component $A$.
+
+Using these expressions for the change in concentration due to transport across the cell membrane, the
+rate equations governing this system become
+\begin{eqnarray*}
+\frac{d [A_{out}]}{d t} &=&-k_1\frac{A_{cell}}{V_{grid}} [A_{out}]
++k_{-1}\frac{A_{cell}}{V_{grid}} [A_{in}] \\
+\frac{d [A_{in}]}{d t} &=&k_1\frac{A_{cell}}{V_{cell}} [A_{out}]
+-k_{-1}\frac{A_{cell}}{V_{cell}} [A_{in}] - k_2 [A_{in}]
+ + k_{-2}[B_{in}][C_{in}]\\
+\frac{d [B_{in}]}{d t} &=&k_2 [A_{in}] - k_{-2}[B_{in}][C_{in}]\\
+\frac{d [C_{in}]}{d t} &=&k_2 [A_{in}] - k_{-2}[B_{in}][C_{in}]
+-k_{-3} \frac{A_{cell}}{V_{cell}}[C_{in}]
++ k_3\frac{A_{cell}}{V_{cell}} [C_{out}] \\
+\frac{d [C_{out}]}{d t} &=&k_{-3} \frac{A_{cell}}{V_{grid}}[C_{in}]
+-k_3\frac{A_{cell}}{V_{grid}} [C_{out}]
+\end{eqnarray*}
+
+Numerically, the rate equations are currently being handled using the following scheme
+\begin{list}{$\bullet$}{}
+\item There is an equilibration between the fluid and the cell over a time
+increment $\dt/2$
+\item The internal cell reaction takes place over a time increment $\dt$
+using the updated internal concentrations from the previous step
+\item Using the updated internal concentrations from the reaction step, the
+concentrations are re-equilibrated with the outside fluid over a time interval
+$\dt/2$
+\end{list}
+The first step is implemented by calculating the amount of material that flows
+between the biological cell and the grid cell in which it is located.
+The total amount of
+material that flows into the cell in the interval $\dt$ is
+\begin{eqnarray*}
+\Delta A & = & \frac{\dt}{2} A_{cell}(k_1 [A_{out}]-k_{-1} [A_{in}]) \\
+\Delta B & = & 0 \\
+\Delta C & = & \frac{\dt}{2} A_{cell}(k_3 [C_{out}]-k_{-3} [C_{in}]) \\
+\end{eqnarray*}
+Based on this increment, the concentrations inside and outside the cell are
+adjusted using the equations
+\begin{eqnarray}
+\nonumber
+[A'_{in}] &=& [A_{in}] + \Delta A/V_{cell} \\
+\nonumber
+[B'_{in}]  &=& [B_{in}] \\
+\nonumber
+[C'_{in}] &=& [C_{in}] + \Delta C/V_{cell}
+\end{eqnarray}
+\begin{eqnarray}
+\nonumber
+[A'_{out}] &=& [A_{out}] - \Delta A/V_{grid} \\
+\nonumber
+[B'_{out}]  & = & [B_{out}] \\
+\nonumber
+[C'_{out}] &=& [C_{out}] - \Delta C/V_{grid}
+\end{eqnarray}
+
+The second step adjusts the concentration of reactants inside the cell based on
+internal chemical reactions. Using a simple Euler scheme, the adjusted values of
+the concentrations after the time increment $\dt$ are
+\begin{eqnarray}
+\nonumber
+[A'_{in}] &=& [A_{in}] + \dt(-k_2 [A_{in}] + k_{-2} [B_{in}][C_{in}]) \\
+\nonumber
+[B'_{in}] &=& [B_{in}] + \dt(k_2 [A_{in}] - k_{-2} [B_{in}][C_{in}]) \\
+\nonumber
+[C'_{in}] &=& [C_{in}] + \dt(k_2 [A_{in}] - k_{-2} [B_{in}][C_{in}])
+\end{eqnarray}
+After adjusting the internal concentrations using the these equations, the
+concentrations inside and outside the cell are again adjusted using the
+equations in the first step.
+
+In addition to exchanging chemical components with the external medium, chemical compounds can
+diffuse through the septum between attached hyphae. Labeling the two hyphae with the indices $i$
+and $j$, the flux $f_{Xij}$ from $i$ to $j$ through the hyphae for chemical species $X$ is
+\[
+f_{Xij} = M_{X}([X_{in}]_i-[X_{in}]_j)
+\]
+$M_{X}$ is a mass transfer coefficient for species $X$ and is assumed to be the same for all
+hyphae. The actual amount of material transferred over a short time interval $\Delta t$ is the
+flux multiplied by the area of the hyphae, $A_{ij}$, and the time interval $\dt$
+\[
+\Delta X_i = -\Delta X_j = -\Delta t A_{ij} M_{X}([X_{in}]_i-[X_{in}]_j)
+\]
+The area of the septum is taken as the average of the area of the end caps of the two joined
+hyphae.
+
+In this model, the exchanges between hyphae are completed after the chemistry and exchange
+with the external medium are completed. This again brings up an issue with maintaining positive
+concentrations within the hyphae. Theoretically, the transfer of material between hyphae should
+be accomplished by solving a set of simultaneous equations for transfer between all hyphae in th
+system and this would probably eliminate the issue of some concentrations going negative.
+However, this is not practical. Apart from the fact that the AMReX framework does not support
+setting up these kinds of equations in a distributed environment, the overhead of doing a
+potentially large linear solve at each step is prohibitive. We opt for a simpler scheme that
+should introduce minimal errors in the limit of small timesteps.
+
+Each hyphae can be queried to find out how many other hyphae it is currently bonded to. This
+number $M$ is between 1 and 4. The total amount of component $X$ is then divided up into $M$
+separate portions $X/M$. This portion is then the maximum amount that can be exhanged with
+another hyphae. If the exchange based on the mass transfer formula above exceeds this limit,
+the amount exchanged is reduced to equal the portion size. For small enough time steps, the
+exchanges will not hit the limit and this restriction has no effect. It is possible that an
+exchange between one pair of hyphae that exceeds the limit could be counter-balanced by other
+exchanges that don't result in a negative concentration. However, since exchanges are evaluated
+completely independently of each other it is not possible to make use of this information.
+
+\section{Cell forces}
+The cell forces are calculated using a cubic interaction as described in Mathias
+{\em et al}~\cite{Mathias}. The separation distance used in the force
+calculation is the minimum separation distance between the two line segments
+discribing the two hyphae cylinders. The interactions are pairwise
+additive, with the force between two particles $i$ and $j$ described by a function of the form
+\[
+\Fvec_{ij} = F_{ij}(r_{ij})\frac{\rvec_{ij}}{r_{ij}}
+\]
+where $F_{ij}(r_{ij})$ is a spherically symmetric function of the separation distance between the
+centers of the two particles. For this model, the function $F(r)$ has the generic form
+\begin{eqnarray*}
+F(r) &=& -\mu(r-R_A)^2(r-R_S)\;\;\;\mbox{if}\;\;\;r<R_A \\
+& = & 0\;\;\; \mbox{otherwise}
+\end{eqnarray*}
+The parameter $\mu$ is the stiffness and controls the magnitude of the repulsive and attractive
+interactions. $R_S$ is the equilibrium separation value at which the net force on the particles is zero
+and $R_A$ is the distance at which all pair interactions vanish. For $r<R_S$, the particles repel each
+other while for $R_S<r<R_A$, the particles are attracted to each other. For this model, the values of
+$R_S$ and $R_A$ are functions of the individual hyphae radii. If particle $i$ has radius $R_i$ and
+particle $j$ has radius $R_j$ then the parameter $R_S$ is chosen as
+\[
+R_S = R_i+R_j
+\]
+The width of the attractive region, $R_A-R_S$, is chosen to have a fixed value $W_A$ for all particle
+interactions. The value of $R_A$ is then
+\[
+R_A = R_i+R_j +W_A
+\]
+Note that the particle radii can increase over time, so even if two particles are in mechanical
+equilibrium at some time $t$, they may start pushing against each other at a later time $t'$ as they
+grow.
+
+Particles also interact with the surface of the growth medium using a similar potential. In this
+the contribution to the force is only in the $z$-direction and is a function $H(z)$ of the height $z$ above
+the growth medium surface. The force has the form
+\begin{eqnarray*}
+H(z) & = & -\xi (z-Z_A)^2(z-Z_S)\;\;\;\mbox{if}\;\;\;0<z<Z_A \\
+& = & \xi Z_A^2Z_S\;\;\;\mbox{if}\;\;\;z<0 \\
+& = & 0\;\;\;\mbox{otherwise}
+\end{eqnarray*}
+The parameter $\xi$ is the stiffness of the interaction, $Z_S$ is the equilibrium distance above the surface
+and $Z_A$ is the point at which all interaction with the surface ends. Between $Z_S<z<Z_A$, particles are
+attracted to the surface, while below $Z_S$ particles are repelled from the surface. Below the surface,
+particles experience a constant upward force. This force is designed primarily to prevent particles from
+getting accidentally pushed down into the growth medium. Similar to the pair interaction, for particle $i$,
+the parameter $Z_S$ is given by
+\[
+Z_S = R_i
+\]
+and the parameter $Z_A$ is given by
+\[
+Z_S = R_i + W_Z
+\]
+where $W_Z$ is the width of the attractive region and is assumed to be independent of the particle's size.
+
+The remaining calculation is to find the  minimum distance between two
+line segments. The segments are defined by the line joining the centers of the two
+end caps for each cylinder. If these two points are defined as $\rvec_1$ and $\rvec_2$
+and the separation between them is $\rhvec = \rvec_2-\rvec_1$, then the line
+segment $\Rvec(\tau)$ joining the endpoints is defined by
+\[
+\Rvec(\tau) = \rvec_1 +\tau\rhvec\;\;\;\;\;\;\;\mbox{for}\;\;\tau\in [0,1]
+\]
+For two cylinders $i$ and $j$ defined by the line segments $\Rvec_i(\tau_i)$ and
+$\Rvec_j(\tau_j)$ we can find the minimum separation distance by minimizing
+\begin{eqnarray*}
+\chi & = & \left|\Rvec_i(\tau_i)-\Rvec_j(\tau_j)\right|^2 \\
+     & = & \left|\rvec_{i1}-\rvec_{j1}\right|^2+2\tau_i(\rvec_{i1}-\rvec_{j1})\cdot\rhvec_i
+          -2\tau_j(\rvec_{i1}-\rvec_{j1})\cdot\rhvec_j \\
+     & + & \tau_i^2\left|\rhvec_i\right|^2 + \tau_j^2\left|\rhvec_j\right|^2
+           - 2\tau_i\tau_j\rhvec_i\cdot\rhvec_j
+\end{eqnarray*}
+subject to the constraints $0\le\tau_i\le 1$ and $0\le\tau_j\le 1$.
+
+Setting the gradients of $\chi$ with respect to $\tau_i$ and $\tau_j$ equal to
+zero gives the coupled linear equations
+\begin{eqnarray*}
+-(\rvec_{i1}-\rvec_{j1})\cdot\rhvec_i & = & \tau_i\left|\rhvec_i\right|^2
+                                        - \tau_j\rhvec_i\cdot\rhvec_j \\
+(\rvec_{i1}-\rvec_{j1})\cdot\rhvec_j & = & - \tau_i\rhvec_i\cdot\rhvec_j
+                                       + \tau_j\left|\rhvec_j\right|^2
+\end{eqnarray*}
+This can easily be solved in most cases for $\tau_i$ and $\tau_j$.
+After a solution is found, it is necessary to check that the $\tau_i$ and $\tau_j$
+satisfy the constraints. If they don't then the solution can be found by setting the
+values of $\tau_i$ and $\tau_j$ to the limits 0 and 1 and optimizing the remaining
+variable to find a minimum distance value. This may require and exhaustive search through
+up to four values.
+
+A corner case occurs when $\rhvec_i$ and $\rhvec_j$ are parallel. In this case the
+determinant vanishes and there is no unique solution. An {\em ad hoc} solution can be
+found by fixing $\tau_i$ to 0 and 1 and then minimizing $\tau_j$. Based on the values
+of $\tau_j$, a pair of values can be chosen the represent the minimum distance between
+the line segments.
+
+The force between the two cylinders is some function $\Fvec(R)$ of the minimal
+distance $R=|\Rvec_i(\tau_i)-\Rvec_j(\tau_j)|$ between the two cylinders. The
+force must still be partitioned between the sites defining the cylinder. To do
+this, we assume that $F(R)$ is generated from a potential $U(R)$. The force is
+then
+\[
+\nabla_{\Rvec}U(R) = \Fvec(R)
+\]
+If we write $\Rvec_j(\tau_j)$ as
+\[
+\Rvec_i(\tau_i) = \rvec_i + \tau_i (\rvec_{i2}-\rvec_{i1})
+\]
+then the gradient of $U(R)$ with respect to $\rvec_{i1}$ is
+\begin{eqnarray*}
+\nabla_{\rvec_{i1}}U(R) & = & \frac{\partial U}{\partial R}\nabla_{\rvec_{i1}}R\
+ = \frac{\partial U}{\partial R}\frac{\Rvec}{R} (1-\tau_i)
+\end{eqnarray*}
+Identifying $-\partial U/\partial R$ as some function $F(R)$ gives the final
+relation
+\[
+\fvec_{i1} = F(R)\frac{\Rvec}{R}(1-\tau_i)
+\]
+for the force acting on site 1 of segment $i$. The force acting on site 2 of segment
+$i$ is just
+\[
+\fvec_{i2} = F(R)\frac{\Rvec}{R}\tau_i
+\]
+The expressions for the forces on the two sites of segment $j$ are similar.
+
+\section{Hydrodynamic Drag}
+A two-site model designed to represent a segment of filamentous fungi consists
+of two spheres that are held at a fixed distance apart and are chosen to represent
+the hydrodynamic drag on the segment as forces from other segments push
+it around. Each sphere is subject to a force, $\fvec_1$, $\fvec_2$, resulting in
+a translational and rotational motion of the segment. For freely interacting
+spheres, with no rigid constraints, the motion of the spheres can be described
+by the matrix equation
+\[
+\left[\begin{array}{c}\vvec_1 \\ \vvec_2 \end{array}\right] =
+\left[\begin{array}{cc} \Dmat_{11} & \Dmat_{12} \\
+\Dmat_{21} & \Dmat_{22} \end{array}\right]
+\cdot\left[\begin{array}{c} \fvec_1 \\ \fvec_2 \end{array}\right]
+\]
+The $3\times 3$ matrices $\Dmat_{ij}$ are diffusion matrices for hydrodynamically
+interacting spheres. The details of these matrices can be found in Rotne and
+Prager\cite{RP}. The vectors $\vvec_1$ and $\vvec_2$ are the
+velocities of particles 1 and 2 that represent the filament segment.
+
+%For our purposes, it is more convenient to express the equations of motion of the
+%system in terms of net force and torque on the particle pair. To simplify this, we
+%choose the two particles, separated by a distance $h$ to lie on the $x$-axis at
+%positions $\rvec_1 = (h/2,0,0)$ and $\rvec_2 = (-h/2,0,0)$. The more general case
+%can be derived by an appropriate rotation of the system. The torque $\Tvec$ and
+%net force $\Fvec$ on the system can be written in terms of the forces $\fvec_1$
+%and $\fvec_2$ and the positions $\rvec_1$ and $\rvec_2$ as
+%\begin{eqnarray*}
+%\Tvec & = & \rvec_1\times\fvec_1 + \rvec_2\times\fvec_2 \\
+%\Fvec & = & \fvec_1 + \fvec_2
+%\end{eqnarray*}
+%Breaking these up into individual components gives the equations (for particles
+%located at $\rvec_1$ and $\rvec_2$)
+%\begin{eqnarray*}
+%T_x & = & 0 \\
+%T_y & = & \frac{h}{2}(f_{2z}-f_{1z}) \\
+%T_z & = & \frac{h}{2}(f_{1y}-f_{2y}) \\
+%F_x & = & f_{1x} + f_{2x} \\
+%F_y & = & f_{1y} + f_{2y} \\
+%F_z & = & f_{1z} + f_{2z}
+%\end{eqnarray*}
+%The equation for $F_x$ is actually a bit more complicated. The two particles
+%cannot move relative to each other so an additional constraint would be
+%\[
+%f_{1x}-f_{2x} = 0
+%\]
+%indicating that there is no force pushing the two particles together. This could
+%be considered as the result of a constraint force that acts to keep the two particles
+%at a fixed distance. If the original $x$ components of the force acting on the two
+%particles are considered as $f'_{1x}$ and $f'_{2x}$ and $F_x = f'_{1x} + f'_{2x}$
+%then it is possible to use this value of $F_x$ and the two equations involving
+%$f_{1x}$ and $f_{2x}$ to solve for $f_{1x}$ and $f_{2x}$.
+%
+%The equations for $\Tvec$ and $\Fvec$ can be inverted to solve for $\fvec_1$ and
+%$\fvec_2$ in terms of $\Tvec$ and $\Fvec$. Writing this as a matrix equation gives
+%\[
+%\left[\begin{array}{c}f_{1x} \\ f_{1y} \\ f_{1z} \\ f_{2x} \\ f_{2y} \\ f_{2z}
+% \end{array}\right] =
+%\left[\begin{array}{cccccc}
+%\frac{1}{2} & 0 & 0 & 0 & 0 & 0 \\
+%0 & \frac{1}{2} & 0 & 0 & 0 & \frac{1}{h} \\
+%0 & 0 & \frac{1}{2} & 0 & -\frac{1}{h} & 0 \\
+%\frac{1}{2} & 0 & 0 & 0 & 0 & 0 \\
+%0 & \frac{1}{2} & 0 & 0 & 0 & -\frac{1}{h} \\
+%0 & 0 & \frac{1}{2} & 0  &\frac{1}{h} & 0
+%\end{array}\right]\cdot
+%\left[\begin{array}{c} F_x \\ F_y \\ F_z \\ T_x \\ T_y \\ T_z
+%\end{array}\right]
+%\]
+%
+%It is also useful to decompose the velocities $\vvec_1$ and $vvec_2$ into a velocity
+%of the center of mass, $\Vvec$, and an angular velocity, $\omvec$. The center of mass
+%velocity is given by the relation
+%\[
+%\Vvec = \frac{1}{2}(\vvec_1+\vvec_2)
+%\]
+%The angular velocity must satisfy the relations
+%\[
+%(\vvec_1-\Vvec) = \omvec\times\rvec_1
+%\]
+%Since $\rvec_2=-\rvec_1$ it follows that $\vvec_1-\Vvec=-(\vvec_2-\Vvec)$. This is
+%is equivalent to saying the relative motion of particles 1 and 2 is zero, which is
+%required if the particles remain separated by a fixed distance. Using the
+%coordinates for $\rvec_1$ and $\rvec_2$ as above, the components of $\omvec$ can be
+%written as
+%\begin{eqnarray*}
+%v_{1x}-V_x & = & 0 \\
+%v_{1y}-V_y & = & \frac{h}{2} \omega_z \\
+%v_{1z}-V_z & = & -\frac{h}{2} \omega_y
+%\end{eqnarray*}
+%The equations generated by $\vvec_2$ are essentially that same as the equations
+%generated by $\vvec_1$. The $x$ component of $\omvec$ is indeterminate, but can be
+%set to 0 (the forces in this model are applied to points, so there is no torque
+%about the $x$ axis). These equations can be solved for $\Vvec$ and $\omvec$ to get
+%the matrix equations
+%\[
+%\left[\begin{array}{c}V_x \\ V_y \\ V_z \\ \omega_x \\ \omega_y \\ \omega_z
+% \end{array}\right] =
+%\left[\begin{array}{cccccc}
+%\frac{1}{2} & 0 & 0 & \frac{1}{2} & 0 & 0 \\
+%0 & \frac{1}{2} & 0 & 0 & \frac{1}{2} & 0 \\
+%0 & 0 & \frac{1}{2} & 0 & 0 & \frac{1}{2} \\
+%0 & 0 & 0 & 0 & 0 & 0 \\
+%0 & 0 & -\frac{1}{h} & 0 & 0 & \frac{1}{h} \\
+%0 & \frac{1}{h} & 0 & 0  &-\frac{1}{h} & 0
+%\end{array}\right]\cdot
+%\left[\begin{array}{c} v_{1x} \\ v_{1y} \\ v_{1z} \\ v_{2x} \\ v_{2y} \\ v_{2z}
+%\end{array}\right]
+%\]
+%
+
+From Rotne and Prager, the diffusion tensor for a pair of
+particles of radius $a$ is
+\begin{eqnarray*}
+\Dmat_{ii} & = & \frac{kT}{6\pi\mu a}\Omat \\
+\Dmat_{ij} & = & \frac{kT}{8\pi\mu r_{ij}^3}\left[\left(\Omat r_{ij}^2 +\rvec_{ij}
+\rvec_{ij}\right) +\frac{2a^2}{r_{ij}^2}\left(\frac{1}{3}\Omat r_{ij}^2
+-\rvec_{ij}\rvec_{ij}\right)\right] \;\;\;\; \mbox{if}\;\; r_{ij} > 2a \\
+\Dmat_{ij} & = & \frac{kT}{6\pi\mu a}\left[\left(1-\frac{9}{32}\frac{r_{ij}}{a}\right)
++\frac{3}{32}\frac{\rvec_{ij}\rvec_{ij}}{ar_{ij}}\right] \;\;\;\; \mbox{if} \;\; r_{ij}<2a
+\end{eqnarray*}
+Assuming that the two particles lie at points $(h/2,0,0)$ and $(-h/2,0,0)$,
+the equations for the off-diagonal matrices reduce to
+\begin{eqnarray*}
+(\Dmat_{ij})_{xx} & = & \frac{kT}{4\pi\mu h^3}\left[h^2-\frac{2}{3}a^2\right]
+ \;\;\;\;\mbox{if}\;\;h>2a \\
+(\Dmat_{ij})_{yy,zz} & = & \frac{kT}{8\pi\mu h^3}\left[h^2+\frac{2}{3}a^2\right]
+ \;\;\;\;\mbox{if}\;\;h>2a \\
+(\Dmat_{ij})_{xx} & = & \frac{kT}{6\pi\mu a}\left[1-\frac{3}{16}\frac{h}{a}\right]
+ \;\;\;\;\mbox{if}\;\;h<2a \\
+(\Dmat_{ij})_{yy,zz} & = & \frac{kT}{6\pi\mu a}\left[1-\frac{9}{32}\frac{h}{a}\right]
+ \;\;\;\;\mbox{if}\;\;h<2a
+\end{eqnarray*}
+All other matrix elements are zero in this orientation. Note that these matrix
+elements are continuous at the contact value of $h=2a$. This formula can be used to
+calculate the diffusion tensor in the frame of reference where the cylinder is located
+along the $x$ axis and then the tensor can be rotated back to the actual orientation.
+
+A remaining detail
+is to choose a relation between the radius $a$ of the two particles representing
+the ends of the segment, the separation distance $h$ between the particles and
+the dimensions of the cylinder representing the fungi segment. For these simulations
+we choose the radius $a$ so that the total area of the two spheres is equal to the
+area of the area of the cylinder represented by the segment.
+
+The simulation code actually uses the translational velocity of the center of mass and
+the angular rotational velocity, $\omvec$, of the cylinder to update the position of the system.
+The two fictitious particles used to  calculate the hydrodynamic drag are assumed to
+have the same mass, which leads immediately to the relation
+\[
+\Vvec = \frac{\vvec_1+\vvec_2}{2}
+\]
+between the center of mass velocity $\Vvec$ and the individual particle velocities.
+The angular velocity is more complicated. The relationship between angular velocity
+and the velocity of the individual particles in the cylinder is given by
+\[
+\Imat\cdot\omvec = \Lvec
+\]
+where $\Lvec$ is the angular momentum
+\begin{eqnarray*}
+\Lvec & = & \sum_i m\rvec_i\times\vvec_i\\
+& = & \frac{m}{2}\rvec_{12}\times(\vvec_1-\vvec_2)
+\end{eqnarray*}
+and $\Imat$ is the moment of inertia tensor
+\begin{eqnarray*}
+\Imat & = & \sum_i m (\Omat r_i^2-\rvec_i\rvec_i) \\
+& = & \frac{m}{4}(\Omat\; 2r_{12}^2-2\rvec_{12}\rvec_{12}) \\
+& = & \frac{m}{2}(\Omat r_{12}^2-\rvec_{12}\rvec_{12}) \\
+\end{eqnarray*}
+Note that in all these equations, the particles are assumed to be located at
+$\pm \rvec_{12}/2$.
+
+If the cylinder is oriented parallel to the $x$ axis, then the moment of inertia tensor
+has the simple form
+\[
+\Imat = \frac{mh^2}{2}\left[\begin{array}{ccc}
+0 & 0 & 0\\
+0 & 1 & 0\\
+0 & 0 & 1\\
+\end{array}\right]
+\]
+Note that this has a zero eigenvalue so that it is not invertible. However, in this
+orientation, the $x$ component of $\Lvec$ also vanishes, implying that $\omega_x$ can be
+set to any value. For convenience, we set it equal to zero. The angular momentum in this
+orientation is
+\[
+\Lvec = \frac{mh}{2}(0,\;-v'_z,\;v'_y)
+\]
+where $\vvec'$ is the vector $\vvec_1-\vvec_2$ after rotating to the frame where
+$\rvec_{12}$ is parallel to the $x$ axis. In this frame, the remaining two components
+of $\omvec$ are given by 
+\begin{eqnarray*}
+\omega_y & = & -v'_z/h \\
+\omega_z & = & v'_y/h
+\end{eqnarray*}
+Equivalently, $\omega$ can be computed from that rotated angular momentum $\Lvec'$ using
+\begin{eqnarray*}
+\omega_x & = & 2L_x'/h^2 \\
+\omega_y & = & 2L_y'/h^2 \\
+\end{eqnarray*}
+
+These equations have all relied on the fact that $\rvec_{12}$ is oriented along the
+$x$ axis. To use these equations in practice, it is necessary to construct the rotation
+that orients $\rvec_{12}$ along the $x$ axis. Assume polar coordinates with polar
+angle $\phi$ and azimuthal angle $\theta$ such that $\theta = 0$ implies that a vector
+is parallel to the $z$ axis and $\phi = 0$, $\theta = \pi/2$ implies that a vector is
+parallel to the $x$ axis. The vector $\rvec_{12}$ is described by the coordinates
+$h(\cos\phi\sin\theta,\sin\phi\sin\theta,\cos\theta)$. The matrix to rotate the $x$ axis
+to this orientation is
+\[
+\Rmat=\left[\begin{array}{ccc}
+\cos\phi\sin\theta & -\sin\phi & -\cos\phi\cos\theta \\
+\sin\phi\sin\theta & \cos\phi & -\sin\phi\cos\theta \\
+\cos\theta & 0 & \sin\theta
+\end{array}\right]
+=\left[\begin{array}{ccc}
+\cos\phi & -\sin\phi & 0 \\
+\sin\phi & \cos\phi & 0 \\
+0 & 0 & 1\end{array}\right]
+\left[\begin{array}{ccc}
+\sin\theta & 0 & -\cos\theta \\
+0 & 1 & 0 \\
+\cos\theta & 0 & \sin\theta
+\end{array}\right]
+\]
+The inverse rotation is just the transpose of this matrix.
+
+A final rotation is required to rotate the about the $x$ axes to align the rotational
+velocity with the $z$ axis. The rotation angle can be found by normalizing $\omvec$
+and then finding the angle it makes with the $z$ axis (this should just be the
+$\cos^{-1}$ of the $z$ component of the normalized rotational velocity). The
+orientation of the segment can then be updated in this configuration and the segment
+is then returned to it original orientation by applying the inverse rotations.
+
+\section{Maintaining Connectivities Between Segments}
+To model filamentous fungi, it is necessary to maintain bonds between
+different linear segments. The end of one segment is bonded to the end of another
+segment so that some sort of fixed relation can be maintained (A is bonded to B),
+even if the two segments are hosted on different processors. The existing code
+base does not support a bond list that can be used to maintain bonds
+between different segments. In order to create a mechanism that allows us to
+established fixed relations between different segments, the following is assumed
+to be true
+\begin{list}{$\bullet$}{}
+\item Any segment B that is bonded to segment A is located within a finite
+distance of A and lies in the neighbor list of A (the neighbor list is based
+exclusively on position and is supported by the code). The same is true of A with
+respect to B.
+\item There is a finite maximum number of segments that can be bonded to a
+central segment (in our case the maximum is four)
+\item At most one bond can exist between two segments
+\item A unique identifier can be created for each new segment that is added to the
+system and is maintained over the life of the simulation. This identifier is also
+restored if the calculation is restarted from a checkpoint file.
+\end{list}
+The last item on this list is a bit more complicated than it might initially appear.
+The unique identifier in our implementation is, in fact, an integer pair. The first
+integer is a unique index associated with the process that created the segment and
+the second index is the rank of the process. This combination is unique across all
+processes and can be generated without communication between processes.
+
+The four events that can generate new particles are
+\begin{list}{$\bullet$}{}
+\item Segment generation from a growth tip.
+\item Tip splitting of a growth tip to generate two new segments.
+\item Side branching from an interiour segment.
+\item Fusion of a growth tip to an interior segment. The interior segment splits
+into two segments at the point at which the growth tip fuses.
+\end{list}
+Each of these events can generate one or two segments and it is necessary for internal data
+on all particles to be updated to reflect the formation of new bonds and, in some cases,
+the removal of old bonds. All of this is complicated by the fact that modifications to
+particle data need to be done in a particular way in order for modifications to be made
+permanent. This can be seen when looking at loops over neighbor pairs.
+
+\begin{figure}
+\centering
+\includegraphics[width=4.0in,keepaspectratio=true]{side_branch}
+\caption{\label{fig:side_branch} Schematic diagram of side branching}
+\end{figure}
+
+A typical loop over neighbors has the structure
+\[
+\sum_{i}\sum_{j\in Nghb(i)}
+\]
+The sum over $j$ may also have a restriction that the interaction is only evaluated
+for $i<j$ to avoid duplicate interactions. The issue that arises, is that any
+modifications that are identified in a loop over particles of this sort can only
+be permanently applied to the particles indexed by $i$. The particles in the neighbor list
+indexed by $j$ are copies of the original particle data, which may reside on other
+processors, and changes made to the copies will disappear when the neighbor list is rebuilt.
+
+To maintain and update the connectivity information, the following information is maintained
+on each segment
+\begin{list}{$\bullet$}{}
+\item the number of segments that this segment is bonded to. The maximum number is 4.
+\item a list of ids for the segments that are bonded to this segment (up to 4)
+\item a list of cpus for the segments that are bonded to this segment (up to 4)
+\item a list describing the site (1 or 2) at which the bonded segments are connected (up to 4)
+\item an integer enumeration specifying whether a segment is a growth tip or not
+\item a flag indicating that this segment is fusing to another segment
+\item a flag indicating that this segment is going to split in a fusion event
+\item a flag indicating that this segment was created during a fusion event
+\item an integer parameter that is used to determine which end of the segment a bond fix will
+attach to
+\item the id of the segment that this particle is fusing to
+\item the cpu of the segment that this particle is fusing to
+\item a list of segment ids that were deleted from this segment (up to 2)
+\item a list of segment cpus that were deleted from this segment (up to 2)
+\end{list}
+Each segment has a site at either end that is capable of forming bonds with other segments.
+These sites are labeled 1 and 2 and each site can be bonded to a maximum of two other segments
+for a maximum of four bonds per segment. The last eight items in the list are only used to
+support fusion of a growth tip to another segment. Not all of the parameters are necessarily
+used simultaneously by all segments involved in the fusion event.
+
+A major function of the simulation is maintaining these connectivities and it is complicated
+to a significant degree by the behavior of the loops over neighbors. Generally, when new
+segments are created, they are spawned from a parent segment. At the moment of creation,
+the permanent copy of both the parent and the newly created child segment are available to
+to the program and modifications to their data will be preserved. Thus, when a growth tip
+generates a new tip or splits into two new tips, all the permanent information for both the
+parent segment and the new segments are available and all bonding information can be updated
+at the same time.
+
+The situation is more complicated for side-branching from an interior segment. This
+is illustrated in Figure \ref{fig:side_branch}. In the figure, the interior segment A is bonded
+to segment B and a side branch forms in segment A at the end that is bonded to segment B. The
+resulting segment C is bonded to both A and B. At the moment when segment C forms, both the
+permanent data for A and C are available, but not the data for B. A can set its internal data
+so that it is bonded to C and C, because it has access to A's internal data and can see that the
+end bonded to C is also bonded to B, can set its
+internal data so that it it is bonded to A and B. However, at this point B's bonding data does
+not list C as a bonding partner.
+This must be fixed up later when the loop to calculate forces is performed. Furthermore, to
+guarantee that segment C's permanent data is modified, the restriction $i<j$ cannot be used.
+Before evaluating the forces between a pair of segments, each segment in the pair
+checks to see if it bonded to the other segment. If it is not, then it checks the bonding
+information in the neighbor to see if the neighbor is bonded to it. If the neighbor is bonded
+then the segment updates its bonding information to list the neighbor as a bond. In the case
+of side branching, segment C is bonded to segment B but B is not bonded to segment C.
+In the force loop, segment B will check the bonding information of segment C and find that
+segment C lists B as a bonding partner. Based on this, segment B will update its bond
+information to include C.
+
+\begin{figure}
+\centering
+\includegraphics[width=4.0in,keepaspectratio=true]{fusion}
+\caption{\label{fig:fusion} Schematic diagram of a growth tip fusing with an interior segment}
+\end{figure}
+
+Fusion of a growth tip with an interior segment requires the addition of several more loops
+over neighbors in order to maintain an accurate record of connectivity. A schematic diagram
+of a tip fusion event is shown in Figure \ref{fig:fusion}. When a tip fuses to another segment,
+the other segment splits at the point where the fusion occurs and two new segments are formed.
+
+Computationally, a tip fusion event occurs in four separate steps:
+\begin{enumerate}
+\item In a double loop over all segments and their neighbors, a tip identifies another segment
+that it is going to fuse with. The tip labels itself as fusing and stores the id and cpu of the
+fusing partner. In Figure \ref{fig:fusion} segment A identifies segment B as a fusion partner
+and marks itself accordingly. Segment A also adds segment B to its list of bonding partners,
+\item A second double loop over all segments and their neighbors is performed and each segment
+checks its neighbors to see if it is a fusing tip and if it has marked the segment as a fusing
+partner. If it finds that it is a fusing partner, the segment marks itself as splitting and
+stores the id and cpu of the tip that it is fusing with. It also adds the tip as a bonding
+partner. In the example shown in Figure \ref{fig:fusion}, segment B finds that segment A has
+marked itself as fusing and lists segment B as its fusing partner. Segment B marks itself as
+splitting, stores the id and cpu of segment A and adds A as a bonding partner.
+\item A third loop over segments is performed and all segments marked for splitting are split
+into two segments. In the example in Figure \ref{fig:fusion}, segment B generates segment D.
+Segment D is marked as being a new segment derived from a fusion event.
+The split is done in a consisistent way so that the new segment is generated at the end of the
+original segment corresponding to bonding site 2. Because of this, the bonds at site 2 on the
+original segment B that bond to segment C are no longer valid and need to be replaced with bonds to D.
+Similarly, bonds to A, B and C can be added to D at this point since D has access to B's
+connectivity data. However, A does not list D as a bonding partner and C needs to modify its
+bonding data to remove the bonds to B and add bonds to D. To do this, B stores the id and cpu
+of the bond to C that was deleted. If B is attached to two segments at site 2, then the ids and
+cpus of both segments are stored.
+
+An additional complication is that when A and the
+segments that were bonded to B at site 2 update their bond lists in the force loop, they
+won't know to which site to add the new bonds. This can be handled by the integer bond fix
+parameter. When segment A determines that it is fusing to segment B, it sets its copy of the
+bond fix parameter to the value of 1 or 2 corresponding to the end of the segment that is
+fusing to B. The segments that were formerly bonded to B, in this case C, will set this
+parameter in the next step.
+
+\item A fourth double loop including neighbors is performed to fix up the bond on segment C.
+Bonds between segments A and D and segments C and D will get fixed in the force loop when
+bonds are recognized between segments A and C and segment D. Segment B will still show up as
+a neighbor of
+segment C in the cleanup loop. However, segment B will be marked as having just been split and
+will list a
+bond to C as having been deleted. This is a signal to C to remove B as a bonding partner. C
+will also have information on which site B is attached and can use this to set the value of
+the bond fix flag to the site at which the bond to B was attached.
+\end{enumerate}
+Once these operations have been completed, the force loop will fix up any remaining
+bonds that are only defined on one segment of a bonding pair and all other fusion parameters are
+reset to a state that can initiate new events. For a side branching event, the bond fix parameter
+will be set to zero. If a zero value for the bond fix parameter is encountered in the force loop,
+then the segment that is
+updating its bond list checks which site the first bond in its bond list is using and then sets
+the bond fix parameter to the other site. This is enough to guarantee that the new bond is
+attached to the correct site.
+\bibliographystyle{unsrt}
+\bibliography{bmx}
+\end{document}
