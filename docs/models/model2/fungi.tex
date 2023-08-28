@@ -653,7 +653,7 @@ is then returned to it original orientation by applying the inverse rotations.
 \section{Maintaining Connectivities Between Segments}
 To model filamentous fungi, it is necessary to maintain bonds between
 different linear segments. The end of one segment is bonded to the end of another
-segment so that some sort of fixed relation can be maintained (A is bonded to B),
+segment so that some sort of fixed relation must be maintained (A is bonded to B),
 even if the two segments are hosted on different processors. The existing code
 base does not support a bond list that can be used to maintain bonds
 between different segments. In order to create a mechanism that allows us to
@@ -689,7 +689,8 @@ Each of these events can generate one or two segments and it is necessary for in
 on all particles to be updated to reflect the formation of new bonds and, in some cases,
 the removal of old bonds. All of this is complicated by the fact that modifications to
 particle data need to be done in a particular way in order for modifications to be made
-permanent. This can be seen when looking at loops over neighbor pairs.
+permanent. The complications associated with changing connectivities can be seen
+by looking at loops over neighbor pairs.
 
 \begin{figure}
 \centering
@@ -704,9 +705,10 @@ A typical loop over neighbors has the structure
 The sum over $j$ may also have a restriction that the interaction is only evaluated
 for $i<j$ to avoid duplicate interactions. The issue that arises, is that any
 modifications that are identified in a loop over particles of this sort can only
-be permanently applied to the particles indexed by $i$. The particles in the neighbor list
+be permanently applied to the particles indexed by $i$. {\em The particles in the neighbor list
 indexed by $j$ are copies of the original particle data, which may reside on other
-processors, and changes made to the copies will disappear when the neighbor list is rebuilt.
+processors, and changes made to the copies will disappear when the neighbor list
+is rebuilt}.
 
 To maintain and update the connectivity information, the following information is maintained
 on each segment
@@ -738,7 +740,7 @@ segments are created, they are spawned from a parent segment. At the moment of c
 the permanent copy of both the parent and the newly created child segment are available to
 to the program and modifications to their data will be preserved. Thus, when a growth tip
 generates a new tip or splits into two new tips, all the permanent information for both the
-parent segment and the new segments are available and all bonding information can be updated
+parent segment and the new segments is available and all bonding information can be updated
 at the same time.
 
 The situation is more complicated for side-branching from an interior segment. This
@@ -749,9 +751,12 @@ permanent data for A and C are available, but not the data for B. A can set its 
 so that it is bonded to C and C, because it has access to A's internal data and can see that the
 end bonded to C is also bonded to B, can set its
 internal data so that it it is bonded to A and B. However, at this point B's bonding data does
-not list C as a bonding partner.
-This must be fixed up later when the loop to calculate forces is performed. Furthermore, to
-guarantee that segment C's permanent data is modified, the restriction $i<j$ cannot be used.
+not list C as a bonding partner. This must be fixed up later when the loop to calculate forces
+is performed.  However, to
+guarantee that segment B's permanent data is modified, the restriction $i<j$ cannot be used.
+Otherwise, the interaction between B and C may be evaluated with B being in the
+neighbor list of C.
+
 Before evaluating the forces between a pair of segments, each segment in the pair
 checks to see if it bonded to the other segment. If it is not, then it checks the bonding
 information in the neighbor to see if the neighbor is bonded to it. If the neighbor is bonded
@@ -779,8 +784,10 @@ that it is going to fuse with. The tip labels itself as fusing and stores the id
 fusing partner. In Figure \ref{fig:fusion} segment A identifies segment B as a fusion partner
 and marks itself accordingly. Segment A also adds segment B to its list of bonding partners,
 \item A second double loop over all segments and their neighbors is performed and each segment
-checks its neighbors to see if it is a fusing tip and if it has marked the segment as a fusing
-partner. If it finds that it is a fusing partner, the segment marks itself as splitting and
+checks its neighbors to see if the neighbor is a fusing tip and if the neighbor has marked the
+segment as a fusing
+partner. If the segment finds that it is a fusing partner, the segment marks itself as
+splitting and
 stores the id and cpu of the tip that it is fusing with. It also adds the tip as a bonding
 partner. In the example shown in Figure \ref{fig:fusion}, segment B finds that segment A has
 marked itself as fusing and lists segment B as its fusing partner. Segment B marks itself as
@@ -797,7 +804,7 @@ bonding data to remove the bonds to B and add bonds to D. To do this, B stores t
 of the bond to C that was deleted. If B is attached to two segments at site 2, then the ids and
 cpus of both segments are stored.
 
-An additional complication is that when A and the
+When A and the
 segments that were bonded to B at site 2 update their bond lists in the force loop, they
 won't know to which site to add the new bonds. This can be handled by the integer bond fix
 parameter. When segment A determines that it is fusing to segment B, it sets its copy of the
@@ -812,7 +819,7 @@ a neighbor of
 segment C in the cleanup loop. However, segment B will be marked as having just been split and
 will list a
 bond to C as having been deleted. This is a signal to C to remove B as a bonding partner. C
-will also have information on which site B is attached and can use this to set the value of
+will also have information on which site B is attached to and can use this to set the value of
 the bond fix flag to the site at which the bond to B was attached.
 \end{enumerate}
 Once these operations have been completed, the force loop will fix up any remaining
@@ -823,6 +830,27 @@ then the segment that is
 updating its bond list checks which site the first bond in its bond list is using and then sets
 the bond fix parameter to the other site. This is enough to guarantee that the new bond is
 attached to the correct site.
+
+Tip fusion is a relatively rare event, so it is possible to improve the
+efficiency of this part of the calculation if no fusion fusion events are
+detected in the first loop. In this case, a global reduction can be used to
+check if fusion occurs anywhere in the system. If it hasn't, then the remaining
+loops in the fusion calculation canb be dispensed with.
+
+The calculation for determining if a tip fuses to another segment is relatively
+simple. Currently, fusion only occure between a tip and an interior segment. The
+algorithm for determining if a fusion event occurs is
+\begin{list}{$\bullet$}{}
+\item the minimum separation distance between the free end of the growth tip A
+and the line segment defining the interior segment B must be less than some
+minimum distance.
+\item the point at which this mimimum occurs must be an interior point of B, not
+lying on the endpoints.
+\item if the tip A is close enough to segment B for a fusion event, a random
+number if generated from a uniform distribuion on the interval $[0,1)$. If the value 
+is less than some probability threshold $p_{fuse}$, then the fusion event occurs.
+\end{list}
+This calculation is repeated at every timestep.
 \bibliographystyle{unsrt}
 \bibliography{bmx}
 \end{document}
