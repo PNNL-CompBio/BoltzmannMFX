@@ -53,7 +53,7 @@ tips to interior portions of the existing fungal network.
 
 The individual hyphae are represented by a single particle data structure inside
 the AMReX framework. The hyphae are characterized by a position $\rvec$
-represeting the center of the cylinder, an orientation
+representing the center of the cylinder, an orientation
 specified by two angles $\phi$ and $\theta$ and the previously mentioned cylinder
 length and radius. In addition, a large number of integer flags keep track of
 bonding of the hyphae to other hyphae in the fungal network. These flags are
@@ -72,7 +72,7 @@ $\rvec_1$ and $\rvec_2$ are related via
 
 \section{Chemistry Model}
 The chemistry for this fungi simulation is similar to one constructed for looking
-at bacteria or yeast and consists of a simple set
+at bacteria or yeast and consists of a set
 of equations that describe chemical dynamics of a simple system within
 the fungal hyphae. Three chemical
 constituents are considered, $A$, $B$
@@ -92,7 +92,7 @@ $A$ is only capable of undergoing a reaction inside the cell.  To distinguish
 between concentrations of these components and absolute amounts of component, we use
 brackets [ ]. In this notation, $[A_{out}]$ is the concentration of $A$ in a grid cell and
 $A_{out}$ is the total amount (mass) of $A$ in a grid cell. There is also an
-additional equation that converts $B_{cell}$ into cell volume. This can be
+additional equation that converts $B_{in}$ into cell volume. This can be
 expressed by the equation
 \[
 B_{in} \stackrel{k_g,k_v}{\longleftrightarrow} V_{cell}
@@ -101,42 +101,16 @@ The rate constant $k_g$ describes how fast $B_{in}$ disappears from the system
 and the rate constant $k_v$ describes how fast the cell volume $V_{cell}$
 increases. In this model, the conversion of $B_{in}$ to volume is irreversible.
 
-The intracellular concentration of these species is governed by the set of equations
-\begin{eqnarray*}
-\frac{d [A_{out}]}{d t} &=&-k_1 [A_{out}]+k_{-1} [A_{in}] \\
-\frac{d [A_{in}]}{d t} &=&k_1 [A_{out}]-k_{-1} [A_{in}] - k_2 [A_{in}]
- + k_{-2}[B_{in}][C_{in}]\\
-\frac{d [B_{in}]}{d t} &=&k_2 [A_{in}] - k_{-2}[B_{in}][C_{in}] - k_g[B_{in}]\\
-\frac{d [C_{in}]}{d t} &=&k_2 [A_{in}] - k_{-2}[B_{in}][C_{in}]-k_{-3} [C_{in}]
-+ k_3 [C_{out}] \\
-\frac{d [C_{out}]}{d t} &=&k_{-3} [C_{in}]-k_3 [C_{out}]
-\end{eqnarray*}
-These reactions also act as sources and sinks for $A_{out}$ and $C_{out}$ in the diffusion
-equations that govern transport in the agar growth medium.
-
-An additional equation couples the concentration of $B_{in}$ to cell growth.
-The growth is governed by the equation
-\[
-\frac{dV_{cell}}{dt} = V_{cell}k_v[B_{in}]
-\]
-The factor of $V_{cell}$ means that the total volume produced per unit time is
-governed by the total amount of $B_{in}$ insided the cell. For the time being,
-the rate constants are only non-zero if the segment is below the maximum size
-limits. This means that growth only occurs at growth tips or, to a lesser
-extent, segments that have just undergone a fusion event.
-
-In addition to transport in and out of the cell, coupled to diffusion in the external
-growth medium, constituants can also be transferred between hyphae that are directly
-bonded to each other. Hyphae that are linked together are separated by a permeable septum
-that allows material to transfer between hyphae based on the concentration difference
-across the septum. The flux of material between segments i and j is given by a relation
-of the form
-\[
-f_{X,ij} = M_X ([X]_{in,i}-[X]_{in,i})
-\]
-where $f_{X,ij}$ is the flux of $X$ from segment i into segment j and $M_X$ is the mass
-transfer coefficient for this process. This equation assumes perfect mixing inside the hyphae
-so that the concentration at the septum is equal to the concentration within the cell.
+%The intracellular concentration of these species is governed by the set of equations
+%\begin{eqnarray*}
+%\frac{d [A_{out}]}{d t} &=&-k_1 [A_{out}]+k_{-1} [A_{in}] \\
+%\frac{d [A_{in}]}{d t} &=&k_1 [A_{out}]-k_{-1} [A_{in}] - k_2 [A_{in}]
+% + k_{-2}[B_{in}][C_{in}]\\
+%\frac{d [B_{in}]}{d t} &=&k_2 [A_{in}] - k_{-2}[B_{in}][C_{in}] - k_g[B_{in}]\\
+%\frac{d [C_{in}]}{d t} &=&k_2 [A_{in}] - k_{-2}[B_{in}][C_{in}]-k_{-3} [C_{in}]
+%+ k_3 [C_{out}] \\
+%\frac{d [C_{out}]}{d t} &=&k_{-3} [C_{in}]-k_3 [C_{out}]
+%\end{eqnarray*}
 
 The transport equations into and out of the hyphae from the external fluid are similar to those
 examined in a previous paper.
@@ -168,6 +142,51 @@ rate equations governing this system become
 \frac{d [C_{out}]}{d t} &=&k_{-3} \frac{A_{cell}}{V_{grid}}[C_{in}]
 -k_3\frac{A_{cell}}{V_{grid}} [C_{out}]
 \end{eqnarray*}
+These reactions also act as sources and sinks for $A_{out}$ and $C_{out}$ in the diffusion
+equations that govern transport in the agar growth medium.
+
+An additional equation couples the concentration of $B_{in}$ to cell growth.
+The growth is governed by the equation
+\[
+\frac{dV_{cell}}{dt} = V_{cell}k_v[B_{in}]
+\]
+The factor of $V_{cell}$ means that the total volume produced per unit time is
+governed by the total amount of $B_{in}$ insided the cell. For the time being,
+the rate constants are only non-zero if the segment is below the maximum size
+limits. This means that growth only occurs at growth tips or, to a lesser
+extent, segments that have just undergone a fusion event.
+
+After updating the concentrations, an additional check is required to guarantee
+that all components remain positive.
+The BMX strategy for maintaining positive concentrations consists of two parts.
+The first is to divide the available fluid in each grid cell evenly between each
+of the particles located in the grid cell and the second is to check if any of the
+components in the reaction schemes inside the particles goes negative.
+Concentrations inside the particle or in the fluid can go negative because a
+finite time step causes the system to overshoot a limit on the available reactant.
+If this occurs, then the change in that component is modified so that the component
+only goes to zero. This means that the change in any component that is coupled to
+the changed component must also be adjusted. For example, for the reaction
+\[
+A \longrightarrow B + C
+\]
+we might calculate a change in $A$ over one time step, $\Delta A$, such that $A$
+goes negative. This can be corrected by decreasing the change in $A$ to a value
+$\Delta A'$ so that $A$ goes to zero instead. However, this means that the changes
+in $B$ and $C$ must also be modified to reflect the smaller change in $A$.
+
+Besides transport in and out of the cell coupled to diffusion in the external
+growth medium, constituants can also be transferred between hyphae that are directly
+bonded to each other. Hyphae that are linked together are separated by a permeable septum
+that allows material to transfer between hyphae based on the concentration difference
+across the septum. The flux of material between segments i and j is given by a relation
+of the form
+\[
+f_{X,ij} = M_X ([X]_{in,i}-[X]_{in,i})
+\]
+where $f_{X,ij}$ is the flux of $X$ from segment i into segment j and $M_X$ is the mass
+transfer coefficient for this process. This equation assumes perfect mixing inside the hyphae
+so that the concentration at the septum is equal to the concentration within the cell.
 
 Numerically, the rate equations are currently being handled using the following scheme
 \begin{list}{$\bullet$}{}
@@ -238,11 +257,14 @@ The area of the septum is taken as the average of the area of the end caps of th
 hyphae.
 
 In this model, the exchanges between hyphae are completed after the chemistry and exchange
-with the external medium are completed. This again brings up an issue with maintaining positive
-concentrations within the hyphae. Theoretically, the transfer of material between hyphae should
+with the external medium are completed. The hyphae need to be updated in a
+separate loop from the internal chemistry updates because pairs of hyphae are
+needed for the exchange between different hyphae. The exchange of constituents
+between hyphae again brings up an issue with maintaining positive
+concentrationse. Theoretically, the transfer of material between hyphae should
 be accomplished by solving a set of simultaneous equations for transfer between all hyphae in th
-system and this would probably eliminate the issue of some concentrations going negative.
-However, this is not practical. Apart from the fact that the AMReX framework does not support
+system. This would probably eliminate the issue of some concentrations going
+negative but this is not practical. Apart from the fact that the AMReX framework does not support
 setting up these kinds of equations in a distributed environment, the overhead of doing a
 potentially large linear solve at each step is prohibitive. We opt for a simpler scheme that
 should introduce minimal errors in the limit of small timesteps.
@@ -261,7 +283,7 @@ completely independently of each other it is not possible to make use of this in
 The cell forces are calculated using a cubic interaction as described in Mathias
 {\em et al}~\cite{Mathias}. The separation distance used in the force
 calculation is the minimum separation distance between the two line segments
-discribing the two hyphae cylinders. The interactions are pairwise
+describing the two hyphae cylinders. The interactions are pairwise
 additive, with the force between two particles $i$ and $j$ described by a function of the form
 \[
 \Fvec_{ij} = F_{ij}(r_{ij})\frac{\rvec_{ij}}{r_{ij}}
@@ -291,7 +313,7 @@ equilibrium at some time $t$, they may start pushing against each other at a lat
 grow.
 
 Particles also interact with the surface of the growth medium using a similar potential. In this
-the contribution to the force is only in the $z$-direction and is a function $H(z)$ of the height $z$ above
+case the contribution to the force is only in the $z$-direction and is a function $H(z)$ of the height $z$ above
 the growth medium surface. The force has the form
 \begin{eqnarray*}
 H(z) & = & -\xi (z-Z_A)^2(z-Z_S)\;\;\;\mbox{if}\;\;\;0<z<Z_A \\
@@ -342,20 +364,20 @@ zero gives the coupled linear equations
 \end{eqnarray*}
 This can easily be solved in most cases for $\tau_i$ and $\tau_j$.
 After a solution is found, it is necessary to check that the $\tau_i$ and $\tau_j$
-satisfy the constraints. If they don't then the solution can be found by setting the
-values of $\tau_i$ and $\tau_j$ to the limits 0 and 1 and optimizing the remaining
-variable to find a minimum distance value. This may require and exhaustive search through
-up to four values.
+satisfy the constraints. If one variable violates the constraints then the solution
+can be found by setting the values of $\tau_i$ or $\tau_j$ to the limits 0 or 1 and
+optimizing the remaining variable to find a minimum distance value. 
+If both values violate the constraints then the minimum distance can be found
+by searching the four pairs of values $\tau_i,\tau_j\in\{0,1\}$.
 
 A corner case occurs when $\rhvec_i$ and $\rhvec_j$ are parallel. In this case the
 determinant vanishes and there is no unique solution. An {\em ad hoc} solution can be
-found by fixing $\tau_i$ to 0 and 1 and then minimizing $\tau_j$. Based on the values
-of $\tau_j$, a pair of values can be chosen the represent the minimum distance between
-the line segments.
+found by fixing $\tau_i$ to 0 or 1 and then minimizing $\tau_j$.
 
-The force between the two cylinders is some function $\Fvec(R)$ of the minimal
-distance $R=|\Rvec_i(\tau_i)-\Rvec_j(\tau_j)|$ between the two cylinders. The
-force must still be partitioned between the sites defining the cylinder. To do
+The force $\Fvec(R)$ acts on the two points $\Rvec_i(\tau_i)$ and
+$\Rvec_j(\tau_j)$ on the cylinders but these sites do not necessarily correspond
+to the sites at the ends of the cylinder.  The force must still be partitioned
+between these. To do
 this, we assume that $F(R)$ is generated from a potential $U(R)$. The force is
 then
 \[
@@ -370,8 +392,7 @@ then the gradient of $U(R)$ with respect to $\rvec_{i1}$ is
 \nabla_{\rvec_{i1}}U(R) & = & \frac{\partial U}{\partial R}\nabla_{\rvec_{i1}}R\
  = \frac{\partial U}{\partial R}\frac{\Rvec}{R} (1-\tau_i)
 \end{eqnarray*}
-Identifying $-\partial U/\partial R$ as some function $F(R)$ gives the final
-relation
+Identifying $-\partial U/\partial R$ as $F(R)$ gives the final relation
 \[
 \fvec_{i1} = F(R)\frac{\Rvec}{R}(1-\tau_i)
 \]
@@ -383,8 +404,9 @@ $i$ is just
 The expressions for the forces on the two sites of segment $j$ are similar.
 
 \section{Hydrodynamic Drag}
-A two-site model designed to represent a segment of filamentous fungi consists
-of two spheres that are held at a fixed distance apart and are chosen to represent
+To model hydrodynamic drag on the hyphae, each of the cites at the ends of the
+hyphae is the center of a sphere. Both spheres are the same size
+are chosen to represent
 the hydrodynamic drag on the segment as forces from other segments push
 it around. Each sphere is subject to a force, $\fvec_1$, $\fvec_2$, resulting in
 a translational and rotational motion of the segment. For freely interacting
@@ -519,12 +541,20 @@ elements are continuous at the contact value of $h=2a$. This formula can be used
 calculate the diffusion tensor in the frame of reference where the cylinder is located
 along the $x$ axis and then the tensor can be rotated back to the actual orientation.
 
-A remaining detail
-is to choose a relation between the radius $a$ of the two particles representing
-the ends of the segment, the separation distance $h$ between the particles and
-the dimensions of the cylinder representing the fungi segment. For these simulations
+Two remaining details are to choose is to choose a value for the radius $a$ and
+to account for the fixed separation of the ends of the segment as it translates
+and rotates. For these simulations
 we choose the radius $a$ so that the total area of the two spheres is equal to the
 area of the area of the cylinder represented by the segment.
+To account for the rigid body motion of the two spheres at the ends of the
+cylinder, we subtract out half of the relative velocity of the spheres towards each
+other from each sphere. If the spheres at $\rvec_1$ and $\rvec_2$ have relative
+ velocity
+$\nhat_{12}\cdot(\vvec_1-\vvec_2)$ then the modified velocities are
+\begin{eqnarray*}
+\vvec'_1 & = & \vvec_1 - \frac{1}{2}\nhat_{12}(\nhat_{12}\cdot(\vvec_1-\vvec_2)) \\
+\vvec'_2 & = & \vvec_2 + \frac{1}{2}\nhat_{12}(\nhat_{12}\cdot(\vvec_1-\vvec_2))
+\end{eqnarray*}
 
 The simulation code actually uses the translational velocity of the center of mass and
 the angular rotational velocity, $\omvec$, of the cylinder to update the position of the system.
@@ -534,6 +564,9 @@ have the same mass, which leads immediately to the relation
 \Vvec = \frac{\vvec_1+\vvec_2}{2}
 \]
 between the center of mass velocity $\Vvec$ and the individual particle velocities.
+Note that the translational velocity is not affected by subtracting out the
+relative velocity of the two spheres.
+
 The angular velocity is more complicated. The relationship between angular velocity
 and the velocity of the individual particles in the cylinder is given by
 \[
@@ -564,22 +597,24 @@ has the simple form
 \]
 Note that this has a zero eigenvalue so that it is not invertible. However, in this
 orientation, the $x$ component of $\Lvec$ also vanishes, implying that $\omega_x$ can be
-set to any value. For convenience, we set it equal to zero. The angular momentum in this
-orientation is
-\[
-\Lvec = \frac{mh}{2}(0,\;-v'_z,\;v'_y)
-\]
-where $\vvec'$ is the vector $\vvec_1-\vvec_2$ after rotating to the frame where
-$\rvec_{12}$ is parallel to the $x$ axis. In this frame, the remaining two components
-of $\omvec$ are given by 
+set to any value. For convenience, we set it equal to zero.
+%The angular momentum in this
+%orientation is
+%\[
+%\Lvec = \frac{mh}{2}(0,\;-v'_z,\;v'_y)
+%\]
+%where $\vvec'$ is the vector $\vvec_1-\vvec_2$ after rotating to the frame where
+%$\rvec_{12}$ is parallel to the $x$ axis. In this frame, the remaining two components
+%of $\omvec$ are given by 
+%\begin{eqnarray*}
+%\omega_y & = & -v'_z/h \\
+%\omega_z & = & v'_y/h
+%\end{eqnarray*}
+The remaining components of $\omvec$ can be computed from the rotated angular momentum
+$\Lvec'$ using
 \begin{eqnarray*}
-\omega_y & = & -v'_z/h \\
-\omega_z & = & v'_y/h
-\end{eqnarray*}
-Equivalently, $\omega$ can be computed from that rotated angular momentum $\Lvec'$ using
-\begin{eqnarray*}
-\omega_x & = & 2L_x'/h^2 \\
 \omega_y & = & 2L_y'/h^2 \\
+\omega_z & = & 2L_z'/h^2 \\
 \end{eqnarray*}
 
 These equations have all relied on the fact that $\rvec_{12}$ is oriented along the
