@@ -40,10 +40,12 @@
 
 \section{Model}
 This document describes a fungal growth simulation implemented with the
-BMX framework. Individual hyphae are modeled as connected cylinders that 
+BMX framework, which is in turn implmented using the AMReX framework.
+Withing BMX, individual fungal hyphae are modeled as connected cylinders that 
 are designed to mimic the behavior of a fungal network that is growing by
 elongation of tip elements and creation of new segments at the growth tips.
-The hyphae cylinders are characterized by a length and a radius. Hyphae
+The hyphae cylinders are characterized by a length and a radius, as well as
+their connectivity to neighboring hyphae. Hyphae
 that have reached a maximum size stop growing if they are in an interior
 location while hyphae representing a growth tip can generate one or two new
 hyphae at the free growth end of the cylinder. The tip splitting events that
@@ -59,8 +61,8 @@ length and radius. In addition, a large number of integer flags keep track of
 bonding of the hyphae to other hyphae in the fungal network. These flags are
 discussed in more detail below. Because the hyphae are cylinders that are rotationally
 symmetric about the cylinder axis, only two angles are needed instead of the
-customary three angles used to specify the orientation of an arbitrary shape
-in three dimensions. The centers of the cylinder end-caps are located at positions
+customary three angles used to specify the orientation of an arbitrary rigid shape
+in three dimensions. The centers of the cylinder endcaps are located at positions
 $\rvec_1$ and $\rvec_2$ and the angles $\phi$ and $\theta$ describe the unit vector
 $\nhat = (\cos(\phi)\sin(\theta),\sin(\phi)\sin(\theta),\cos(\theta))$ pointing
 from $\rvec_1$ to $\rvec_2$. For a cylinder of length $h$, the vectors $\rvec$,
@@ -70,6 +72,14 @@ $\rvec_1$ and $\rvec_2$ are related via
 \rvec_2 & = & \rvec + \frac{h}{2}\nhat
 \end{eqnarray*}
 
+The simulation describes the growth of a fungal network on the surface of an agar
+growth medium that is saturated with a nutrient solution. The surface of the
+agar is parallel to the $xy$ plane and the normal to the $z$-axis. Growth is
+generally along the agar surface, although the network can potentially push up
+in the $z$-direction. Nutrients and waste products can diffuse in the agar
+medium and can enter end exit individual hyphae based on mass transport across
+the hyhpae membrane. Material can also exchange between attached hyphae.
+
 \section{Chemistry Model}
 The chemistry for this fungi simulation is similar to one constructed for looking
 at bacteria or yeast and consists of a set
@@ -78,7 +88,7 @@ the fungal hyphae. Three chemical
 constituents are considered, $A$, $B$
 and $C$. The cell volume is also coupled to these constituents. $A$ and $C$
 exist both inside and outside the cell (in the
-agar medium). The concentrations outside the cell are denoted with the
+agar growth medium). The concentrations outside the cell are denoted with the
 subscript $out$ while those inside the cell are labeled
 with the subscript $in$. The compound $B$ is only located inside the cell and
 is impermeable to the cell membrane.
@@ -88,12 +98,12 @@ A_{out} &\stackrel{k_{1},k_{-1}}{\longleftrightarrow}& A_{in} \\
 A_{in} &\stackrel{k_2,k_{-2}}{\longleftrightarrow}& B_{in} + C_{in} \\
 C_{in} &\stackrel{k_3,k_{-3}}{\longleftrightarrow}& C_{out}
 \end{eqnarray*}
-$A$ is only capable of undergoing a reaction inside the cell.  To distinguish
+$A$, $B$, and $C$ are only capable of undergoing a reaction inside the cell.  To distinguish
 between concentrations of these components and absolute amounts of component, we use
 brackets [ ]. In this notation, $[A_{out}]$ is the concentration of $A$ in a grid cell and
-$A_{out}$ is the total amount (mass) of $A$ in a grid cell. There is also an
-additional equation that converts $B_{in}$ into cell volume. This can be
-expressed by the equation
+$A_{out}$ is the total amount (mass) of $A$ in a grid cell.
+
+An additional equation converts $B_{in}$ into cell volume
 \[
 B_{in} \stackrel{k_g,k_v}{\longleftrightarrow} V_{cell}
 \]
@@ -124,7 +134,7 @@ k_{-3} \\
 k_{3}
 \end{eqnarray*}
 These equation are for component $C$. The variable $A_{cell}$ is the surface area of the hyphae,
-$V_{cell}$ is the corresponding hyphe volume and $V_{grid}$ is the fluid volume in the grid cell.
+$V_{cell}$ is the corresponding hyphae volume and $V_{grid}$ is the fluid volume in the grid cell.
 Similar equations apply to component $A$.
 
 Using these expressions for the change in concentration due to transport across the cell membrane, the
@@ -145,8 +155,7 @@ rate equations governing this system become
 These reactions also act as sources and sinks for $A_{out}$ and $C_{out}$ in the diffusion
 equations that govern transport in the agar growth medium.
 
-An additional equation couples the concentration of $B_{in}$ to cell growth.
-The growth is governed by the equation
+Hyphae growth depends on the internal concentration of $[B_{in}]$ and is governed by the equation
 \[
 \frac{dV_{cell}}{dt} = V_{cell}k_v[B_{in}]
 \]
@@ -174,6 +183,9 @@ we might calculate a change in $A$ over one time step, $\Delta A$, such that $A$
 goes negative. This can be corrected by decreasing the change in $A$ to a value
 $\Delta A'$ so that $A$ goes to zero instead. However, this means that the changes
 in $B$ and $C$ must also be modified to reflect the smaller change in $A$.
+It is necessary to check both the the final value of the concentration inside
+the hyphae, as well as the concentration in the grid cell holding the hyphae,
+both remain positive, so this check must be performed twice for each component.
 
 Besides transport in and out of the cell coupled to diffusion in the external
 growth medium, constituants can also be transferred between hyphae that are directly
@@ -362,7 +374,7 @@ zero gives the coupled linear equations
 (\rvec_{i1}-\rvec_{j1})\cdot\rhvec_j & = & - \tau_i\rhvec_i\cdot\rhvec_j
                                        + \tau_j\left|\rhvec_j\right|^2
 \end{eqnarray*}
-This can easily be solved in most cases for $\tau_i$ and $\tau_j$.
+These can easily be solved in most cases for $\tau_i$ and $\tau_j$.
 After a solution is found, it is necessary to check that the $\tau_i$ and $\tau_j$
 satisfy the constraints. If one variable violates the constraints then the solution
 can be found by setting the values of $\tau_i$ or $\tau_j$ to the limits 0 or 1 and
@@ -403,10 +415,23 @@ $i$ is just
 \]
 The expressions for the forces on the two sites of segment $j$ are similar.
 
+One additional force is required in order to maintain bonding order. If two
+hyphae $i$ and $j$ are bonded at sites $\alpha$ and $\beta$, then a linear
+restoring force is used to keep the sites in close proximity to each other
+\[
+\fvec_{i\alpha j\beta} = -H(\rvec_{i\alpha}-\rvec_{j\beta})
+\]
+The constant $H$ governs the magnitude of the restoring force. This force is
+designed to maintain the bonding relationships between the hyphae.
+Theoretically, the larger the force, the smaller the separation between bonded
+hyphae. However, a very large force requires a correspondingly small timestep to
+maintain numerical stability, so the magnitude of $H$ is somewhat restricted by
+numerical considerations.
+
 \section{Hydrodynamic Drag}
-To model hydrodynamic drag on the hyphae, each of the cites at the ends of the
-hyphae is the center of a sphere. Both spheres are the same size
-are chosen to represent
+To model hydrodynamic drag on the hyphae, each of the sites at the ends of the
+hyphae is assumed to be the center of a sphere. Both spheres are the same size
+and are chosen to represent
 the hydrodynamic drag on the segment as forces from other segments push
 it around. Each sphere is subject to a force, $\fvec_1$, $\fvec_2$, resulting in
 a translational and rotational motion of the segment. For freely interacting
@@ -421,7 +446,7 @@ by the matrix equation
 The $3\times 3$ matrices $\Dmat_{ij}$ are diffusion matrices for hydrodynamically
 interacting spheres. The details of these matrices can be found in Rotne and
 Prager\cite{RP}. The vectors $\vvec_1$ and $\vvec_2$ are the
-velocities of particles 1 and 2 that represent the filament segment.
+velocities of particles 1 and 2 that define the hyphae segment.
 
 %For our purposes, it is more convenient to express the equations of motion of the
 %system in terms of net force and torque on the particle pair. To simplify this, we
@@ -537,11 +562,11 @@ the equations for the off-diagonal matrices reduce to
  \;\;\;\;\mbox{if}\;\;h<2a
 \end{eqnarray*}
 All other matrix elements are zero in this orientation. Note that these matrix
-elements are continuous at the contact value of $h=2a$. This formula can be used to
+elements are continuous at the contact value of $h=2a$. These formulae can be used to
 calculate the diffusion tensor in the frame of reference where the cylinder is located
 along the $x$ axis and then the tensor can be rotated back to the actual orientation.
 
-Two remaining details are to choose is to choose a value for the radius $a$ and
+Two remaining details are to choose a value for the radius $a$ and
 to account for the fixed separation of the ends of the segment as it translates
 and rotates. For these simulations
 we choose the radius $a$ so that the total area of the two spheres is equal to the
@@ -737,7 +762,7 @@ used simultaneously by all segments involved in the fusion event.
 A major function of the simulation is maintaining these connectivities and it is complicated
 to a significant degree by the behavior of the loops over neighbors. Generally, when new
 segments are created, they are spawned from a parent segment. At the moment of creation,
-the permanent copy of both the parent and the newly created child segment are available to
+the permanent copy of both the parent and the newly created child segment are available
 to the program and modifications to their data will be preserved. Thus, when a growth tip
 generates a new tip or splits into two new tips, all the permanent information for both the
 parent segment and the new segments is available and all bonding information can be updated
@@ -753,7 +778,8 @@ end bonded to C is also bonded to B, can set its
 internal data so that it it is bonded to A and B. However, at this point B's bonding data does
 not list C as a bonding partner. This must be fixed up later when the loop to calculate forces
 is performed.  However, to
-guarantee that segment B's permanent data is modified, the restriction $i<j$ cannot be used.
+guarantee that segment B's permanent data is modified, the restriction $i<j$ in
+the loop over neighbors cannot be used.
 Otherwise, the interaction between B and C may be evaluated with B being in the
 neighbor list of C.
 
@@ -775,14 +801,16 @@ information to include C.
 Fusion of a growth tip with an interior segment requires the addition of several more loops
 over neighbors in order to maintain an accurate record of connectivity. A schematic diagram
 of a tip fusion event is shown in Figure \ref{fig:fusion}. When a tip fuses to another segment,
-the other segment splits at the point where the fusion occurs and two new segments are formed.
+the other segment splits at the point where the fusion occurs and a new segment
+is formed.
 
 Computationally, a tip fusion event occurs in four separate steps:
 \begin{enumerate}
 \item In a double loop over all segments and their neighbors, a tip identifies another segment
 that it is going to fuse with. The tip labels itself as fusing and stores the id and cpu of the
 fusing partner. In Figure \ref{fig:fusion} segment A identifies segment B as a fusion partner
-and marks itself accordingly. Segment A also adds segment B to its list of bonding partners,
+and marks itself accordingly. Segment A also adds segment B to its list of
+bonding partners.
 \item A second double loop over all segments and their neighbors is performed and each segment
 checks its neighbors to see if the neighbor is a fusing tip and if the neighbor has marked the
 segment as a fusing
@@ -835,10 +863,10 @@ Tip fusion is a relatively rare event, so it is possible to improve the
 efficiency of this part of the calculation if no fusion fusion events are
 detected in the first loop. In this case, a global reduction can be used to
 check if fusion occurs anywhere in the system. If it hasn't, then the remaining
-loops in the fusion calculation canb be dispensed with.
+loops in the fusion calculation can be dispensed with.
 
 The calculation for determining if a tip fuses to another segment is relatively
-simple. Currently, fusion only occure between a tip and an interior segment. The
+simple. Currently, fusion only occurs between a tip and an interior segment. The
 algorithm for determining if a fusion event occurs is
 \begin{list}{$\bullet$}{}
 \item the minimum separation distance between the free end of the growth tip A
@@ -847,7 +875,7 @@ minimum distance.
 \item the point at which this mimimum occurs must be an interior point of B, not
 lying on the endpoints.
 \item if the tip A is close enough to segment B for a fusion event, a random
-number if generated from a uniform distribuion on the interval $[0,1)$. If the value 
+number is generated from a uniform distribuion on the interval $[0,1)$. If the value 
 is less than some probability threshold $p_{fuse}$, then the fusion event occurs.
 \end{list}
 This calculation is repeated at every timestep.
