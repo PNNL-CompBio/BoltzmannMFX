@@ -31,7 +31,7 @@
 \newcommand{\Imat}{\overline{\overline{I}}}
 \newcommand{\Hmat}{\overline{\overline{H}}}
 \newcommand{\Lag}{\mathcal{L}}
-\title{Simple Model of Fungal Growth on a Stationary Nutrient Medium}
+\title{Model of Bacterial-Fungal Interactions on a Stationary Nutrient Medium}
 \author{Written by a cast of thousands}
 \maketitle
 
@@ -57,14 +57,16 @@ bacteria and fungal hyphae segments. The bacteria are also subject to a random f
 that causes then to execute a random walk trajectory in the absence of any other bacteria
 or fungal hyphae. Both bacteria and hyphae can absorb nutrients from the environment. The
 fungi produce metabolites that are consumed by the bacteria and similarly, the bacteria
-produce metabolites that are consumed by the fungi.
+produce metabolites that are consumed by the fungi resulting in a partially
+closed nutrient loop in which both bacteria and fungi support each other.
 
 \section{Chemistry Model}
-The chemistry for the combined bacteria-fungi simulation has been extended to
+The chemistry for the combined bacteria-fungi simulation has been extended from
+previous models to
 include a total of five components, designated $A$, $B$, $C$, $D$, and $E$.
 The chemistry of the first three components is similar to the model constructed for looking
 at fungi alone and consists of a fairly simple set
-of equations that describe dynamics within individual fungal hyphae.
+of equations that describe chemical dynamics within individual fungal hyphae.
 Inside the hyphae, only the constituents, $A$, $B$
 and $C$ are considered. The cell volume is also coupled to these constituents. $A$ and $C$
 exist both inside and outside the cell (in the
@@ -78,8 +80,8 @@ A_{out} &\stackrel{k_{1},k_{-1}}{\longleftrightarrow}& A_{in} \\
 A_{in} &\stackrel{k_2,k_{-2}}{\longleftrightarrow}& B_{in} + C_{in} \\
 C_{in} &\stackrel{k_3,k_{-3}}{\longleftrightarrow}& C_{out}
 \end{eqnarray*}
-$A$ is only capable of undergoing a reaction inside the cell.  To distinguish
-between concentrations of these components and absolute amounts of component, we use
+$A$, $B$ and $C$ are only capable of undergoing reactions inside the cell.  To distinguish
+between concentrations of these components and absolute amounts of a component, we use
 brackets [ ]. In this notation, $[A_{out}]$ is the concentration of $A$ in a grid cell and
 $A_{out}$ is the total amount (mass) of $A$ in a grid cell. There is also an
 additional equation that converts $B_{cell}$ into cell volume. This can be
@@ -146,25 +148,25 @@ The equations for $C$, $D$, $E$, and $A$ generate the following coupled rate equ
 \frac{d [C_{in}]}{d t} &=&k_7 [C_{out}]-k_{-7} [C_{in}] - k_5 [C_{in}][D_{in}]
  + k_{-5}[A_{in}][E_{in}]
 \end{eqnarray*}
-Note that although both $k_3$, $k_{-3}$ and $k_7$, $k_{-7}$ both describe the transport
+Note that although both $k_3$, $k_{-3}$ and $k_7$, $k_{-7}$ describe the transport
 of $C$ across a cell membrane, it is a different membrane in each case and the coefficients
 could potentially be different. A similar consideration applies to component $A$.
 In analogy with hyphae growth, bacteria growth is governed by the equation
 \[
-\frac{dV_{cell}}{dt} = V_{cell}k_bv[E_{in}]
+\frac{dV_{cell}}{dt} = V_{cell}k_{bv}[E_{in}]
 \]
 
 In addition to transport in and out of the cell, coupled to diffusion in the external
 growth medium, constituants can also be transferred between fungal hyphae that are directly
 bonded to each other. Hyphae that are linked together are separated by a permeable septum
 that allows material to transfer between hyphae based on the concentration difference
-across the septum. The flux of material between segments i and j is given by a relation
+across the septum. The flux of material between segments $i$ and $j$ is given by a relation
 of the form
 \[
 f_{Xij} = M_X ([X_{in}]_i-[X_{in}]_j)
 \]
-where $f_{Xij}$ is the flux of component $X=A,C,E$ from segment i into segment j and $M_X$ is
-the corresponding mass
+where $f_{Xij}$ is the flux of component $X=A,C,E$ from segment $i$ into segment
+$j$ and $M_X$ is the corresponding mass
 transfer coefficient for this process. This equation assumes perfect mixing inside the hyphae
 so that the concentration at the septum is equal to the concentration within the cell.
 
@@ -203,7 +205,7 @@ k'_3 \\
 k'_3
 \end{eqnarray*}
 Using these expressions for the change in concentration due to transport across the cell membrane, the
-rate equations governing this system become
+rate equations governing the fungi become
 \begin{eqnarray*}
 \frac{d [A_{out}]}{d t} &=&-k'_1\frac{A_{cell}}{V_{grid}} [A_{out}]
 +k'_{-1}\frac{A_{cell}}{V_{grid}} [A_{in}] \\
@@ -215,19 +217,32 @@ rate equations governing this system become
 -k'_{-3} \frac{A_{cell}}{V_{cell}}[C_{in}]
 + k'_3\frac{A_{cell}}{V_{cell}} [C_{out}] \\
 \frac{d [C_{out}]}{d t} &=&k'_{-3} \frac{A_{cell}}{V_{grid}}[C_{in}]
--k'_3\frac{A_{cell}}{V_{grid}} [C_{out}] \\
+-k'_3\frac{A_{cell}}{V_{grid}} [C_{out}]
+\end{eqnarray*}
+Similarly, the equations for the bacteria are
+\begin{eqnarray*}
 \frac{d [A_{out}]}{d t} &=&-k'_6\frac{A_{cell}}{V_{grid}} [A_{out}]
 +k'_{-6}\frac{A_{cell}}{V_{grid}} [A_{in}] \\
-\frac{d [A_{in}]}{d t} &=&k_5[C_{in}][D_{in}] - k_{-5}[A_{in}][E_{in}]
--k'_{-6}\frac{A_{cell}}{V_{cell}} [A_{in}] + k'_6\frac{A_{cell}}{V_{cell}} [A_{out}] \\
+\frac{d [C_{out}]}{d t} &=&-k'_7\frac{A_{cell}}{V_{grid}} [C_{out}]
++k'_{-7}\frac{A_{cell}}{V_{grid}} [C_{in}] \\
+\frac{d [D_{out}]}{d t} &=&-k'_4\frac{A_{cell}}{V_{grid}} [D_{out}]
++k'_{-4}\frac{A_{cell}}{V_{grid}} [D_{in}] \\
+\frac{d [A_{in}]}{d t} &=& -k'_{-6}\frac{A_{cell}}{V_{cell}} [A_{in}]
++ k'_6\frac{A_{cell}}{V_{cell}} [A_{out}] +
+k_5[C_{in}][D_{in}] - k_{-5}[A_{in}][E_{in}] \\
 \frac{d [C_{in}]}{d t} &=&k'_7\frac{A_{cell}}{V_{cell}} [C_{out}]
 -k'_{-7}\frac{A_{cell}}{V_{cell}} [C_{in}] - k_5 [C_{in}][D_{in}]
- + k_{-5}[A_{in}][E_{in}]
+ + k_{-5}[A_{in}][E_{in}] \\
+\frac{d [D_{in}]}{d t} &=&k'_4\frac{A_{cell}}{V_{cell}} [D_{out}]
+-k'_{-4}\frac{A_{cell}}{V_{cell}} [D_{in}] - k_5 [C_{in}][D_{in}]
+ + k_{-5}[A_{in}][E_{in}] \\
+\frac{d [E_{in}]}{d t} &=& k_5 [C_{in}][D_{in}]
+ - k_{-5}[A_{in}][E_{in}]
 \end{eqnarray*}
 From here on, we drop the primes on $k'_1$, $k'_{-1}$, etc.
 
 Numerically, the rate equations are currently being handled using a scheme that splits the
-transport across the cell membrane, the reactions inside the cell and the transport between
+transport across the cell membrane, the reactions inside the cell, and the transport between
 hyphae into separate steps. These consist of the following
 \begin{list}{$\bullet$}{}
 \item There is an equilibration between the fluid and the cell over a time
@@ -247,7 +262,7 @@ The first step is implemented by calculating the amount of material that flows
 between the biological cell and the grid cell in which it is located.
 The discussion below focuses on the reactions associated with the hyphae, but the bacterial
 reactions are completely analogous.  The total amount of
-material that flows into the cell in the interval $\dt$ is
+material that flows into the cell in the interval $\dt/2$ is
 \begin{eqnarray*}
 \Delta A & = & \frac{\dt}{2} A_{cell}(k_1 [A_{out}]-k_{-1} [A_{in}]) \\
 \Delta B & = & 0 \\
@@ -296,6 +311,8 @@ and the volume is updated with
 \[
 V'_{cell} = V_{cell}+k_v V_{cell}\dt[B_{in}]
 \]
+The equations for modifying the bacteria volume based in $[E_{in}]$ are
+completely analogous.
 
 Finally, the transfer of material between hyphae needs to be evaluated.
 The actual amount of material transferred over a short time interval $\Delta t$ is the
