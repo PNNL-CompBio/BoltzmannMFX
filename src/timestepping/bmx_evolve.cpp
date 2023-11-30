@@ -93,7 +93,7 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
     if (DEM::solve)
     {
         if (time == 0.0) pc->InitBonds(particle_cost, knapsack_weight_type);
-        //if (time == 100000.0) pc->PrintConnectivity(particle_cost,knapsack_weight_type);
+        // if (time == 46657.0) pc->PrintConnectivity(particle_cost,knapsack_weight_type);
         pc->EvolveParticles(dt, particle_cost, knapsack_weight_type, nsubsteps);
         pc->split_particles(time);
         pc->ParticleExchange(dt, particle_cost, knapsack_weight_type, nsubsteps);
@@ -101,6 +101,18 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
           amrex::Print()<<"Completing FUSION step"<<std::endl;
           pc->EvaluateInteriorFusion(particle_cost,knapsack_weight_type);
           pc->CleanupFusion(particle_cost,knapsack_weight_type);
+        }
+        if (nstep%SPECIES::rg_frequency == 0) {
+          RealVect cm;
+          pc->CalculateFungalCM(particle_cost, knapsack_weight_type, cm);
+          amrex::Print()<<"Fungal Center of Mass: ["<<cm[0]<<","<<cm[1]
+            <<","<<cm[2]<<"]"<<std::endl;
+          Real rg, masst;
+          pc->CalculateFungalRG(particle_cost, knapsack_weight_type, rg, masst);
+          amrex::Print()<<"Total Fungal Mass: "<<masst<<std::endl;
+          amrex::Print()<<"Fungal Radius of Gyration: "<<rg<<std::endl;
+          pc->CalculateFungalDensityProfile(particle_cost, knapsack_weight_type,
+              SPECIES::dens_prof_bins,SPECIES::dens_prof_max);
         }
     }
 

@@ -31,8 +31,10 @@ checkSplit(Real *p_par, int *p_ipar, Real max_vol, Real max_len,
   *n_new = 0;
   if (cell_type == cellType::YEAST) {
     if (p_par[realIdx::vol] > max_vol) ret = true;
+#ifndef AMREX_USE_GPU
     if (ret) printf("SPLITTING cell id: %d cpu: %d\n",
         p_ipar[intIdx::id],p_ipar[intIdx::cpu]);
+#endif
     *n_new = 1;
   } else if (cell_type == cellType::FUNGI) {
     //TODO: Check fungi values
@@ -46,11 +48,15 @@ checkSplit(Real *p_par, int *p_ipar, Real max_vol, Real max_len,
           if (x > split_prob || p_ipar[intIdx::n_bnds] == 0) {
             // If segment is a growth tip then split if segment is greater than
             // or equal to maximum length
+#ifndef AMREX_USE_GPU
             printf("LENGTH: %16.8f\n",p_par[realIdx::c_length]);
+#endif
             ret = true;
             *n_new = 1;
           } else {
+#ifndef AMREX_USE_GPU
             printf("SPLIT LENGTH: %16.8f\n",p_par[realIdx::c_length]);
+#endif
             ret = true;
             *n_new = 2;
           }
@@ -63,7 +69,9 @@ checkSplit(Real *p_par, int *p_ipar, Real max_vol, Real max_len,
       Real x = amrex::Random(engine);
       if (x < brnch_prob) ret = true;
 //      printf("CHECKING FOR SIDE BRANCH brnch_prob: %f x: %f\n",brnch_prob,x);
+#ifndef AMREX_USE_GPU
       if (ret) printf("SIDE BRANCH WILL BE CREATED\n");
+#endif
       *n_new = 1;
     }
   }
@@ -217,15 +225,14 @@ checkTipFusion(Real *rij, Real *i_par, int *i_ipar, Real *j_par,
           if (r < fuse_length) {
             if (amrex::Random(engine) < fuse_prob) {
               // TIP i is fusing to segment j
+#ifndef AMREX_USE_GPU
               printf("TIP %d,%d is fusing to segment %d,%d n_bnds: %d site1: %d\n",
                   i_ipar[intIdx::id],
                   i_ipar[intIdx::cpu],
                   j_ipar[intIdx::id],
                   j_ipar[intIdx::cpu],
                   i_bnds,i_ipar[intIdx::site1]);
-      printf("ibnds: %d i1: %d,%d i2: %d,%d i3: %d,%d i4: %d,%d jbnds: %d j1: %d,%d j2: %d,%d j3: %d,%d j4: %d,%d\n",
-          i_bnds,i_id[0],i_cpu[0],i_id[1],i_cpu[1],i_id[2],i_cpu[2],i_id[3],i_cpu[3],
-          j_bnds,j_id[0],j_cpu[0],j_id[1],j_cpu[1],j_id[2],j_cpu[2],j_id[3],j_cpu[3]);
+#endif
               i_ipar[intIdx::fuse_flag] = 1;
               i_ipar[intIdx::fuse_id] = j_ipar[intIdx::id];
               i_ipar[intIdx::fuse_cpu] = j_ipar[intIdx::cpu];
@@ -240,12 +247,10 @@ checkTipFusion(Real *rij, Real *i_par, int *i_ipar, Real *j_par,
                 site = 1;
               }
               if (i_bnds == 1) {
-                printf("Fuse tip SETTING SITE 2\n");
                 i_ipar[intIdx::site2] = site;
                 i_ipar[intIdx::seg2_id1] = j_ipar[intIdx::id];
                 i_ipar[intIdx::seg2_id2] = j_ipar[intIdx::cpu];
               } else if (i_bnds == 2) {
-                printf("Fuse tip SETTING SITE 3\n");
                 i_ipar[intIdx::site3] = site;
                 i_ipar[intIdx::seg3_id1] = j_ipar[intIdx::id];
                 i_ipar[intIdx::seg3_id2] = j_ipar[intIdx::cpu];
@@ -336,8 +341,10 @@ checkInteriorFusion(Real *i_par, int *i_ipar, Real *j_par, int *j_ipar,
 
       // This particle is supposed to fuse with particle j
       if (!bonded) {
+#ifndef AMREX_USE_GPU
         printf("Performing FUSION to tip on particle id: %d cpu: %d to particle id: %d cpu: %d\n",
            i_ipar[intIdx::id],i_ipar[intIdx::cpu],j_ipar[intIdx::id],j_ipar[intIdx::cpu]);
+#endif
         *split_flag = 1;
         i_ipar[intIdx::split_flag] = 1;
         i_ipar[intIdx::fuse_id] = j_ipar[intIdx::id];
@@ -552,8 +559,10 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     // Growth is towards site 1
     ipar_new[intIdx::id] = id;
     ipar_new[intIdx::cpu] = cpu;
+#ifndef AMREX_USE_GPU
     printf("New tip parent id: %d cpu: %d child id: %d cpu: %d\n",
              ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],id,cpu);
+#endif
 
     /* Divide original increment evenly between two new cells */
     Real *p_vals = &par_orig[realIdx::first_data];
@@ -782,8 +791,10 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     ipar_new[intIdx::cpu] = cpu; 
     ipar_new[intIdx::seg1_id1] = ipar_orig[intIdx::id];
     ipar_new[intIdx::seg1_id2] = ipar_orig[intIdx::cpu];
+#ifndef AMREX_USE_GPU
     printf("New tip parent id: %d cpu: %d child id: %d cpu: %d\n",
              ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],id,cpu);
+#endif
 
     /* Set increments in new segment to zero */
     Real *p_vals = &par_new[realIdx::first_data];
@@ -1012,8 +1023,10 @@ setNewSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
   par_new[realIdx::area] = 2.0*M_PI*rad*clen+2.0*M_PI*rad*rad;
   par_new[realIdx::bond_scale] = 1.0;
   ipar_new[intIdx::fuse_tip] = 0;
+#ifndef AMREX_USE_GPU
   printf("Adding new segment id: %d cpu: %d\n",
       ipar_new[intIdx::id],ipar_new[intIdx::cpu]);
+#endif
 }
 
 /**
@@ -1130,11 +1143,13 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       if (new_bnds == 2) break;
     }
   }
+#ifndef AMREX_USE_GPU
   printf("DELETED id: %d cpu: %d n: %d site1: %d id1: %d cpu1: %d site2: %d id2: %d cpu2: %d\n",
       ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],
       new_bnds,ipar_orig[intIdx::dltd_site1],ipar_orig[intIdx::dltd_id1],
       ipar_orig[intIdx::dltd_cpu1],ipar_orig[intIdx::dltd_site2],
       ipar_orig[intIdx::dltd_id2],ipar_orig[intIdx::dltd_cpu2]);
+#endif
   new_bnds += 2;
   ipar_new[intIdx::site3] = 2;
   ipar_new[intIdx::seg3_id1] = n_id[0];
@@ -1145,6 +1160,7 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     ipar_new[intIdx::seg4_id2] = n_cpu[1];
   }
   ipar_new[intIdx::n_bnds] = new_bnds;
+#ifndef AMREX_USE_GPU
   printf("NEW SEG id: %d cpu: %d n: %d site1: %d id1: %d cpu1: %d site2: %d"
       " id2: %d cpu2: %d site3: %d id3: %d cpu3: %d site4: %d"
       " id4: %d cpu4: %d\n",id,cpu,new_bnds,
@@ -1152,6 +1168,7 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       ipar_new[intIdx::site2],ipar_new[intIdx::seg2_id1],ipar_new[intIdx::seg2_id2],
       ipar_new[intIdx::site3],ipar_new[intIdx::seg3_id1],ipar_new[intIdx::seg3_id2],
       ipar_new[intIdx::site4],ipar_new[intIdx::seg4_id1],ipar_new[intIdx::seg4_id2]);
+#endif
   // Find segments bonded to site 1 on old segment
   new_bnds = 0;
   for (i=0; i<old_bnds; i++) {
@@ -1162,6 +1179,7 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       if (new_bnds == 2) break;
     }
   }
+#ifndef AMREX_USE_GPU
   printf("OLD SEG BEFORE id: %d cpu: %d n: %d site1: %d id1: %d cpu1: %d site2: %d"
       " id2: %d cpu2: %d site3: %d id3: %d cpu3: %d site4: %d"
       " id4: %d cpu4: %d\n",ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],ipar_orig[intIdx::n_bnds],
@@ -1169,6 +1187,7 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       ipar_orig[intIdx::site2],ipar_orig[intIdx::seg2_id1],ipar_orig[intIdx::seg2_id2],
       ipar_orig[intIdx::site3],ipar_orig[intIdx::seg3_id1],ipar_orig[intIdx::seg3_id2],
       ipar_orig[intIdx::site4],ipar_orig[intIdx::seg4_id1],ipar_orig[intIdx::seg4_id2]);
+#endif
   ipar_orig[intIdx::site1] = 1;
   ipar_orig[intIdx::seg1_id1] = n_id[0];
   ipar_orig[intIdx::seg1_id2] = n_cpu[0];
@@ -1194,6 +1213,7 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
     ipar_orig[intIdx::seg4_id1] = ipar_orig[intIdx::fuse_id];
     ipar_orig[intIdx::seg4_id2] = ipar_orig[intIdx::fuse_cpu];
   }
+#ifndef AMREX_USE_GPU
   printf("OLD SEG AFTER id: %d cpu: %d n: %d site1: %d id1: %d cpu1: %d site2: %d"
       " id2: %d cpu2: %d site3: %d id3: %d cpu3: %d site4: %d"
       " id4: %d cpu4: %d\n",ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],ipar_orig[intIdx::n_bnds],
@@ -1201,6 +1221,7 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
       ipar_orig[intIdx::site2],ipar_orig[intIdx::seg2_id1],ipar_orig[intIdx::seg2_id2],
       ipar_orig[intIdx::site3],ipar_orig[intIdx::seg3_id1],ipar_orig[intIdx::seg3_id2],
       ipar_orig[intIdx::site4],ipar_orig[intIdx::seg4_id1],ipar_orig[intIdx::seg4_id2]);
+#endif
   par_orig[realIdx::c_length] = tau_split*c_length;
   par_new[realIdx::c_length] = (1.0-tau_split)*c_length;
   ipar_orig[intIdx::position] = siteLocation::INTERIOR;
@@ -1208,9 +1229,11 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
   ipar_new[intIdx::id] = id;
   ipar_new[intIdx::cpu] = cpu;
 
+#ifndef AMREX_USE_GPU
   printf("Particle split old id: %d cpu: %d new id: %d cpu: %d\n",
       ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],ipar_new[intIdx::id],
       ipar_new[intIdx::cpu]);
+#endif
 
   // Reset fusion parameters
   ipar_orig[intIdx::fuse_flag] = 0; 
@@ -1242,8 +1265,10 @@ setSplitSegment(Real *pos_orig, Real *pos_new, Real *par_orig,
   par_new[realIdx::area] = 2.0*M_PI*rad*clen+2.0*M_PI*rad*rad;
   par_new[realIdx::bond_scale] = 1.0;
   ipar_new[intIdx::fuse_tip] = 0;
+#ifndef AMREX_USE_GPU
   printf("New branch tip parent id: %d cpu: %d child id: %d cpu: %d\n",
       ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],id,cpu);
+#endif
 
   /* Divide increments based on tau */
   Real *p_vals = &par_orig[realIdx::first_data];
@@ -1295,7 +1320,7 @@ void cleanupFusionBond(int *ipar , int *jpar, int me)
   int j_id, j_cpu;
   j_id = jpar[intIdx::id];
   j_cpu = jpar[intIdx::cpu];
-
+  
   int i;
   int idx;
   for (i=0; i<i_bnds; i++) {
@@ -1307,20 +1332,24 @@ void cleanupFusionBond(int *ipar , int *jpar, int me)
       // and I is not new and isite[idx] = 1
       if (ipar[intIdx::new_flag] == 0 && ipar[intIdx::fuse_flag] == 0 &&
           jpar[intIdx::split_flag] == 1) {
+#ifndef AMREX_USE_GPU
         printf("Possible REMOVE iid: %d icpu: %d jid: %d jcpu: %d jid1: %d jcpu1: %d"
             " jid2: %d jcpu2: %d\n",i_id,i_cpu,j_id,j_cpu,
             jpar[intIdx::dltd_id1],jpar[intIdx::dltd_cpu1],
             jpar[intIdx::dltd_id2],jpar[intIdx::dltd_cpu2]);
+#endif
         // Check further to see if a bond to this segment was deleted from
         // segment j
         int site = 0;
         if ((jpar[intIdx::dltd_id1] == i_id && jpar[intIdx::dltd_cpu1] == i_cpu) ||
             (jpar[intIdx::dltd_id2] == i_id && jpar[intIdx::dltd_cpu2] == i_cpu)) {
           // This is a leftover bond from before the split. Remove it.
+#ifndef AMREX_USE_GPU
           printf("REMOVE bond %d id: %d cpu: %d attached to"
               " id: %d cpu: %d ipar: %p\n",idx+1,
               ipar[intIdx::id],ipar[intIdx::cpu],jpar[intIdx::id],
               jpar[intIdx::cpu],ipar);
+#endif
           if (idx < 1) {
             if (site == 0) site = ipar[intIdx::site1];
             ipar[intIdx::seg1_id1] = ipar[intIdx::seg2_id1];
@@ -1346,6 +1375,7 @@ void cleanupFusionBond(int *ipar , int *jpar, int me)
           i_bnds--;
           ipar[intIdx::n_bnds] = i_bnds;
           ipar[intIdx::fix_site] = site;
+#ifndef AMREX_USE_GPU
           printf("post REMOVE bond id: %d cpu: %d n_bnds: %d fix_site: %d"
               " id1: %d cpu1: %d site1: %d id2: %d cpu2: %d site2: %d"
               " id3: %d cpu3: %d site3: %d id4: %d cpu4: %d site4: %d\n",
@@ -1355,6 +1385,7 @@ void cleanupFusionBond(int *ipar , int *jpar, int me)
               ipar[intIdx::seg2_id1],ipar[intIdx::seg2_id2],ipar[intIdx::site2],
               ipar[intIdx::seg3_id1],ipar[intIdx::seg3_id2],ipar[intIdx::site3],
               ipar[intIdx::seg4_id1],ipar[intIdx::seg4_id2],ipar[intIdx::site4]);
+#endif
 
         }
       }
@@ -1684,35 +1715,44 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     }
 //  printf("   Cell concentration B (at 2): %16.8e\n",cB);
 
-#ifndef AMREX_USE_GPU
     if (cA < 0.0) {
+#ifndef AMREX_USE_GPU
       printf("   Internal concentration A : %16.8e\n"
              "     cA0: %16.8e fA0: %16.8e\n"
              "     cA1: %16.8e fA1: %16.8e\n",cA,cA0,fA0,cA1,fA1);
+#endif
       if (fabs(cA) < 1.0e-15) cA = 0.0;
     }
     if (cB < 0.0) {
+#ifndef AMREX_USE_GPU
       printf("   Internal concentration B : %16.8e\n"
              "     cB0: %16.8e fB0: %16.8e\n"
              "     cB1: %16.8e fB1: %16.8e\n",cB,cB0,fB0,cB1,fB1);
+#endif
       if (fabs(cB) < 1.0e-15) cB = 0.0;
     }
     if (cC < 0.0) {
+#ifndef AMREX_USE_GPU
       printf("   Internal concentration C : %16.8e\n"
         "          cC0: %16.8e fC0: %16.8e\n"
         "          cC1: %16.8e fC1: %16.8e\n",cC,cC0,fC0,cC1,fC1);
+#endif
       if (fabs(cC) < 1.0e-15) cC = 0.0;
     }
     if (cD < 0.0) {
+#ifndef AMREX_USE_GPU
       printf("   Internal concentration D : %16.8e\n"
         "          cD0: %16.8e fD0: %16.8e\n"
         "          cD1: %16.8e fD1: %16.8e\n",cD,cD0,fD0,cD1,fD1);
+#endif
       if (fabs(cD) < 1.0e-15) cD = 0.0;
     }
     if (cE < 0.0) {
+#ifndef AMREX_USE_GPU
       printf("   Internal concentration E : %16.8e\n"
         "          cE0: %16.8e fE0: %16.8e\n"
         "          cE1: %16.8e fE1: %16.8e\n",cE,cE0,fE0,cE1,fE1);
+#endif
       if (fabs(cE) < 1.0e-15) cE = 0.0;
     }
     if (cA < 0.0) is_negative = true;
@@ -1720,7 +1760,6 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     if (cC < 0.0) is_negative = true;
     if (cD < 0.0) is_negative = true;
     if (cE < 0.0) is_negative = true;
-#endif
 
     if (fA_tmp < 0. || fB_tmp < 0. || fC_tmp < 0. || fD_tmp < 0. || fE_tmp < 0.) 
     {
@@ -1877,10 +1916,10 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     if (cA < 0.0) printf("   Intermediate internal concentration A: %16.8e\n",cA);
     if (cB < 0.0) printf("   Intermediate internal concentration B: %16.8e\n",cB);
     if (cC < 0.0) printf("   Intermediate internal concentration C: %16.8e\n",cC);
+#endif
     if (cA < 0.0) is_negative = true;
     if (cB < 0.0) is_negative = true;
     if (cC < 0.0) is_negative = true;
-#endif
 
     // ********************************************************************
     // Increment volume 
@@ -2120,12 +2159,12 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
     if (cC < 0.0) printf("   Final internal concentration C: %16.8e\n",cC);
     if (cD < 0.0) printf("   Final internal concentration D: %16.8e\n",cD);
     if (cE < 0.0) printf("   Final internal concentration E: %16.8e\n",cE);
+#endif
     if (cA < 0.0) is_negative = true;
     if (cB < 0.0) is_negative = true;
     if (cC < 0.0) is_negative = true;
     if (cD < 0.0) is_negative = true;
     if (cE < 0.0) is_negative = true;
-#endif
 
     if (fA_tmp < 0. || fB_tmp < 0. || fC_tmp < 0. || fD_tmp < 0. || fE_tmp < 0.) 
     {
@@ -2355,6 +2394,7 @@ applyIncrements(Real *par, int *ipar)
     cnc[0] += cnc[3];
     cnc[1] += cnc[4];
     cnc[2] += cnc[5];
+#ifndef AMREX_USE_GPU
     if (cnc[0] < 0.0) {
       printf("Post xchng A1: %e pre xchng A0: %e\n",cnc[0],cA0);
     }
@@ -2365,6 +2405,7 @@ applyIncrements(Real *par, int *ipar)
       printf("Post xchng C1: %e pre xchng C0: %e\n",cnc[2],cC0);
     }
   }
+#endif
 }
 
 /**
@@ -2394,9 +2435,11 @@ setNewSegments(Real *pos_orig, Real *pos_new1, Real *pos_new2,
       num_reals, num_ints);
   copyChildParameters(par_orig, ipar_orig, par_new2, ipar_new2,
       num_reals, num_ints);
+#ifndef AMREX_USE_GPU
   printf("Adding new segments id1: %d cpu1: %d id2: %d cpu2: %d\n",id1,cpu1,id2,cpu2);
   printf("Old segment id: %d cpu: %d n_bnds: %d\n",ipar_orig[intIdx::id],
       ipar_orig[intIdx::cpu],ipar_orig[intIdx::n_bnds]);
+#endif
 
   //Check out if this is an interior or terminal segment
   int nbnd = ipar_orig[intIdx::n_bnds];
@@ -2696,8 +2739,10 @@ setNewSegments(Real *pos_orig, Real *pos_new1, Real *pos_new2,
   ipar_new1[intIdx::cpu] = cpu1;
   ipar_new2[intIdx::id] = id2;
   ipar_new2[intIdx::cpu] = cpu2;
+#ifndef AMREX_USE_GPU
   printf("New tips parent id: %d cpu: %d child1 id: %d cpu: %d child2 id: %d cpu: %d\n",
       ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],id1,cpu1,id2,cpu2);
+#endif
   // Calculate area and volume of all three segments
   Real clen = par_orig[realIdx::c_length];
   Real rad = par_orig[realIdx::radius];
@@ -2715,6 +2760,7 @@ setNewSegments(Real *pos_orig, Real *pos_new1, Real *pos_new2,
   par_new2[realIdx::area] = 2.0*M_PI*rad*clen+2.0*M_PI*rad*rad;
   par_new2[realIdx::bond_scale] = 1.0;
   ipar_new2[intIdx::fuse_tip] = 0;
+#ifndef AMREX_USE_GPU
   printf("NEW segment id: %d cpu: %d site1: %d id1: %d cpu1: %d\n",
       ipar_new1[intIdx::id],ipar_new1[intIdx::cpu],ipar_new1[intIdx::site1],
       ipar_new1[intIdx::seg1_id1],ipar_new1[intIdx::seg1_id2]);
@@ -2728,6 +2774,7 @@ setNewSegments(Real *pos_orig, Real *pos_new1, Real *pos_new2,
   printf("After split old segment n_bnds: %d\n",ipar_orig[intIdx::n_bnds]);
   printf("OLD id: %d cpu: %d nbnds: %d id1: %d cpu1: %d id2: %d cpu2: %d"
       " id3: %d cpu3: %d id4: %d cpu4: %d\n",
+#endif
       ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],ipar_orig[intIdx::n_bnds],
       ipar_orig[intIdx::seg1_id1],ipar_orig[intIdx::seg1_id2],
       ipar_orig[intIdx::seg2_id1],ipar_orig[intIdx::seg2_id2],

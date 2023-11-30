@@ -719,7 +719,9 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       // siteLocation value. Is segment j a growth tip? If not,
       // change position to INTERIOR
       if (ib<i_bnds && ipar2[intIdx::position] != siteLocation::TIP) {
+#ifndef AMREX_USE_GPU
         printf("Converting site position on segment id: %d cpu: %d\n",iid,icpu);
+#endif
         ipar1[intIdx::position] = siteLocation::INTERIOR;
       }
     }
@@ -753,6 +755,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
     if (!i_bonded_to_j && j_bonded_to_i) {
       // j has registered i as a bonding partner but i
       // has not registered j as a bonding partner. Fix up i
+#ifndef AMREX_USE_GPU
       printf("I id: %d cpu: %d nbnds: %d id1: %d cpu1: %d id2: %d cpu: %d"
           " id3: %d cpu3: %d id4: %d cpu4: %d fix_site: %d\n",ipar1[intIdx::id],
           ipar1[intIdx::cpu],ipar1[intIdx::n_bnds],
@@ -769,6 +772,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           ipar2[intIdx::seg3_id1],ipar2[intIdx::seg3_id2],
           ipar2[intIdx::seg4_id1],ipar2[intIdx::seg4_id2],
           ipar2[intIdx::fix_site]);
+#endif
       int ib0 = i_bnds;
       // Figure out where which site to add new bond
       int isite;
@@ -782,6 +786,17 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         isite = ipar1[intIdx::fix_site];
       }
 
+#ifndef AMREX_USE_GPU
+      printf("FIXING up i id: %d cpu: %d attached to id: %d cpu: %d ib: %d i_bnds: %d isite: %d\n",
+          iid,icpu,jid,jcpu,ib0,i_bnds,isite);
+      printf("pre FIXING up i id: %d cpu: %d nbnds: %d id1: %d cpu1: %d site1: %d"
+          " id2: %d cpu2: %d site2: %d id3: %d cpu3: %d site3: %d id4: %d cpu4: %d site4: %d\n",
+          ipar1[intIdx::id],ipar1[intIdx::cpu],ipar1[intIdx::n_bnds],
+          ipar1[intIdx::seg1_id1],ipar1[intIdx::seg1_id2],ipar1[intIdx::site1],
+          ipar1[intIdx::seg2_id1],ipar1[intIdx::seg2_id2],ipar1[intIdx::site2],
+          ipar1[intIdx::seg3_id1],ipar1[intIdx::seg3_id2],ipar1[intIdx::site3],
+          ipar1[intIdx::seg4_id1],ipar1[intIdx::seg4_id2],ipar1[intIdx::site4]);
+#endif
       if (i_bnds == 0) {
         ipar1[intIdx::seg1_id1] = jid;
         ipar1[intIdx::seg1_id2] = jcpu;
@@ -819,8 +834,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         i_bnds++;
         ipar1[intIdx::n_bnds] = i_bnds;
       }
-      printf("FIXING up i id: %d cpu: %d attached to id: %d cpu: %d ib: %d i_bnds: %d isite: %d\n",
-          iid,icpu,jid,jcpu,ib0,i_bnds,isite);
+#ifndef AMREX_USE_GPU
       printf("post FIXING up i id: %d cpu: %d nbnds: %d id1: %d cpu1: %d site1: %d"
           " id2: %d cpu2: %d site2: %d id3: %d cpu3: %d site3: %d id4: %d cpu4: %d site4: %d\n",
           ipar1[intIdx::id],ipar1[intIdx::cpu],ipar1[intIdx::n_bnds],
@@ -828,9 +842,11 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           ipar1[intIdx::seg2_id1],ipar1[intIdx::seg2_id2],ipar1[intIdx::site2],
           ipar1[intIdx::seg3_id1],ipar1[intIdx::seg3_id2],ipar1[intIdx::site3],
           ipar1[intIdx::seg4_id1],ipar1[intIdx::seg4_id2],ipar1[intIdx::site4]);
+#endif
     } else if (i_bonded_to_j && !j_bonded_to_i) {
       // i has registered j as a bonding partner but j
       // has not registered i as a bonding partner. Fix up j
+#ifndef AMREX_USE_GPU
       printf("I id: %d cpu: %d nbnds: %d id1: %d cpu1: %d id2: %d cpu: %d"
           " id3: %d cpu3: %d id4: %d cpu4: %d fix_site: %d\n",ipar1[intIdx::id],
           ipar1[intIdx::cpu],ipar1[intIdx::n_bnds],
@@ -847,6 +863,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           ipar2[intIdx::seg3_id1],ipar2[intIdx::seg3_id2],
           ipar2[intIdx::seg4_id1],ipar2[intIdx::seg4_id2],
           ipar2[intIdx::fix_site]);
+#endif
       int jb0 = j_bnds;
       // Figure out where which site to add new bond
       int jsite;
@@ -859,6 +876,17 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
       } else {
         jsite = ipar2[intIdx::fix_site];
       }
+#ifndef AMREX_USE_GPU
+      printf("FIXING up j id: %d cpu: %d attached to id: %d cpu: %d jb: %d j_bnds: %d jsite: %d\n",
+          jid,jcpu,iid,icpu,jb0,j_bnds,jsite);
+      printf("pre FIXING up j id: %d cpu: %d nbnds: %d id1: %d cpu1: %d site1: %d"
+          " id2: %d cpu2: %d site2: %d id3: %d cpu3: %d site3: %d id4: %d cpu4: %d site4: %d\n",
+          ipar2[intIdx::id],ipar2[intIdx::cpu],ipar2[intIdx::n_bnds],
+          ipar2[intIdx::seg1_id1],ipar2[intIdx::seg1_id2],ipar2[intIdx::site1],
+          ipar2[intIdx::seg2_id1],ipar2[intIdx::seg2_id2],ipar2[intIdx::site2],
+          ipar2[intIdx::seg3_id1],ipar2[intIdx::seg3_id2],ipar2[intIdx::site3],
+          ipar2[intIdx::seg4_id1],ipar2[intIdx::seg4_id2],ipar2[intIdx::site4]);
+#endif
       if (j_bnds == 0) {
         ipar2[intIdx::seg1_id1] = iid;
         ipar2[intIdx::seg1_id2] = icpu;
@@ -896,8 +924,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
         j_bnds++;
         ipar2[intIdx::n_bnds] = j_bnds;
       }
-      printf("FIXING up j id: %d cpu: %d attached to id: %d cpu: %d jb: %d j_bnds: %d jsite: %d\n",
-          jid,jcpu,iid,icpu,jb0,j_bnds,jsite);
+#ifndef AMREX_USE_GPU
       printf("post FIXING up j id: %d cpu: %d nbnds: %d id1: %d cpu1: %d site1: %d"
           " id2: %d cpu2: %d site2: %d id3: %d cpu3: %d site3: %d id4: %d cpu4: %d site4: %d\n",
           ipar2[intIdx::id],ipar2[intIdx::cpu],ipar2[intIdx::n_bnds],
@@ -905,6 +932,7 @@ evaluateForce(const Real *r12, Real *par1, Real *par2, int *ipar1, int *ipar2,
           ipar2[intIdx::seg2_id1],ipar2[intIdx::seg2_id2],ipar2[intIdx::site2],
           ipar2[intIdx::seg3_id1],ipar2[intIdx::seg3_id2],ipar2[intIdx::site3],
           ipar2[intIdx::seg4_id1],ipar2[intIdx::seg4_id2],ipar2[intIdx::site4]);
+#endif
     }
     for (int ii=0; ii<3; ii++) {
       f1_s1[ii] = 0.0;
@@ -1664,7 +1692,6 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void 
 fixBonds(Real *r12, Real *ripar, int *ipar, Real *rjpar, int *jpar, Real rlim)
 {
-  printf("Calling fixBonds\n");
   if (ipar[intIdx::cell_type] == cellType::FUNGI &&
       jpar[intIdx::cell_type] == cellType::FUNGI) {
     bool bonded = false;
@@ -1753,7 +1780,9 @@ fixBonds(Real *r12, Real *ripar, int *ipar, Real *rjpar, int *jpar, Real rlim)
       j_site[j_bnds] = 1;
       jpar[intIdx::n_bnds] = j_bnds+1;
       bonded = true;
+#ifndef AMREX_USE_GPU
       printf("Adding bond between I: %d,%d and J: %d,%d\n",iid,icpu,jid,jcpu);
+#endif
     }
     if (!bonded) {
       // site 2 - site 1
@@ -1761,7 +1790,6 @@ fixBonds(Real *r12, Real *ripar, int *ipar, Real *rjpar, int *jpar, Real rlim)
       ry = yi2 - yj1;
       rz = zi2 - zj1;
       r = sqrt(rx*rx+ry*ry+rz*rz);
-    printf("R21: %e\n",r);
       if (r < rlim) {
         // Add bond to i and j
         i_id[i_bnds] = jid;
@@ -1773,7 +1801,9 @@ fixBonds(Real *r12, Real *ripar, int *ipar, Real *rjpar, int *jpar, Real rlim)
         j_site[j_bnds] = 1;
         jpar[intIdx::n_bnds] = j_bnds+1;
         bonded = true;
+#ifndef AMREX_USE_GPU
       printf("Adding bond between I: %d,%d and J: %d,%d\n",iid,icpu,jid,jcpu);
+#endif
       }
     }
     if (!bonded) {
@@ -1782,7 +1812,6 @@ fixBonds(Real *r12, Real *ripar, int *ipar, Real *rjpar, int *jpar, Real rlim)
       ry = yi1 - yj2;
       rz = zi1 - zj2;
       r = sqrt(rx*rx+ry*ry+rz*rz);
-    printf("R12: %e\n",r);
       if (r < rlim) {
         // Add bond to i and j
         i_id[i_bnds] = jid;
@@ -1794,7 +1823,9 @@ fixBonds(Real *r12, Real *ripar, int *ipar, Real *rjpar, int *jpar, Real rlim)
         j_site[j_bnds] = 2;
         jpar[intIdx::n_bnds] = j_bnds+1;
         bonded = true;
+#ifndef AMREX_USE_GPU
       printf("Adding bond between I: %d,%d and J: %d,%d\n",iid,icpu,jid,jcpu);
+#endif
       }
     }
     if (!bonded) {
@@ -1803,7 +1834,6 @@ fixBonds(Real *r12, Real *ripar, int *ipar, Real *rjpar, int *jpar, Real rlim)
       ry = yi2 - yj2;
       rz = zi2 - zj2;
       r = sqrt(rx*rx+ry*ry+rz*rz);
-    printf("R22: %e\n",r);
       if (r < rlim) {
         // Add bond to i and j
         i_id[i_bnds] = jid;
@@ -1815,7 +1845,9 @@ fixBonds(Real *r12, Real *ripar, int *ipar, Real *rjpar, int *jpar, Real rlim)
         j_site[j_bnds] = 2;
         jpar[intIdx::n_bnds] = j_bnds+1;
         bonded = true;
+#ifndef AMREX_USE_GPU
       printf("Adding bond between I: %d,%d and J: %d,%d\n",iid,icpu,jid,jcpu);
+#endif
       }
     }
   }

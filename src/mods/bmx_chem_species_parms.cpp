@@ -51,6 +51,15 @@ namespace SPECIES
   // Tip-splitting probability
   amrex::Real split_prob;
 
+  // Frequency to compute radius of gyration and center of mass
+  int rg_frequency;
+
+  // Number of bins in density profile
+  int dens_prof_bins;
+
+  // Maximum radius of density profile
+  amrex::Real dens_prof_max;
+
   void Initialize ()
   {
     amrex::ParmParse pp("chem_species");
@@ -66,6 +75,12 @@ namespace SPECIES
     pp.query("branching_probability", brnch_prob);
     split_prob = 0.1;
     pp.query("splitting_probability", split_prob);
+    rg_frequency = 100;
+    pp.query("rg_frequency", rg_frequency);
+    dens_prof_bins = 50;
+    pp.query("density_profile_bins", dens_prof_bins);
+    dens_prof_max = 0.0150;
+    pp.query("density_profile_maximum", dens_prof_max);
 
     if (pp.contains("solve"))
     {

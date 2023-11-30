@@ -152,6 +152,17 @@ public:
     void PrintConnectivity(const amrex::Vector<amrex::MultiFab*> cost,
                                    std::string& knapsack_weight_type);
 
+    void CalculateFungalCM(const amrex::Vector<amrex::MultiFab*> cost,
+                                  std::string& knapsack_weight_type,
+                                  amrex::RealVect &cm);
+
+    void CalculateFungalRG(const amrex::Vector<amrex::MultiFab*> cost,
+                                  std::string& knapsack_weight_type,
+                                  Real &Rg, Real &Masst);
+    void CalculateFungalDensityProfile(const amrex::Vector<amrex::MultiFab*> cost,
+                                  std::string& knapsack_weight_type,
+                                  int nbins, Real Rmax);
+
     ///
     /// Write out all particles in the format of the particle_input.dat files so we
     ///       can initialize a run with them

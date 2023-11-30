@@ -124,7 +124,7 @@ bool BMXParticleContainer::EvaluateTipFusion (const Vector<MultiFab*> cost,
           {
           auto p2 = *mit;
           const int j = mit.index();
-          int fusing;
+          int fusing = 0;
 
           Real dist_x = pos1[0] - p2.pos(0);
           Real dist_y = pos1[1] - p2.pos(1);
@@ -486,6 +486,7 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
 
   int l_num_reals = BMXChemistry::p_num_reals;
   int l_num_ints  = BMXChemistry::p_num_ints;
+  amrex::Print() << "Cleanup fusion bonds" <<std::endl;
 
   /*
   BMXCellInteraction *interaction = BMXCellInteraction::instance();
@@ -493,11 +494,11 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
   Real *xpar = &xpar_vec[0];
   */
   BMXChemistry *bmxchem = BMXChemistry::instance();
-  std::vector<Real> chempar_vec;
-  bmxchem->getChemParams(chempar_vec);
-  Real *chempar = &chempar_vec[0];
   std::vector<Real> fpar_vec = bmxchem->getFusionParameters();
   Real *fpar = &fpar_vec[0];
+  BMXCellInteraction *interaction = BMXCellInteraction::instance();
+  std::vector<Real> xpar_vec = interaction->getForceParams();
+  Real *xpar = &xpar_vec[0];
 
   for (int lev = 0; lev <= finest_level; lev++)
   {
@@ -576,7 +577,7 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
       // now we loop over the neighbor list and look for invalid connections
       int me = ParallelDescriptor::MyProc();
       amrex::ParallelFor(nrp,
-          [nrp,pstruct,nbor_data,chempar,fpar,ntot,me]
+          [nrp,pstruct,nbor_data,xpar,fpar,ntot,me]
           AMREX_GPU_DEVICE (int i) noexcept
           {
           auto& particle = pstruct[i];
@@ -601,11 +602,9 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
 
           RealVect diff(dist_x,dist_y,dist_z);
 
-          /*
-          Real r_lm = maxInteractionDistance(&particle.rdata(0),&p2.rdata(0),
-              &particle.idata(0),&p2.idata(0),xpar[0]);
-              */
-          Real r_lm = 1.5*chempar[9];
+          Real r_lm = 2.0*maxInteractionDistance(&particle.rdata(0),&p2.rdata(0),
+              &particle.idata(0),&p2.idata(0),&xpar[0]);
+          // Real r_lm = 1.5*chempar[20];
           AMREX_ASSERT_WITH_MESSAGE(
               not (particle.id() == p2.id() and
                 particle.cpu() == p2.cpu()),
@@ -706,21 +705,12 @@ void BMXParticleContainer::PrintConnectivity (const Vector<MultiFab*> cost,
       auto& particles  = ptile.GetArrayOfStructs();
       ParticleType* pstruct = particles().dataPtr();
 
-      const int grid = pti.index();
-      const int tile = pti.LocalTileIndex();
-      auto& particle_tile = this->GetParticles(lev)[std::make_pair(grid,tile)];
-
       const int nrp = GetParticles(lev)[index].numRealParticles();
       const int num_total = GetParticles(lev)[index].numTotalParticles();
 
       // Number of particles including neighbor particles
       int ntot = nrp;
 
-      /********************************************************************
-       * Particle-Particle collision forces (and torques)                 *
-       *******************************************************************/
-
-      // now we loop over the neighbor list and compute the forces
       int me = ParallelDescriptor::MyProc();
       amrex::Gpu::Device::synchronize();
 
@@ -796,4 +786,374 @@ void BMXParticleContainer::PrintConnectivity (const Vector<MultiFab*> cost,
 #endif
 
   BL_PROFILE_REGION_STOP("bmx_dem::PrintConnectivity()");
+}
+
+/*******************************************************************************
+ *  Calculate center of mass of fungal network
+ ******************************************************************************/
+void BMXParticleContainer::CalculateFungalCM(const Vector<MultiFab*> cost,
+                                              std::string& knapsack_weight_type,
+                                              RealVect &cm)
+{
+  BL_PROFILE_REGION_START("bmx_dem::CalculateFungalCM()");
+  BL_PROFILE("bmx_dem::CalculateFungalCM()");
+
+  cm[0] = 0.0;
+  cm[1] = 0.0;
+  cm[2] = 0.0;
+
+  int ntot = 0;
+
+  for (int lev = 0; lev <= finest_level; lev++)
+  {
+
+    int n_at_lev = this->NumberOfParticlesAtLevel(lev);
+
+    if (n_at_lev == 0) continue;
+
+    /********************************************************************
+     * Particle routines                                                *
+     *******************************************************************/
+#ifdef _OPENMP
+#pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
+#endif
+    for (BMXParIter pti(*this, lev); pti.isValid(); ++pti)
+    {
+      // Timer used for load-balancing
+      Real wt = ParallelDescriptor::second();
+      BL_PROFILE_VAR("calculate_fungal_cm()", calculate_fungal_cm);
+
+      PairIndex index(pti.index(), pti.LocalTileIndex());
+
+      auto& plev = GetParticles(lev);
+      auto& ptile = plev[index];
+      auto& particles  = ptile.GetArrayOfStructs();
+      ParticleType* pstruct = particles().dataPtr();
+
+      const int nrp = GetParticles(lev)[index].numRealParticles();
+      const int num_total = GetParticles(lev)[index].numTotalParticles();
+
+      Gpu::DeviceScalar<Real> cmx_gpu(0.0);
+      Real* cmx = cmx_gpu.dataPtr();
+      Gpu::DeviceScalar<Real> cmy_gpu(0.0);
+      Real* cmy = cmy_gpu.dataPtr();
+      Gpu::DeviceScalar<Real> cmz_gpu(0.0);
+      Real* cmz = cmz_gpu.dataPtr();
+      Gpu::DeviceScalar<int> ntot_gpu(0);
+      int* ntotp = ntot_gpu.dataPtr();
+
+      amrex::Gpu::Device::synchronize();
+
+      pstruct = particles().dataPtr();
+      amrex::ParallelFor( nrp, [pstruct,cmx,cmy,cmz,ntotp]
+          AMREX_GPU_DEVICE (int pid) noexcept
+          {
+          BMXParticleContainer::ParticleType& p_orig = pstruct[pid];
+
+            int *ipar = &p_orig.idata(0);
+
+            if (ipar[intIdx::cell_type] == cellType::FUNGI) {
+              RealVect pos(p_orig.pos());
+              *cmx += pos[0];
+              *cmy += pos[1];
+              *cmz += pos[2];
+              (*ntotp)++;
+            }
+
+
+          }); // pid
+          cm[0] += cmx_gpu.dataValue();
+          cm[1] += cmy_gpu.dataValue();
+          cm[2] += cmz_gpu.dataValue();
+          ntot += ntot_gpu.dataValue();
+          BL_PROFILE_VAR_STOP(calculate_fungal_cm);
+
+          /********************************************************************
+           * Update runtime cost (used in load-balancing)                     *
+           *******************************************************************/
+
+          if (cost[lev])
+          {
+            // Runtime cost is either (weighted by tile box size):
+            //   * time spent
+            //   * number of particles
+            const Box& tbx = pti.tilebox();
+            if (knapsack_weight_type == "RunTimeCosts")
+            {
+              wt = (ParallelDescriptor::second() - wt) / tbx.d_numPts();
+            }
+            else if (knapsack_weight_type == "NumParticles")
+            {
+              wt = nrp / tbx.d_numPts();
+            }
+            (*cost[lev])[pti].plus<RunOn::Device>(wt, tbx);
+          }
+    } // pti
+
+
+  } // lev
+  ParallelDescriptor::ReduceRealSum(&cm[0],3);
+  ParallelDescriptor::ReduceIntSum(ntot);
+
+  cm[0] /= static_cast<Real>(ntot);
+  cm[1] /= static_cast<Real>(ntot);
+  cm[2] /= static_cast<Real>(ntot);
+
+#ifdef _OPENMP
+#pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
+#endif
+
+  BL_PROFILE_REGION_STOP("bmx_dem::CalculateFungalCM()");
+}
+
+/*******************************************************************************
+ *  Calculate radius of gyration of fungal network
+ ******************************************************************************/
+void BMXParticleContainer::CalculateFungalRG(const Vector<MultiFab*> cost,
+                                              std::string& knapsack_weight_type,
+                                              Real &Rg, Real &Masst)
+{
+  BL_PROFILE_REGION_START("bmx_dem::CalculateFungalRG()");
+  BL_PROFILE("bmx_dem::CalculateFungalRG()");
+
+  RealVect cm;
+  CalculateFungalCM(cost,knapsack_weight_type,cm);
+
+  int ntot = 0;
+  Rg = 0.0;
+  Masst = 0.0;
+
+  for (int lev = 0; lev <= finest_level; lev++)
+  {
+
+    int n_at_lev = this->NumberOfParticlesAtLevel(lev);
+
+    if (n_at_lev == 0) continue;
+
+    /********************************************************************
+     * Particle routines                                                *
+     *******************************************************************/
+#ifdef _OPENMP
+#pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
+#endif
+    for (BMXParIter pti(*this, lev); pti.isValid(); ++pti)
+    {
+      // Timer used for load-balancing
+      Real wt = ParallelDescriptor::second();
+      BL_PROFILE_VAR("calculate_fungal_rg)", calculate_fungal_rg);
+
+      PairIndex index(pti.index(), pti.LocalTileIndex());
+
+      auto& plev = GetParticles(lev);
+      auto& ptile = plev[index];
+      auto& particles  = ptile.GetArrayOfStructs();
+      ParticleType* pstruct = particles().dataPtr();
+
+      const int nrp = GetParticles(lev)[index].numRealParticles();
+      const int num_total = GetParticles(lev)[index].numTotalParticles();
+
+      Gpu::DeviceScalar<Real> rg_gpu(0.0);
+      Real* rg = rg_gpu.dataPtr();
+      Gpu::DeviceScalar<Real> mtot_gpu(0.0);
+      Real* mtot = mtot_gpu.dataPtr();
+      Gpu::DeviceScalar<int> ntot_gpu(0);
+      int* ntotp = ntot_gpu.dataPtr();
+
+
+      amrex::Gpu::Device::synchronize();
+
+      pstruct = particles().dataPtr();
+      amrex::ParallelFor( nrp, [pstruct,cm,ntotp,rg,mtot]
+          AMREX_GPU_DEVICE (int pid) noexcept
+          {
+          BMXParticleContainer::ParticleType& p_orig = pstruct[pid];
+
+            Real *rpar = &p_orig.rdata(0);
+            int  *ipar = &p_orig.idata(0);
+
+            if (ipar[intIdx::cell_type] == cellType::FUNGI) {
+              RealVect pos(p_orig.pos());
+              Real radius = rpar[realIdx::radius];
+              Real clength = rpar[realIdx::c_length];
+              Real vol = M_PI*radius*radius*clength;
+              *rg += vol*((pos[0]-cm[0])*(pos[0]-cm[0])
+                  + (pos[1]-cm[1])*(pos[1]-cm[1])
+                  + (pos[2]-cm[2])*(pos[2]-cm[2]));
+              *mtot += vol;
+              (*ntotp)++;
+            }
+
+
+          }); // pid
+          Rg += rg_gpu.dataValue();
+          Masst += mtot_gpu.dataValue();
+          ntot += ntot_gpu.dataValue();
+          BL_PROFILE_VAR_STOP(calculate_fungal_rg);
+
+          /********************************************************************
+           * Update runtime cost (used in load-balancing)                     *
+           *******************************************************************/
+
+          if (cost[lev])
+          {
+            // Runtime cost is either (weighted by tile box size):
+            //   * time spent
+            //   * number of particles
+            const Box& tbx = pti.tilebox();
+            if (knapsack_weight_type == "RunTimeCosts")
+            {
+              wt = (ParallelDescriptor::second() - wt) / tbx.d_numPts();
+            }
+            else if (knapsack_weight_type == "NumParticles")
+            {
+              wt = nrp / tbx.d_numPts();
+            }
+            (*cost[lev])[pti].plus<RunOn::Device>(wt, tbx);
+          }
+    } // pti
+
+
+  } // lev
+  ParallelDescriptor::ReduceRealSum(Rg);
+  ParallelDescriptor::ReduceRealSum(Masst);
+  ParallelDescriptor::ReduceIntSum(ntot);
+
+  Rg /= Masst;
+  Rg = sqrt(Rg);
+
+#ifdef _OPENMP
+#pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
+#endif
+
+  BL_PROFILE_REGION_STOP("bmx_dem::CalculateFungalRG()");
+}
+
+/*******************************************************************************
+ *  Calculate density as a function of radius for fungal network
+ ******************************************************************************/
+void BMXParticleContainer::CalculateFungalDensityProfile(
+                                              const Vector<MultiFab*> cost,
+                                              std::string& knapsack_weight_type,
+                                              int nbins, Real Rmax)
+{
+  BL_PROFILE_REGION_START("bmx_dem::CalculateFungalDensityProfile()");
+  BL_PROFILE("bmx_dem::CalculateFungalDensityProfile()");
+
+  RealVect cm;
+  CalculateFungalCM(cost,knapsack_weight_type,cm);
+
+  Vector<Real> rdens(nbins,0.0);
+  Real dr = Rmax/static_cast<Real>(nbins);
+  int i;
+
+  for (int lev = 0; lev <= finest_level; lev++)
+  {
+
+    int n_at_lev = this->NumberOfParticlesAtLevel(lev);
+
+    if (n_at_lev == 0) continue;
+
+    /********************************************************************
+     * Particle routines                                                *
+     *******************************************************************/
+#ifdef _OPENMP
+#pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
+#endif
+    for (BMXParIter pti(*this, lev); pti.isValid(); ++pti)
+    {
+      // Timer used for load-balancing
+      Real wt = ParallelDescriptor::second();
+      BL_PROFILE_VAR("calculate_fungal_density_profile", calculate_fungal_density_profile);
+
+      PairIndex index(pti.index(), pti.LocalTileIndex());
+
+      auto& plev = GetParticles(lev);
+      auto& ptile = plev[index];
+      auto& particles  = ptile.GetArrayOfStructs();
+      ParticleType* pstruct = particles().dataPtr();
+
+      const int nrp = GetParticles(lev)[index].numRealParticles();
+      const int num_total = GetParticles(lev)[index].numTotalParticles();
+
+      Gpu::DeviceVector<Real> rdens_gpu(nbins,0.0);
+      auto rdens_d = rdens_gpu.data();
+
+      amrex::Gpu::Device::synchronize();
+
+      pstruct = particles().dataPtr();
+      amrex::ParallelFor( nrp, [pstruct,cm,nbins,dr,rdens_d]
+          AMREX_GPU_DEVICE (int pid) noexcept
+          {
+          BMXParticleContainer::ParticleType& p_orig = pstruct[pid];
+
+            Real *rpar = &p_orig.rdata(0);
+            int  *ipar = &p_orig.idata(0);
+
+            if (ipar[intIdx::cell_type] == cellType::FUNGI) {
+              RealVect pos(p_orig.pos());
+              Real radius = rpar[realIdx::radius];
+              Real clength = rpar[realIdx::c_length];
+              Real vol = M_PI*radius*radius*clength;
+//              printf("radius: %e length: %e vol: %e\n",radius,clength,vol);
+              Real r = ((pos[0]-cm[0])*(pos[0]-cm[0])
+                     + (pos[1]-cm[1])*(pos[1]-cm[1])
+                     + (pos[2]-cm[2])*(pos[2]-cm[2]));
+              r = sqrt(r);
+              int ir = static_cast<int>(r/dr);
+              if (ir < nbins) rdens_d[ir] += vol;
+//              if (ir < nbins) printf("r: %e ir: %d rdens_d: %e\n",r,ir,rdens_d[ir]);
+            }
+
+
+          }); // pid
+          Vector<Real> rdens_h(nbins);
+          Gpu::copy(Gpu::deviceToHost,rdens_gpu.begin(),rdens_gpu.end(),
+              rdens_h.begin());
+//          for (i=0; i<nbins; i++) {
+//            if (rdens_h[i] != 0.0) printf("rdens_h[%d]: %e\n",i,rdens_h[i]);
+//          }
+          BL_PROFILE_VAR_STOP(calculate_fungal_density_profile);
+          for (i=0; i<nbins; i++) rdens[i] += rdens_h[i];
+
+          /********************************************************************
+           * Update runtime cost (used in load-balancing)                     *
+           *******************************************************************/
+
+          if (cost[lev])
+          {
+            // Runtime cost is either (weighted by tile box size):
+            //   * time spent
+            //   * number of particles
+            const Box& tbx = pti.tilebox();
+            if (knapsack_weight_type == "RunTimeCosts")
+            {
+              wt = (ParallelDescriptor::second() - wt) / tbx.d_numPts();
+            }
+            else if (knapsack_weight_type == "NumParticles")
+            {
+              wt = nrp / tbx.d_numPts();
+            }
+            (*cost[lev])[pti].plus<RunOn::Device>(wt, tbx);
+          }
+    } // pti
+
+
+  } // lev
+  ParallelDescriptor::ReduceRealSum(rdens.data(),rdens.size());
+  Vector<Real> Rdens(nbins);
+  Vector<Real> R(nbins);
+  for (i=0; i<nbins; i++) R[i] = dr*(static_cast<Real>(i)+0.5);
+  amrex::Print()<<"Density Profile"<<std::endl;
+  for (i=0; i<nbins; i++) {
+    char buf[128];
+    Real da = M_PI*(pow(R[i]+0.5*dr,2)-pow(R[i]-0.5*dr,2));
+    Rdens[i] = rdens[i]/da;
+    sprintf(buf,"%16.10f, %16.10e",R[i],Rdens[i]);
+    amrex::Print()<<buf<<std::endl;
+  }
+#ifdef _OPENMP
+#pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
+#endif
+
+  BL_PROFILE_REGION_STOP("bmx_dem::CalculateFungalDensityProfile()");
 }

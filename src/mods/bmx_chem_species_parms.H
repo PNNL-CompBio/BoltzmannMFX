@@ -59,6 +59,15 @@ namespace SPECIES
   // Tip-splitting probability
   extern amrex::Real split_prob;
 
+  // Frequency to compute radius of gyration and center of mass
+  extern int rg_frequency;
+
+  // Number of bins in density profile
+  extern int dens_prof_bins;
+
+  // Maximum radius of density profile
+  extern amrex::Real dens_prof_max;
+
   struct SPECIES_t {
     // Constructor
     SPECIES_t() :

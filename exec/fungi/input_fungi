@@ -105,20 +105,20 @@ amr.check_file     ="chk"
 
 #! Restart from checkpoint
 #!-----------------------------------------------------------//
-#amr.restart   ="chk400000"
+#amr.restart   ="chk200000"
 
 #_______________________________________________________________________
 # Fluid model settings
 #
 fluid.solve = fluid
-fluid.chem_species      = A B C
-fluid.chem_species_diff = 6.0e-10 0.0 6.0e-10
-fluid.init_conc_species = 2.0e-5 0.0 2.0e-6
+fluid.chem_species      = A B C D F
+fluid.chem_species_diff = 6.0e-10 0.0 6.0e-10 6.0e-10 0.0
+fluid.init_conc_species = 2.0e-5 0.0 2.0e-6 2.0e-5 0.0
 fluid.surface_location = 0.04800
 #_______________________________________________________________________
 # Reaction model parameters
 #
-chem_species.max_vol = 6.872e-10 # 9.5e-13 # 1.0e-12
+chem_species.max_vol = 1.0e-12 # 9.5e-13 # 1.0e-12
 chem_species.seg_split_length = 30.0e-4 # 9.5e-13 # 1.0e-12
 chem_species.max_seg_length = 35.0e-4 # 9.5e-13 # 1.0e-12
 chem_species.max_seg_radius = 2.5e-4 # 9.5e-13 # 1.0e-12
@@ -128,8 +128,18 @@ chem_species.k2 = 4.0
 chem_species.kr2 = 0.0006
 chem_species.k3 = 2.0e-5
 chem_species.kr3 = 2.0e-5
+chem_species.k4 = 2.0e-5
+chem_species.kr4 = 2.0e-5
+chem_species.k5 = 6000.0
+chem_species.kr5 = 60.0
+chem_species.k6 = 2.0e-5
+chem_species.kr6 = 2.0e-5
+chem_species.k7 = 2.0e-5
+chem_species.kr7 = 2.0e-5
 chem_species.kg = 4.0 # 400.0
 chem_species.kv = 40000.0
+chem_species.kb = 4.0 # 400.0
+chem_species.kbv = 4000.0 # 40000.0
 
 chem_species.mass_transfer_A = 2.0e-5
 chem_species.mass_transfer_B = 2.0e-5
@@ -139,17 +149,24 @@ chem_species.branching_probability = 0.0000
 chem_species.splitting_probability = 0.2
 chem_species.fusion_probability = 0.01
 chem_species.max_fusion_separation = 6.0e-4
+chem_species.rg_frequency = 200
+chem_species.density_profile_bins = 50
+chem_species.density_profile_maximum = 0.060
 
 bmx.substeps = 4
 
 #_______________________________________________________________________
 # Cell force parameters
 #
-cell_force.stiffness = 1.0e6
-cell_force.wall_stiffness = 1.0e5
+cell_force.fungi_stiffness = 1.0e6
+cell_force.fungi_wall_stiffness = 1.0e5
+cell_force.cell_stiffness = 1.0e6
+cell_force.cell_wall_stiffness = 1.0e6
 
-cell_force.boundary_width = 1.0e-4
-cell_force.wall_boundary_width = 1.0e-04
+cell_force.fungi_boundary_width = 1.0e-4
+cell_force.fungi_wall_boundary_width = 1.0e-04
+cell_force.cell_boundary_width = 1.0e-5
+cell_force.cell_wall_boundary_width = 1.0e-04
 
 cell_force.neighbor_width = 1.0e-2 #set range of neighbor list
 
@@ -159,6 +176,9 @@ cell_force.bond_cutoff = 5.0e-4
 cell_force.viscous_drag = 200.0
 
 cell_force.gravity = 0.01
+
+cell_force.fluctuation_scale = 4.0e-5
+cell_force.fluctuation_mixing = 0.1
 
 #cell_force.repulsion_stiffness = 1.0e7 # 5.0e6
 #cell_force.adhesion_stiffness = 1.0e6
