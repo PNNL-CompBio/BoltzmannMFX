@@ -79,6 +79,7 @@ BMXParticleContainer::split_particles (Real /*time*/)
             next_pid = ParticleType::NextID();
             ParticleType::NextID(next_pid+num_split);
         }
+        Real split_len = SPECIES::split_len;
 
         // Fill new particle data. If particle pid is split, the new particle
         // is at index np + poffsets[pid];
@@ -114,7 +115,6 @@ BMXParticleContainer::split_particles (Real /*time*/)
                              par_new, ipar_orig, ipar_new,
                              l_overlap, l_num_reals, l_num_ints, engine);
                 } else {
-                  Real split_len = SPECIES::split_len;
                   setNewSegment(pos_orig, pos_new, par_orig,
                                 par_new, ipar_orig, ipar_new,
                                 l_num_reals, l_num_ints, split_len,
@@ -150,7 +150,6 @@ BMXParticleContainer::split_particles (Real /*time*/)
                 int *ipar_new1  = &p1.idata(0);
                 int *ipar_new2  = &p2.idata(0);
 
-                Real split_len = SPECIES::split_len;
                 setNewSegments(pos_orig, pos_new1, pos_new2,
                                par_orig, par_new1, par_new2,
                                ipar_orig, ipar_new1, ipar_new2,

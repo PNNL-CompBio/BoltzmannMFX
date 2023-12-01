@@ -425,8 +425,10 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
           } else if (do_split_p[pid] > 1) {
             //TODO: Simultaneous fusion happened. We don't know how to
             //handle this.
+#ifndef AMREX_USE_GPU
             std::cout<<"Simultaneous fusion event happened. We cannot"
               " handle this situation"<<std::endl;
+#endif
           } else {
             int *ipar_orig = &p_orig.idata(0);
             ipar_orig[intIdx::split_flag] = 0;

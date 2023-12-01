@@ -2225,11 +2225,11 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
   p_vals[3] = p_vals[8];
   p_vals[4] = p_vals[9];
 
+#if 0
   if (p_vals[1] > 1.0e-7) {
     printf("UPDATE Concentration B: %e id: %d cpu: %d\n",p_vals[1],
         cell_ipar[intIdx::id],cell_ipar[intIdx::cpu]);
   }
-#if 0
   printf("   Final concentration increment for A: %16.8e\n",p_vals[6]);
   printf("   Final concentration increment for B: %16.8e\n",p_vals[7]);
   printf("   Final concentration increment for C: %16.8e\n",p_vals[8]);
@@ -2404,8 +2404,8 @@ applyIncrements(Real *par, int *ipar)
     if (cnc[2] < 0.0) {
       printf("Post xchng C1: %e pre xchng C0: %e\n",cnc[2],cC0);
     }
-  }
 #endif
+  }
 }
 
 /**
@@ -2421,7 +2421,7 @@ applyIncrements(Real *par, int *ipar)
  * @param id1, cpu1, id2, cpu2, ID and cpu of new segments
  * @param engine object for implementing random number generator
  */
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
+AMREX_GPU_HOST_DEVICE  AMREX_INLINE
 void 
 setNewSegments(Real *pos_orig, Real *pos_new1, Real *pos_new2,
                Real *par_orig, Real *par_new1, Real *par_new2,
@@ -2774,12 +2774,12 @@ setNewSegments(Real *pos_orig, Real *pos_new1, Real *pos_new2,
   printf("After split old segment n_bnds: %d\n",ipar_orig[intIdx::n_bnds]);
   printf("OLD id: %d cpu: %d nbnds: %d id1: %d cpu1: %d id2: %d cpu2: %d"
       " id3: %d cpu3: %d id4: %d cpu4: %d\n",
-#endif
       ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],ipar_orig[intIdx::n_bnds],
       ipar_orig[intIdx::seg1_id1],ipar_orig[intIdx::seg1_id2],
       ipar_orig[intIdx::seg2_id1],ipar_orig[intIdx::seg2_id2],
       ipar_orig[intIdx::seg3_id1],ipar_orig[intIdx::seg3_id2],
       ipar_orig[intIdx::seg4_id1],ipar_orig[intIdx::seg4_id2]);
+#endif
 #if 0
   printf("Old seg id: %d cpu %d site1: %d id1: %d cpu1: %d site2: %d id2: %d cpu2: %d site3: %d id3: %d cpu3: %d\n",
       ipar_orig[intIdx::id],ipar_orig[intIdx::cpu],
