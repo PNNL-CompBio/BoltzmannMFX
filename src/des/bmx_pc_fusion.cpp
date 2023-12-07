@@ -502,6 +502,8 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
   std::vector<Real> xpar_vec = interaction->getForceParams();
   Real *xpar = &xpar_vec[0];
 
+  Real max_len = SPECIES::max_len;
+
   for (int lev = 0; lev <= finest_level; lev++)
   {
 
@@ -579,7 +581,7 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
       // now we loop over the neighbor list and look for invalid connections
       int me = ParallelDescriptor::MyProc();
       amrex::ParallelFor(nrp,
-          [nrp,pstruct,nbor_data,xpar,fpar,ntot,me]
+          [nrp,pstruct,nbor_data,xpar,fpar,max_len,ntot,me]
           AMREX_GPU_DEVICE (int i) noexcept
           {
           auto& particle = pstruct[i];
@@ -604,9 +606,21 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
 
           RealVect diff(dist_x,dist_y,dist_z);
 
-          Real r_lm = 2.0*maxInteractionDistance(&particle.rdata(0),&p2.rdata(0),
-              &particle.idata(0),&p2.idata(0),&xpar[0]);
+          //Real r_lm = 2.0*maxInteractionDistance(&particle.rdata(0),&p2.rdata(0),
+          //    &particle.idata(0),&p2.idata(0),&xpar[0]);
           // Real r_lm = 1.5*chempar[20];
+          Real r_lm = 1.5*max_len;
+
+#if 0
+          if ((particle.idata(intIdx::id)==178 && particle.idata(intIdx::cpu) == 5)
+            ||(particle.idata(intIdx::id)==179 && particle.idata(intIdx::cpu) == 5)) {
+            printf("particle %d,%d-%d,%d separation: %e max: %e\n",
+                particle.idata(intIdx::id),particle.idata(intIdx::cpu),
+                p2.idata(intIdx::id),p2.idata(intIdx::cpu),
+                sqrt(r2),r_lm-small_number);
+          }
+#endif
+
           AMREX_ASSERT_WITH_MESSAGE(
               not (particle.id() == p2.id() and
                 particle.cpu() == p2.cpu()),

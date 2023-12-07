@@ -93,7 +93,7 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
     if (DEM::solve)
     {
         if (time == 0.0) pc->InitBonds(particle_cost, knapsack_weight_type);
-        // if (time == 46657.0) pc->PrintConnectivity(particle_cost,knapsack_weight_type);
+//        if (time == 133033.0) pc->PrintConnectivity(particle_cost,knapsack_weight_type);
         pc->EvolveParticles(dt, particle_cost, knapsack_weight_type, nsubsteps);
         pc->split_particles(time);
         pc->ParticleExchange(dt, particle_cost, knapsack_weight_type, nsubsteps);
@@ -102,7 +102,7 @@ bmx::Evolve (int nstep, Real & dt, Real & prev_dt, Real time, Real stop_time)
           pc->EvaluateInteriorFusion(particle_cost,knapsack_weight_type);
           pc->CleanupFusion(particle_cost,knapsack_weight_type);
         }
-        if (nstep%SPECIES::rg_frequency == 0) {
+        if ((nstep+1)%SPECIES::rg_frequency == 0) {
           RealVect cm;
           pc->CalculateFungalCM(particle_cost, knapsack_weight_type, cm);
           amrex::Print()<<"Fungal Center of Mass: ["<<cm[0]<<","<<cm[1]

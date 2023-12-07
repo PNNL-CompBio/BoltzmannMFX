@@ -1300,6 +1300,13 @@ void cleanupFusionBond(int *ipar , int *jpar, int me)
   int i_id, i_cpu;
   i_id = ipar[intIdx::id];
   i_cpu = ipar[intIdx::cpu];
+#if 0
+  if ((ipar[intIdx::id] == 178 && ipar[intIdx::cpu] == 5) ||
+      (ipar[intIdx::id] == 179 && ipar[intIdx::cpu] == 5)) {
+    printf("Checking id: %d cpu: %d for neighbor jid: %d jcpu: %d\n",
+        i_id,i_cpu,jpar[intIdx::id],jpar[intIdx::cpu]);
+  }
+#endif
 
   int isite[4], iid[4], icpu[4];
   iid[0] = ipar[intIdx::seg1_id1];
@@ -1330,6 +1337,15 @@ void cleanupFusionBond(int *ipar , int *jpar, int me)
       //        idx,ipar[intIdx::new_flag],jpar[intIdx::split_flag],isite[idx]);
       // segments are bonded. Check to see if J just split
       // and I is not new and isite[idx] = 1
+#if 0
+      if ((ipar[intIdx::id] == 178 && ipar[intIdx::cpu] == 5) ||
+          (ipar[intIdx::id] == 179 && ipar[intIdx::cpu] == 5)) {
+        printf("iid: %d icpu: %d jid: %d cpu: %d i_new_flag: %d"
+            " i_fuse_flag: %d j_split_flag: %d\n",
+            ipar[intIdx::id],ipar[intIdx::cpu],jpar[intIdx::id],jpar[intIdx::cpu],
+            ipar[intIdx::new_flag],ipar[intIdx::fuse_flag],jpar[intIdx::split_flag]);
+      }
+#endif
       if (ipar[intIdx::new_flag] == 0 && ipar[intIdx::fuse_flag] == 0 &&
           jpar[intIdx::split_flag] == 1) {
 #ifndef AMREX_USE_GPU
@@ -2247,9 +2263,11 @@ initExchange(Real *par, int *ipar)
 {
   if (ipar[intIdx::cell_type] == cellType::FUNGI) {
     Real *cnc = &par[realIdx::first_data];
-    cnc[3] = 0.0;
-    cnc[4] = 0.0;
     cnc[5] = 0.0;
+    cnc[6] = 0.0;
+    cnc[7] = 0.0;
+    cnc[8] = 0.0;
+    cnc[9] = 0.0;
   }
 }
 /**
@@ -2391,9 +2409,9 @@ applyIncrements(Real *par, int *ipar)
     Real cA0 = cnc[0];
     Real cB0 = cnc[1];
     Real cC0 = cnc[2];
-    cnc[0] += cnc[3];
-    cnc[1] += cnc[4];
-    cnc[2] += cnc[5];
+    cnc[0] += cnc[5];
+    cnc[1] += cnc[6];
+    cnc[2] += cnc[7];
 #ifndef AMREX_USE_GPU
     if (cnc[0] < 0.0) {
       printf("Post xchng A1: %e pre xchng A0: %e\n",cnc[0],cA0);
