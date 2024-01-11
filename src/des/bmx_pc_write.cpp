@@ -8,7 +8,7 @@
 #include <bmx_chem_species_parms.H>
 
 using namespace amrex;
-using PinnedTile = typename ContainerLike<amrex::PinnedArenaAllocator>::ParticleTileType;
+using PinnedTile = typename BMXParticleContainer::ContainerLike<amrex::PinnedArenaAllocator>::ParticleTileType;
 
 void BMXParticleContainer::WriteToAscii (const std::string& vtk_filename,int nstep, Real time)
 {
@@ -100,7 +100,7 @@ void BMXParticleContainer::WriteSegmentsToAscii (const std::string& vtk_filename
               PinnedTile pinned_tile;
               pinned_tile.define(NumRuntimeRealComps(),NumRuntimeIntComps());
               pinned_tile.resize(kv.second.numParticles());
-              amrex::copyParticles(pinned_tile, particle_tile, 0, 0,
+              amrex::copyParticles(pinned_tile, kv.second, 0, 0,
                   kv.second.numParticles());
               const auto& particles = pinned_tile.GetArrayOfStructs();
 
