@@ -860,7 +860,6 @@ void BMXParticleContainer::CalculateFungalCM(const Vector<MultiFab*> cost,
 
       amrex::Gpu::Device::synchronize();
 
-      pstruct = particles().dataPtr();
       amrex::ParallelFor( nrp, [pstruct,cmx,cmy,cmz,ntotp]
           AMREX_GPU_DEVICE (int pid) noexcept
           {
