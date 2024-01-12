@@ -218,7 +218,12 @@ void BMXParticleContainer::WriteSegmentsToAscii (const std::string& vtk_filename
             const auto& plevel = GetParticles(lev);
             for (const auto& kv : plevel)
             {
-              const auto& particles = kv.second.GetArrayOfStructs();
+              PinnedTile pinned_tile;
+              pinned_tile.define(NumRuntimeRealComps(),NumRuntimeIntComps());
+              pinned_tile.resize(kv.second.numParticles());
+              amrex::copyParticles(pinned_tile, kv.second, 0, 0,
+                  kv.second.numParticles());
+              const auto& particles = pinned_tile.GetArrayOfStructs();
 
               for (int i = 0; i < particles.numParticles(); ++i)
               {
@@ -323,7 +328,12 @@ void BMXParticleContainer::WriteParticlesToAscii (const std::string& vtk_filenam
             const auto& plevel = GetParticles(lev);
             for (const auto& kv : plevel)
             {
-              const auto& particles = kv.second.GetArrayOfStructs();
+              PinnedTile pinned_tile;
+              pinned_tile.define(NumRuntimeRealComps(),NumRuntimeIntComps());
+              pinned_tile.resize(kv.second.numParticles());
+              amrex::copyParticles(pinned_tile, kv.second, 0, 0,
+                  kv.second.numParticles());
+              const auto& particles = pinned_tile.GetArrayOfStructs();
 
               for (int i = 0; i < particles.numParticles(); ++i)
               {
@@ -439,7 +449,12 @@ void BMXParticleContainer::WriteParticlesToAscii (const std::string& vtk_filenam
             const auto& plevel = GetParticles(lev);
             for (const auto& kv : plevel)
             {
-              const auto& particles = kv.second.GetArrayOfStructs();
+              PinnedTile pinned_tile;
+              pinned_tile.define(NumRuntimeRealComps(),NumRuntimeIntComps());
+              pinned_tile.resize(kv.second.numParticles());
+              amrex::copyParticles(pinned_tile, kv.second, 0, 0,
+                  kv.second.numParticles());
+              const auto& particles = pinned_tile.GetArrayOfStructs();
 
               for (int i = 0; i < particles.numParticles(); ++i)
               {
