@@ -25,7 +25,7 @@ amrex::Real BMXCellInteraction::p_bond_cutoff = 5.0;
 amrex::Real BMXCellInteraction::p_viscosity = 20.0;
 amrex::Real BMXCellInteraction::p_ran_scale = 0.0;
 amrex::Real BMXCellInteraction::p_fluc_mix = 0.0;
-std::vector<amrex::Real> BMXCellInteraction::p_force_params;
+amrex::Gpu::DeviceVector<amrex::Real> BMXCellInteraction::p_force_params;
 
 /**
  * Retrieve instance of BMXCellInteraction object
@@ -109,7 +109,7 @@ void BMXCellInteraction::setParams(const char* /*file*/)
  * Return a vector containing force parameters
  * @return force parameters
  */
-std::vector<Real> BMXCellInteraction::getForceParams()
+amrex::Gpu::DeviceVector<Real> BMXCellInteraction::getForceParams()
 {
   return p_force_params;
 }

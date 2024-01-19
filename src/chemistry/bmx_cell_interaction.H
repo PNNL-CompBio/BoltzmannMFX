@@ -31,7 +31,7 @@ class BMXCellInteraction
    * Return a vector containing force parameters
    * @return force parameters
    */
-  std::vector<Real> getForceParams();
+  amrex::Gpu::DeviceVector<Real> getForceParams();
 
   protected:
   /**
@@ -70,7 +70,7 @@ class BMXCellInteraction
 
   static Real p_fluc_mix;      // fluctuation mixing coefficient
 
-  static std::vector<Real> p_force_params;  // vector containing all force params
+  static amrex::Gpu::DeviceVector<Real> p_force_params;  // vector containing all force params
 
   private:
 

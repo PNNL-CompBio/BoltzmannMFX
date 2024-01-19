@@ -30,6 +30,7 @@ checkSplit(Real *p_par, int *p_ipar, Real max_vol, Real max_len,
   int cell_type = p_ipar[intIdx::cell_type];
   *n_new = 0;
   if (cell_type == cellType::YEAST) {
+    std::printf("Check yeast split vol: %f max_vol: %f\n",p_par[realIdx::vol],max_vol);
     if (p_par[realIdx::vol] > max_vol) ret = true;
 #ifndef AMREX_USE_GPU
     if (ret) printf("SPLITTING cell id: %d cpu: %d\n",
@@ -1471,6 +1472,7 @@ void xferMeshToParticleAndUpdateChem(Real grid_vol, Real npart,
   if (cell_type == cellType::FUNGI) {
     if (cell_par[realIdx::radius] >= radius_max &&
         cell_par[realIdx::c_length] >= length_max) {
+      std::printf("Setting growth to zero\n");
       kg = 0.0;
       kv = 0.0;
     }

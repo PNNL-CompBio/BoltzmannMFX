@@ -76,7 +76,7 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
 
 #ifdef NEW_CHEM
   BMXChemistry *bmxchem = BMXChemistry::instance();
-  std::vector<Real> chempar_vec;
+  amrex::Gpu::DeviceVector<Real> chempar_vec;
   bmxchem->getChemParams(chempar_vec);
   Real *chempar = &chempar_vec[0];
 #endif
@@ -310,6 +310,29 @@ bmx::bmx_calc_txfr_particle (Real time, Real dt)
             interp_gyarray,interp_gzarray]
             AMREX_GPU_DEVICE (int pid) noexcept
               {
+#if 0
+              std::printf("chempar[0]: %f\n",chempar[0]);
+              std::printf("chempar[1]: %f\n",chempar[1]);
+              std::printf("chempar[2]: %f\n",chempar[2]);
+              std::printf("chempar[3]: %f\n",chempar[3]);
+              std::printf("chempar[4]: %f\n",chempar[4]);
+              std::printf("chempar[5]: %f\n",chempar[5]);
+              std::printf("chempar[6]: %f\n",chempar[6]);
+              std::printf("chempar[7]: %f\n",chempar[7]);
+              std::printf("chempar[8]: %f\n",chempar[8]);
+              std::printf("chempar[9]: %f\n",chempar[9]);
+              std::printf("chempar[10]: %f\n",chempar[10]);
+              std::printf("chempar[11]: %f\n",chempar[11]);
+              std::printf("chempar[12]: %f\n",chempar[12]);
+              std::printf("chempar[13]: %f\n",chempar[13]);
+              std::printf("chempar[14]: %f\n",chempar[14]);
+              std::printf("chempar[15]: %f\n",chempar[15]);
+              std::printf("chempar[16]: %f\n",chempar[16]);
+              std::printf("chempar[17]: %f\n",chempar[17]);
+              std::printf("chempar[18]: %f\n",chempar[18]);
+              std::printf("chempar[19]: %f\n",chempar[19]);
+              std::printf("chempar[20]: %f\n",chempar[20]);
+#endif
               // Local array storing interpolated values
               GpuArray<Real, interp_ncomp> interp_loc;
 

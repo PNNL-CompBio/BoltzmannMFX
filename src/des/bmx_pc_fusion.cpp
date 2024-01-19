@@ -32,11 +32,12 @@ bool BMXParticleContainer::EvaluateTipFusion (const Vector<MultiFab*> cost,
     if (n_at_lev == 0) continue;
 
     BMXChemistry *chemistry = BMXChemistry::instance();
-    std::vector<Real> fpar_vec = chemistry->getFusionParameters();
+    amrex::Gpu::DeviceVector<Real> fpar_vec = chemistry->getFusionParameters();
     Real *fpar = &fpar_vec[0];
     BMXCellInteraction *interaction = BMXCellInteraction::instance();
-    std::vector<Real> xpar_vec = interaction->getForceParams();
-    Real *xpar = &xpar_vec[0];
+    amrex::Gpu::DeviceVector<Real> xpar_vec = interaction->getForceParams();
+    // Real *xpar = &xpar_vec[0];
+    auto xpar = xpar_vec.data();
     /****************************************************************************
      * DEBUG flag toggles:                                                      *
      *   -> Print number of collisions                                          *
@@ -227,11 +228,12 @@ void BMXParticleContainer::EvaluateInteriorFusion (const Vector<MultiFab*> cost,
     if (n_at_lev == 0) continue;
 
     BMXChemistry *chemistry = BMXChemistry::instance();
-    std::vector<Real> fpar_vec = chemistry->getFusionParameters();
+    amrex::Gpu::DeviceVector<Real> fpar_vec = chemistry->getFusionParameters();
     Real *fpar = &fpar_vec[0];
     BMXCellInteraction *interaction = BMXCellInteraction::instance();
-    std::vector<Real> xpar_vec = interaction->getForceParams();
-    Real *xpar = &xpar_vec[0];
+    amrex::Gpu::DeviceVector<Real> xpar_vec = interaction->getForceParams();
+    // Real *xpar = &xpar_vec[0];
+    auto xpar = xpar_vec.data();
     /****************************************************************************
      * DEBUG flag toggles:                                                      *
      *   -> Print number of collisions                                          *
@@ -490,17 +492,14 @@ void BMXParticleContainer::CleanupFusion (const Vector<MultiFab*> cost,
   int l_num_ints  = BMXChemistry::p_num_ints;
   amrex::Print() << "Cleanup fusion bonds" <<std::endl;
 
-  /*
-  BMXCellInteraction *interaction = BMXCellInteraction::instance();
-  std::vector<Real> xpar_vec = interaction->getForceParams();
-  Real *xpar = &xpar_vec[0];
-  */
   BMXChemistry *bmxchem = BMXChemistry::instance();
-  std::vector<Real> fpar_vec = bmxchem->getFusionParameters();
-  Real *fpar = &fpar_vec[0];
+  amrex::Gpu::DeviceVector<Real> fpar_vec = bmxchem->getFusionParameters();
+  // Real *fpar = &fpar_vec[0];
+  auto fpar = fpar_vec.data();
   BMXCellInteraction *interaction = BMXCellInteraction::instance();
-  std::vector<Real> xpar_vec = interaction->getForceParams();
-  Real *xpar = &xpar_vec[0];
+  amrex::Gpu::DeviceVector<Real> xpar_vec = interaction->getForceParams();
+  // Real *xpar = &xpar_vec[0];
+  auto xpar = xpar_vec.data();
 
   Real max_len = SPECIES::max_len;
 

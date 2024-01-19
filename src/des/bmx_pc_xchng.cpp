@@ -32,8 +32,9 @@ void BMXParticleContainer::ParticleExchange (Real dt,
                    << " ... with fluid dt " << dt << std::endl;
 
     BMXChemistry *chemistry = BMXChemistry::instance();
-    std::vector<Real> xpar_vec = chemistry->getExchangeParameters();
-    Real *xpar = &xpar_vec[0];
+    amrex::Gpu::DeviceVector<Real> xpar_vec = chemistry->getExchangeParameters();
+    //Real *xpar = &xpar_vec[0];
+    auto xpar = xpar_vec.data();
 
     // Debug level controls the detail of debug output:
     //   -> debug_level = 0 : no debug output
@@ -123,9 +124,14 @@ void BMXParticleContainer::ParticleExchange (Real dt,
               if (particle.idata(intIdx::position) == siteLocation::TIP &&
                   particle.idata(intIdx::n_bnds) > 2) {
                 int *idata = &particle.idata(0);
-                printf("particle id: %d cpu: %d is Tip with %d bonds\n",
+                std::printf("particle id: %d cpu: %d is Tip with %d bonds\n",
                     idata[intIdx::id],idata[intIdx::cpu],idata[intIdx::n_bnds]);
               }
+#if 0
+              std::printf("xpar[0]: %f\n",xpar[0]);
+              std::printf("xpar[1]: %f\n",xpar[1]);
+              std::printf("xpar[2]: %f\n",xpar[2]);
+#endif
 
 
                   // initialize particle before evaluating exchange

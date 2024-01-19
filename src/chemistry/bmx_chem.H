@@ -206,18 +206,18 @@ class BMXChemistry
    * chemistry
    * @param chempar vector of parameters used in chemistry
    */
-  void getChemParams(std::vector<Real> &chempar);
+  void getChemParams(amrex::Gpu::DeviceVector<Real> &chempar);
 
   /** Return a vector containing exchange parameters
    * @return vector of exchange parameters
    */
-  std::vector<Real> getExchangeParameters();
+  amrex::Gpu::DeviceVector<Real> getExchangeParameters();
 
   /**
    * Return a vector containing parameters for segment fusion
    * @return vector of fusion parameters
    */
-  std::vector<Real> getFusionParameters();
+  amrex::Gpu::DeviceVector<Real> getFusionParameters();
 
   // Fraction of overlap
   static Real p_overlap;

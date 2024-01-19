@@ -32,8 +32,9 @@ void BMXParticleContainer::EvolveParticles (Real dt,
                    << " ... with fluid dt " << dt << std::endl;
 
     BMXCellInteraction *interaction = BMXCellInteraction::instance();
-    std::vector<Real> fpar_vec = interaction->getForceParams();
-    Real *fpar = &fpar_vec[0];
+    amrex::Gpu::DeviceVector<Real> fpar_vec = interaction->getForceParams();
+    // Real *fpar = &fpar_vec[0];
+    auto fpar = fpar_vec.data();
     /****************************************************************************
      * DEBUG flag toggles:                                                      *
      *   -> Print number of collisions                                          *
@@ -172,6 +173,23 @@ void BMXParticleContainer::EvolveParticles (Real dt,
               AMREX_GPU_DEVICE (int i, amrex::RandomEngine const& engine) noexcept
               {
                   auto& particle = pstruct[i];
+#if 0
+                  std::printf("fpar[0]: %f\n",fpar[0]);
+                  std::printf("fpar[1]: %f\n",fpar[1]);
+                  std::printf("fpar[2]: %f\n",fpar[2]);
+                  std::printf("fpar[3]: %f\n",fpar[3]);
+                  std::printf("fpar[4]: %f\n",fpar[4]);
+                  std::printf("fpar[5]: %f\n",fpar[5]);
+                  std::printf("fpar[6]: %f\n",fpar[6]);
+                  std::printf("fpar[7]: %f\n",fpar[7]);
+                  std::printf("fpar[8]: %f\n",fpar[8]);
+                  std::printf("fpar[9]: %f\n",fpar[9]);
+                  std::printf("fpar[10]: %f\n",fpar[10]);
+                  std::printf("fpar[11]: %f\n",fpar[11]);
+                  std::printf("fpar[12]: %f\n",fpar[12]);
+                  std::printf("fpar[13]: %f\n",fpar[13]);
+                  std::printf("fpar[14]: %f\n",fpar[14]);
+#endif
 
                   RealVect pos1(particle.pos());
                   // clean up flags
@@ -515,8 +533,9 @@ void BMXParticleContainer::InitBonds (const Vector<MultiFab*> cost,
     Real rlim = 1.0e-7;
 
     BMXCellInteraction *interaction = BMXCellInteraction::instance();
-    std::vector<Real> fpar_vec = interaction->getForceParams();
-    Real *fpar = &fpar_vec[0];
+    amrex::Gpu::DeviceVector<Real> fpar_vec = interaction->getForceParams();
+    // Real *fpar = &fpar_vec[0];
+    auto fpar = fpar_vec.data();
 
     for (int lev = 0; lev <= finest_level; lev++)
     {
@@ -630,6 +649,10 @@ void BMXParticleContainer::InitBonds (const Vector<MultiFab*> cost,
 
           }
           } // end of neighbor loop
+          if (particle.idata(intIdx::cell_type) == cellType::FUNGI &&
+              particle.idata(intIdx::n_bnds) > 1) {
+            particle.idata(intIdx::position) = siteLocation::INTERIOR;
+          }
           }); // end of loop over particles
 
       amrex::Gpu::Device::synchronize();

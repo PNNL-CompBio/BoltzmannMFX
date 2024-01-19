@@ -231,7 +231,7 @@ int BMXChemistry::getIntData(int idx)
  * chemistry
  * @param chempar vector of parameters used in chemistry
  */
-void BMXChemistry::getChemParams(std::vector<Real> &chempar)
+void BMXChemistry::getChemParams(amrex::Gpu::DeviceVector<Real> &chempar)
 {
   chempar.clear();
   chempar.push_back(k1);
@@ -260,9 +260,9 @@ void BMXChemistry::getChemParams(std::vector<Real> &chempar)
 /** Returen a vector containing exchange parameters
  * @return vector of exchange parameters
  */
-std::vector<Real> BMXChemistry::getExchangeParameters()
+amrex::Gpu::DeviceVector<Real> BMXChemistry::getExchangeParameters()
 {
-  std::vector<Real> ret;
+  amrex::Gpu::DeviceVector<Real> ret;
   ret.push_back(mtA);
   ret.push_back(mtB);
   ret.push_back(mtC);
@@ -273,9 +273,9 @@ std::vector<Real> BMXChemistry::getExchangeParameters()
  * Return a vector containing parameters for segment fusion
  * @return vector of fusion parameters
  */
-std::vector<Real> BMXChemistry::getFusionParameters()
+amrex::Gpu::DeviceVector<Real> BMXChemistry::getFusionParameters()
 {
-  std::vector<Real> ret;
+  amrex::Gpu::DeviceVector<Real> ret;
   ret.push_back(fusion_prob);
   ret.push_back(max_fusion_separation);
   ret.push_back(scale_inc);

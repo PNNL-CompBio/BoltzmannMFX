@@ -13,7 +13,8 @@ using PinnedTile = typename BMXParticleContainer::ContainerLike<amrex::PinnedAre
 void BMXParticleContainer::WriteToAscii (const std::string& vtk_filename,int nstep, Real time)
 {
   int nsegments, nparticles;
-  countParticleTypes(nparticles, nsegments);
+  CountParticleTypes(nparticles, nsegments);
+  amrex::Print()<<"Nparticles: "<<nparticles<<" Nsegments: "<<nsegments<<std::endl;
   if (nsegments > 0) WriteSegmentsToAscii(vtk_filename, nstep, time, nsegments);
   if (nparticles > 0) WriteParticlesToAscii(vtk_filename, nstep, time, nparticles);
 }
@@ -478,7 +479,7 @@ void BMXParticleContainer::WriteParticlesToAscii (const std::string& vtk_filenam
 
 }
 
-void BMXParticleContainer::countParticleTypes (int &nparticles, int &nsegments)
+void BMXParticleContainer::CountParticleTypes (int &nparticles, int &nsegments)
 {
   BL_PROFILE("BMXParticleContainer::WriteSegmentsToAscii");
 
@@ -520,6 +521,7 @@ void BMXParticleContainer::countParticleTypes (int &nparticles, int &nsegments)
         int type = particle.idata(intIdx::cell_type);
         if (type == cellType::FUNGI) {
           (*nseg)++;
+          std::printf("Increment nseg: %d\n",*nseg);
         } else {
           (*npart)++;
         }
@@ -531,6 +533,7 @@ void BMXParticleContainer::countParticleTypes (int &nparticles, int &nsegments)
   int buf[2];
   buf[0] = nparticles;
   buf[1] = nsegments;
+  std::printf("nparticles: %d nsegments: %d\n",nparticles,nsegments);
   ParallelDescriptor::ReduceIntSum(buf,2);
   nparticles = buf[0];
   nsegments = buf[1];
